@@ -143,6 +143,14 @@ export const displayRemoteNotification = async remoteMessage => {
         id: 'default',
       },
     },
+    ios: {
+      sound: 'default',
+      foregroundPresentationOptions: {
+        banner: true,
+        sound: true,
+        badge: true,
+      },
+    },
   });
 };
 
