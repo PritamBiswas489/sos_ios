@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>KobyTech</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>KobyTech reads your heart rate from Apple Health to monitor stress levels.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>KobyTech does not write health data.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location so you can share your current position in SOS chat.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We use your location in the background to support Bluetooth scanning and SOS alerts.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We use your microphone so you can record and send voice messages.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We use your camera so you can take photos and make video calls.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We access your photo library so you can share images and videos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We save media to your photo library.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>We access your contacts so you can add trusted contacts.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>We use Bluetooth to detect nearby devices for SOS alerts.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>We use Bluetooth to detect nearby devices for SOS alerts.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>fetch</string>
+		<string>voip</string>
+		<string>processing</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>MaterialIcons.ttf</string>
+		<string>NunitoSans-Black.ttf</string>
+		<string>NunitoSans-Bold.ttf</string>
+		<string>NunitoSans-ExtraBold.ttf</string>
+		<string>NunitoSans-Light.ttf</string>
+		<string>NunitoSans-Regular.ttf</string>
+		<string>NunitoSans-SemiBold.ttf</string>
+		<string>SpaceMono-Regular.ttf</string>
+	</array>
+</dict>
+</plist>
