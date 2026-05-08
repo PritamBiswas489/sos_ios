@@ -26,10 +26,6 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSHealthShareUsageDescription</key>
-	<string>KobyTech reads your heart rate from Apple Health to monitor stress levels.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>KobyTech does not write health data.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -37,24 +33,41 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We use your location so you can share your current position in SOS chat.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>We use your location in the background to support Bluetooth scanning and SOS alerts.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>We use your microphone so you can record and send voice messages.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>We use your camera so you can take photos and make video calls.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We access your photo library so you can share images and videos.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We save media to your photo library.</string>
-	<key>NSContactsUsageDescription</key>
-	<string>We access your contacts so you can add trusted contacts.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>We use Bluetooth to detect nearby devices for SOS alerts.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>We use Bluetooth to detect nearby devices for SOS alerts.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We use your camera so you can take photos and make video calls.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>We access your contacts so you can add trusted contacts.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>KobyTech reads your heart rate from Apple Health to monitor stress levels.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>KobyTech does not write health data.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We use your location in the background to support Bluetooth scanning and SOS alerts.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location so you can share your current position in SOS chat.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We use your microphone so you can record and send voice messages.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We save media to your photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We access your photo library so you can share images and videos.</string>
+	<key>RCTNewArchEnabled</key>
+	<true/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>MaterialIcons.ttf</string>
+		<string>NunitoSans-Black.ttf</string>
+		<string>NunitoSans-Bold.ttf</string>
+		<string>NunitoSans-ExtraBold.ttf</string>
+		<string>NunitoSans-Light.ttf</string>
+		<string>NunitoSans-Regular.ttf</string>
+		<string>NunitoSans-SemiBold.ttf</string>
+		<string>SpaceMono-Regular.ttf</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
@@ -82,16 +95,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>UIAppFonts</key>
-	<array>
-		<string>MaterialIcons.ttf</string>
-		<string>NunitoSans-Black.ttf</string>
-		<string>NunitoSans-Bold.ttf</string>
-		<string>NunitoSans-ExtraBold.ttf</string>
-		<string>NunitoSans-Light.ttf</string>
-		<string>NunitoSans-Regular.ttf</string>
-		<string>NunitoSans-SemiBold.ttf</string>
-		<string>SpaceMono-Regular.ttf</string>
-	</array>
 </dict>
 </plist>

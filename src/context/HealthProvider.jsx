@@ -1,5 +1,5 @@
 import React from 'react';
-import { GoogleFitProvider } from './GoogleFitContext';
+ 
 import { BleProvider } from './BleContext';
 import { StressProvider } from './StressContext';
 
@@ -11,7 +11,7 @@ export default function HealthProvider({
    
 }) {
   return (
-    <GoogleFitProvider refreshIntervalMs={gfRefreshMs}>
+    
       <BleProvider>
         <StressProvider
           userAge={userAge}
@@ -21,6 +21,6 @@ export default function HealthProvider({
           {children}
         </StressProvider>
       </BleProvider>
-    </GoogleFitProvider>
+     
   );
 }

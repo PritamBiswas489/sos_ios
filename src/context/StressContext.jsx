@@ -1,25 +1,21 @@
 /**
  * StressContext.jsx
  *
- * Consumes GoogleFitContext + BleContext separately.
- * Exposes both data sources independently so any screen
- * can read GF data, BLE data, and stress result individually.
+ * Consumes BleContext as the single live source.
+ * Exposes BLE data and stress result so any screen can read
+ * live heart-rate/device status and computed stress.
  *
  * Exposed via useStress():
  *   stress        → computed score, state, breakdown
- *   googleFitData → hr (from GF only)
  *   bleData       → currentHR, hrBuffer, device info (from BLE only)
- *   activeSource  → 'ble' | 'googlefit'
+ *   activeSource  → 'ble'
  *   sosArmed, sendSos, dismissSos
  */
 
 import React, {
   createContext, useContext, useState, useEffect,
   useMemo, useCallback, useRef,
-  use,
 } from 'react';
-import {Vibration} from 'react-native';
-import {useGoogleFit} from './GoogleFitContext';
 import {useBle} from './BleContext';
 import {StressDataService} from '../services/stressData.service';
 import { useSocket } from './SocketContext';
@@ -185,7 +181,6 @@ export function StressProvider({
   criticalThreshold=76,
    
 }) {
-  const gf  = useGoogleFit();
   const ble = useBle();
 
   const { isAuthenticated } = useUserAuth();
@@ -194,37 +189,11 @@ export function StressProvider({
   const [lastRecordedFallback, setLastRecordedFallback] = useState(null);
   const [contactsLastHealthData, setContactsLastHealthData] = useState(null);
   const [manualHROverride, setManualHROverride] = useState(null); // DEV: manual HR injection
-  const prevScoreRef = useRef(0);
   const lastSosTriggerScoreRef = useRef(0);
   const lastSavedAtRef = useRef(0);
   const lastSavedFingerprintRef = useRef('');
-  const { on, emitNoAck, emit, isConnected } = useSocket();
+  const { on, emitNoAck, isConnected } = useSocket();
   const {fetchOutgoingRequests} = useOutgoingRequests();
-
-  // ────────────────────────────────────────────
-  // GOOGLE FIT DATA BLOCK
-  // Pure GF snapshot — all fields from Google Fit only
-  // ────────────────────────────────────────────
-  const googleFitData = useMemo(() => ({
-    // Heart Rate from Google Fit
-    hrReadings: gf.hrReadings,                              // [{value, startDate}]
-    hrValues:   gf.hrReadings.map(r => r.value),           // [bpm, bpm, ...]
-    latestHR:   gf.hrReadings.length
-                  ? gf.hrReadings[gf.hrReadings.length - 1].value
-                  : null,
-    avgHR: gf.hrReadings.length
-      ? Math.round(gf.hrReadings.reduce((a,r)=>a+r.value,0) / gf.hrReadings.length)
-      : null,
-
-    // Status
-    authorized: gf.authorized,
-    loading:    gf.loading,
-    error:      gf.error,
-
-    // Actions
-    authorize: gf.authorize,
-    refresh:   gf.refresh,
-  }), [gf]);
 
   // ────────────────────────────────────────────
   // BLE DATA BLOCK
@@ -255,21 +224,17 @@ export function StressProvider({
 
   // ────────────────────────────────────────────
   // ACTIVE SOURCE
-  // BLE takes priority when connected + has data
+  // BLE is the only live source for stress calculations
   // ────────────────────────────────────────────
-  const activeSource = ble.connected && ble.hrBuffer.length > 0
-    ? 'ble'
-    : 'googlefit';
+  const activeSource = 'ble';
 
   const mergedHRValues = manualHROverride !== null
     ? Array(15).fill(manualHROverride)   // DEV: spread over 15 slots so trend/variability computes
-    : activeSource === 'ble'
-      ? ble.hrBuffer
-      : gf.hrReadings.map(r => r.value);
+    : ble.hrBuffer;
 
   // ────────────────────────────────────────────
   // STRESS CALCULATION
-  // Uses merged HR + GF context data (sleep, spo2)
+  // Uses BLE HR stream (or manual override)
   // ────────────────────────────────────────────
   const stress = useMemo(() =>
     computeStress({hrValues: mergedHRValues}),
@@ -330,15 +295,14 @@ export function StressProvider({
 
   // ────────────────────────────────────────────
   // STRESS/HR PERSISTENCE
-  // Save only when a valid source has data
+  // Save only when BLE/manual source has data
   // ────────────────────────────────────────────
   useEffect(() => {
     const hasBleData    = ble.connected && ble.hrBuffer.length > 0;
-    const hasGfData     = gf.hrReadings.length > 0;
     const hasManualData = manualHROverride !== null;
 
     // Skip insert if no data source is active.
-    if (!hasBleData && !hasGfData && !hasManualData) return;
+    if (!hasBleData && !hasManualData) return;
 
     // Skip insert if stress was computed without a current HR value.
     if (stress.currentHR == null) return;
@@ -365,13 +329,11 @@ export function StressProvider({
       stress,
       activeSource: effectiveSource,
       bleData,
-      googleFitData,
     });
     const insertData = buildStressRecord({
       stress,
       activeSource: effectiveSource,
       bleData,
-      googleFitData,
     });
     console.log('Inserting stress record:', insertData);
     // Emit to trusted contacts before saving, so they get the update faster (no API roundtrip)
@@ -389,8 +351,6 @@ export function StressProvider({
     ble.connected,
     ble.hrBuffer.length,
     bleData,
-    gf.hrReadings.length,
-    googleFitData,
     manualHROverride,
     stress,
     emitNoAck,
@@ -428,7 +388,7 @@ export function StressProvider({
   const sendSos = useCallback(() => {
     console.log('SOS manually triggered by user');
     // setSosArmed(false);
-  }, [stress, googleFitData, bleData, activeSource]);
+  }, [stress, bleData, activeSource]);
 
   const dismissSos = useCallback(() => setSosArmed(false), []);
 
@@ -548,9 +508,8 @@ export function StressProvider({
   // ────────────────────────────────────────────
   const value = useMemo(() => ({
     stress: resolvedStress, // live stress or last saved fallback
-    googleFitData,    // ← GF-only block
     bleData,          // ← BLE-only block
-    activeSource: resolvedActiveSource, // 'ble' | 'googlefit'
+    activeSource: resolvedActiveSource, // 'ble'
     hasLiveData,
     isUsingLastRecord: !hasLiveData && !!lastRecordedFallback,
     lastRecordedAt: lastRecordedFallback?.recordedAt ?? null,
@@ -563,7 +522,6 @@ export function StressProvider({
     clearManualHR: () => setManualHROverride(null),
   }), [
     resolvedStress,
-    googleFitData,
     bleData,
     resolvedActiveSource,
     hasLiveData,
@@ -597,12 +555,6 @@ export function useStress() {
 export function useStressScore() {
   const {stress} = useStress();
   return stress;
-}
-
-/** Only Google Fit data → sleep, spo2 cards */
-export function useGoogleFitData() {
-  const {googleFitData} = useStress();
-  return googleFitData;
 }
 
 /** Only BLE data → live HR, device status */
