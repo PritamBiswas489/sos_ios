@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, TextInput, FlatList, Switch } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import styles from './style';
-import MapView, { Marker, Circle, Polyline, UrlTile, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Circle, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MapAvatarList from '../../components/mapAvatarList';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -16,36 +16,91 @@ import axios from 'axios';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { useLocation } from '../../context/LocationContext';
 import { GOOGLE_MAPS_API_KEY } from '../../../environment';
-import { MAP_TILE_API_KEY, ORS_KEY, USE_GOOGLE_MAPS } from '../../../environment';
 
-// ─── OpenRouteService free API key ────────────────────────────────────────────
-// Get yours free at: https://openrouteservice.org/dev/#/signup
- 
-
-// ─── OSM Tile URL (completely free, no key needed) ────────────────────────────
- 
-
-// ─── Dark map style (only applied when Google Maps is enabled) ────────────────
 const darkMapStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#0a1628' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#5a7a9a' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#0a1628' }] },
-  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#0d1f38' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#0f2847' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#0a1e34' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#3a5a7a' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#1a3a60' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#0f2545' }] },
-  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#4a7aaa' }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#0c2240' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#040c18' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#1a3a5a' }] },
-  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#0a1628' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#060f0a' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#1a3a28' }] },
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#0a1628' }] },
-  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#0a1628' }] },
-  { featureType: 'landscape.man_made', elementType: 'geometry.fill', stylers: [{ color: '#0c1e38' }] },
+  { elementType: 'geometry', stylers: [{ color: '#0b1220' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#0b1220' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#6f86a8' }] },
+  {
+    featureType: 'administrative',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#142136' }],
+  },
+  {
+    featureType: 'administrative.land_parcel',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#4d5f79' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'geometry',
+    stylers: [{ color: '#111a2d' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#7087a9' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{ color: '#0f1d16' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#4f7a61' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{ color: '#17304f' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#11253f' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#86a6cf' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{ color: '#214a77' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#163555' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#c2d7f2' }],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{ color: '#111c2f' }],
+  },
+  {
+    featureType: 'transit.station',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#8fa4c4' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#06111e' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#3f6b9d' }],
+  },
 ];
 
 // ─── Decode encoded polyline (works for both Google & ORS) ───────────────────
@@ -86,34 +141,6 @@ const MapScreen = ({ route }) => {
   const onlineUsers = useChatPresence();
   const usrId = userData?.id;
   const { contactList: chatContactList, fetchChatContacts } = useChatContacts();
-
-  // ╔══════════════════════════════════════════════════════════╗
-  // ║          GOOGLE MAP TOGGLE — main switch                ║
-  // ║  true  → PROVIDER_GOOGLE + Google Directions + Places   ║
-  // ║  false → PROVIDER_DEFAULT + OSM tiles + ORS directions  ║
-  // ╚══════════════════════════════════════════════════════════╝
- 
-  const [useGoogleMap, setUseGoogleMap] = useState(USE_GOOGLE_MAPS);
-
- 
- useEffect(() => {
-    console.log('Google Maps Enabled:', USE_GOOGLE_MAPS);
-  }, [USE_GOOGLE_MAPS]);
-
-  // ─── Nominatim search state (used only when useGoogleMap = false) ─────────
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [showResults, setShowResults] = useState(false);
-  const searchDebounceRef = useRef(null);
-
-  // Clear route + search whenever provider is switched
-  useEffect(() => {
-    setRouteCoords([]);
-    setRouteInfo(null);
-    setSearchQuery('');
-    setSearchResults([]);
-    setShowResults(false);
-  }, [useGoogleMap]);
 
   useEffect(() => {
     hasAutoSelectedFromParamRef.current = false;
@@ -227,70 +254,36 @@ const MapScreen = ({ route }) => {
     }
   }, [selectedContactLocation]);
 
-  // ╔══════════════════════════════════════════════════════════╗
-  // ║     ROUTE FETCHING — switches API based on toggle       ║
-  // ╚══════════════════════════════════════════════════════════╝
+  // Google Directions routing.
   const fetchRoute = useCallback(async () => {
     if (!userLocation.latitude || !userLocation.longitude) return;
     if (!selectedContactLocation?.latitude || !selectedContactLocation?.longitude) return;
 
     try {
-      if (useGoogleMap) {
-        // ── Google Directions API ──────────────────────────────────────────
-        const origin = `${userLocation.latitude},${userLocation.longitude}`;
-        const destination = `${selectedContactLocation.latitude},${selectedContactLocation.longitude}`;
-        const res = await axios.get(
-          `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&mode=${travelMode}&key=${GOOGLE_MAPS_API_KEY}`,
-        );
-        const route = res.data?.routes?.[0];
-        if (!route) return;
-        const points = decodePolyline(route.overview_polyline.points);
-        const leg = route.legs?.[0];
-        setRouteCoords(points);
-        setRouteInfo({
-          distance: leg?.distance?.text ?? '',
-          duration: leg?.duration?.text ?? '',
-        });
-      } else {
-        // ── OpenRouteService API ───────────────────────────────────────────
-        // ORS profile: driving-car | foot-walking
-        const orsProfile = travelMode === 'walking' ? 'foot-walking' : 'driving-car';
-        const res = await axios.post(
-          `https://api.openrouteservice.org/v2/directions/${orsProfile}`,
-          {
-            // ⚠️ ORS uses [longitude, latitude] order (opposite of Google)
-            coordinates: [
-              [userLocation.longitude, userLocation.latitude],
-              [selectedContactLocation.longitude, selectedContactLocation.latitude],
-            ],
-          },
-          {
-            headers: {
-              Authorization: ORS_KEY,
-              'Content-Type': 'application/json',
-            },
-          },
-        );
-        const route = res.data?.routes?.[0];
-        if (!route) return;
-        const points = decodePolyline(route.geometry);
-        const summary = route.summary;
-        setRouteCoords(points);
-        setRouteInfo({
-          distance: formatDistance(summary.distance),
-          duration: formatDuration(summary.duration),
-        });
-      }
+      const origin = `${userLocation.latitude},${userLocation.longitude}`;
+      const destination = `${selectedContactLocation.latitude},${selectedContactLocation.longitude}`;
+      const res = await axios.get(
+        `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&mode=${travelMode}&key=${GOOGLE_MAPS_API_KEY}`,
+      );
+      const route = res.data?.routes?.[0];
+      if (!route) return;
+      const points = decodePolyline(route.overview_polyline.points);
+      const leg = route.legs?.[0];
+      setRouteCoords(points);
+      setRouteInfo({
+        distance: leg?.distance?.text ?? '',
+        duration: leg?.duration?.text ?? '',
+      });
 
-      // Fit map to show both ends (same for both providers)
+      // Fit map to show both ends.
       mapRef.current?.fitToCoordinates(
         [userLocation, { latitude: selectedContactLocation.latitude, longitude: selectedContactLocation.longitude }],
         { edgePadding: { top: 120, right: 60, bottom: 220, left: 60 }, animated: true },
       );
     } catch (err) {
-      console.warn(`fetchRoute [${useGoogleMap ? 'Google' : 'ORS'}] error:`, err?.response?.data ?? err?.message);
+      console.warn('fetchRoute [Google] error:', err?.response?.data ?? err?.message);
     }
-  }, [userLocation, selectedContactLocation, travelMode, useGoogleMap]);
+  }, [userLocation, selectedContactLocation, travelMode]);
 
   useEffect(() => {
     if (selectedContactLocation) fetchRoute();
@@ -328,50 +321,14 @@ const MapScreen = ({ route }) => {
     setIsOffCenter(latDiff > 0.002 || lngDiff > 0.002);
   };
 
-  // ─── Google Places handler ────────────────────────────────────────────────
   const handleGooglePlaceSelect = (data, details) => {
     if (!details?.geometry?.location) return;
     const { lat, lng } = details.geometry.location;
     updateCurrentLocation({ latitude: lat, longitude: lng });
   };
 
-  // ─── Nominatim search handlers ────────────────────────────────────────────
-const handleSearchChange = text => {
-  setSearchQuery(text);
-  if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-  if (text.length < 2) { setSearchResults([]); setShowResults(false); return; }
-
-  searchDebounceRef.current = setTimeout(async () => {
-    try {
-      const res = await axios.get(
-        `https://api.maptiler.com/geocoding/${encodeURIComponent(text)}.json?key=${MAP_TILE_API_KEY}`
-      );
-      const features = res.data?.features ?? [];
-      setSearchResults(features);
-      setShowResults(true);
-    } catch (err) {
-      console.warn('Maptiler geocoding error:', err?.message);
-    }
-  }, 350);
-};
-const handleNominatimPlaceSelect = place => {
-  // Maptiler returns [longitude, latitude] in coordinates
-  const lng = place.geometry.coordinates[0];
-  const lat = place.geometry.coordinates[1];
-
-  updateCurrentLocation({ latitude: lat, longitude: lng });
-  // mapRef.current?.animateToRegion(
-  //   { latitude: lat, longitude: lng, latitudeDelta: 0.012, longitudeDelta: 0.012 },
-  //   600,
-  // );
-  setSearchQuery(place.place_name);  // ← place_name not display_name
-  setShowResults(false);
-  setSearchResults([]);
-};
   const chooseCurrentLocation = () => {
     updateMyGprsLocation();
-    setSearchQuery('');
-    setShowResults(false);
   };
 
   const [region] = useState({
@@ -464,18 +421,14 @@ const handleNominatimPlaceSelect = place => {
   return (
     <View style={styles.container}>
       <>
-        {/* ══════════════════════════════════════════════════════
-            MAP
-            useGoogleMap ON  → PROVIDER_GOOGLE, darkMapStyle
-            useGoogleMap OFF → PROVIDER_DEFAULT, OSM UrlTile
-            ══════════════════════════════════════════════════════ */}
+        {/* Google map with Google directions and places. */}
         <MapView
           key={mapKey}
           ref={mapRef}
           style={styles.map}
-          provider={useGoogleMap ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-          mapType={useGoogleMap ? 'standard' : 'none'}
-          customMapStyle={useGoogleMap ? darkMapStyle : undefined}
+          provider={PROVIDER_GOOGLE}
+          mapType="standard"
+          customMapStyle={darkMapStyle}
           initialRegion={region}
           showsUserLocation={false}
           showsMyLocationButton={false}
@@ -483,15 +436,6 @@ const handleNominatimPlaceSelect = place => {
           toolbarEnabled={false}
           onRegionChangeComplete={handleRegionChangeComplete}
         >
-          {/* OSM tile layer — only when Google is OFF */}
-          {!useGoogleMap && (
-            <UrlTile
-              urlTemplate={`https://api.maptiler.com/maps/night/{z}/{x}/{y}.png?key=${MAP_TILE_API_KEY}`}
-              maximumZ={20}
-              tileSize={256}
-              shouldReplaceMapContent={true} 
-            />
-          )}
 
           {/* Accuracy radius */}
           <Circle
@@ -703,100 +647,41 @@ const handleNominatimPlaceSelect = place => {
           </TouchableOpacity>
         </View>
 
-        {/* ══════════════════════════════════════════════════════
-            SEARCH BAR
-            useGoogleMap ON  → GooglePlacesAutocomplete
-            useGoogleMap OFF → TextInput + Nominatim dropdown
-            ══════════════════════════════════════════════════════ */}
+        {/* Search bar with Google Places autocomplete. */}
         <View style={styles.searchBarWrapper}>
-          {useGoogleMap ? (
-            // ── Google Places ───────────────────────────────────────────────
-            <GooglePlacesAutocomplete
-              placeholder="Select your current location"
-              fetchDetails
-              onPress={handleGooglePlaceSelect}
-              query={{ key: GOOGLE_MAPS_API_KEY, language: 'en' }}
-              styles={{
-                container: styles.placesContainer,
-                textInputContainer: styles.placesInputContainer,
-                textInput: styles.placesInput,
-                listView: styles.placesList,
-                row: styles.placesRow,
-                description: styles.placesDescription,
-                poweredContainer: { display: 'none' },
-                powered: { display: 'none' },
-              }}
-              renderLeftButton={() => (
-                <View style={styles.searchIconBg}>
-                  <Icon name="search" size={16} color="#4DA3FF" />
-                </View>
-              )}
-              renderRightButton={() => (
-                <TouchableOpacity
-                  style={styles.searchBtn}
-                  onPress={chooseCurrentLocation}
-                  activeOpacity={0.7}
-                >
-                  <Icon name="near-me" size={16} color="#4DA3FF" />
-                </TouchableOpacity>
-              )}
-              enablePoweredByContainer={false}
-              debounce={300}
-              minLength={2}
-            />
-          ) : (
-            // ── Nominatim (OSM) Search ──────────────────────────────────────
-            <>
-              <View style={styles.placesInputContainer}>
-                <View style={styles.searchIconBg}>
-                  <Icon name="search" size={16} color="#4DA3FF" />
-                </View>
-                <TextInput
-                  style={styles.placesInput}
-                  placeholder="Select your current location"
-                  placeholderTextColor="#7A8499"
-                  value={searchQuery}
-                  onChangeText={handleSearchChange}
-                  onFocus={() =>
-                    searchResults.length > 0 && setShowResults(true)
-                  }
-                />
-                <TouchableOpacity
-                  style={styles.searchBtn}
-                  onPress={chooseCurrentLocation}
-                  activeOpacity={0.7}
-                >
-                  <Icon name="near-me" size={16} color="#4DA3FF" />
-                </TouchableOpacity>
+          <GooglePlacesAutocomplete
+            placeholder="Select your current location"
+            fetchDetails
+            onPress={handleGooglePlaceSelect}
+            query={{ key: GOOGLE_MAPS_API_KEY, language: 'en' }}
+            styles={{
+              container: styles.placesContainer,
+              textInputContainer: styles.placesInputContainer,
+              textInput: styles.placesInput,
+              listView: styles.placesList,
+              row: styles.placesRow,
+              description: styles.placesDescription,
+              poweredContainer: { display: 'none' },
+              powered: { display: 'none' },
+            }}
+            renderLeftButton={() => (
+              <View style={styles.searchIconBg}>
+                <Icon name="search" size={16} color="#4DA3FF" />
               </View>
-
-              {showResults && searchResults.length > 0 && (
-                <FlatList
-                  style={styles.placesList}
-                  keyboardShouldPersistTaps="handled"
-                  data={searchResults}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.placesRow}
-                      onPress={() => handleNominatimPlaceSelect(item)}
-                      activeOpacity={0.7}
-                    >
-                      <Icon
-                        name="place"
-                        size={14}
-                        color="#4DA3FF"
-                        style={{ marginRight: 8 }}
-                      />
-                      <Text style={styles.placesDescription} numberOfLines={2}>
-                        {item.place_name} {/* ← was item.display_name */}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  keyExtractor={item => item.id.toString()} // ← was item.place_id
-                />
-              )}
-            </>
-          )}
+            )}
+            renderRightButton={() => (
+              <TouchableOpacity
+                style={styles.searchBtn}
+                onPress={chooseCurrentLocation}
+                activeOpacity={0.7}
+              >
+                <Icon name="near-me" size={16} color="#4DA3FF" />
+              </TouchableOpacity>
+            )}
+            enablePoweredByContainer={false}
+            debounce={300}
+            minLength={2}
+          />
         </View>
 
         {/* CONTACT QUICK ACTIONS BAR */}
@@ -885,31 +770,6 @@ const handleNominatimPlaceSelect = place => {
       </>
     </View>
   );
-};
-
-// ─── Inline styles for the toggle widget ─────────────────────────────────────
-const googleToggleStyle = {
-  wrapper: {
-    position: 'absolute',
-    top: 80,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(10,22,40,0.85)',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    gap: 6,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  label: {
-    color: '#9ab',
-    fontSize: 11,
-    fontWeight: '600',
-  },
 };
 
 export default MapScreen;

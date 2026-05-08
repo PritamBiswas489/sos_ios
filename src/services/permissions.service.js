@@ -47,8 +47,13 @@ export const requestLocationPermissions = async () => {
     return requestAndroidLocationPermissions();
   }
 
-  // iOS – @react-native-community/geolocation
-  const auth = await Geolocation.requestAuthorization('always');
+  // iOS – @react-native-community/geolocation uses callback-style requestAuthorization.
+  const auth = await new Promise(resolve => {
+    Geolocation.requestAuthorization(
+      status => resolve(status),
+      () => resolve('denied'),
+    );
+  });
   return auth === 'granted' ? 'full' : auth;
 };
 

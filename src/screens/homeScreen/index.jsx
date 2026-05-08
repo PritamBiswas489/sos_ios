@@ -155,7 +155,10 @@ const HomeScreen = () => {
       {/* ── Greeting ── */}
       <View style={styles.greetingContainer}>
         <Text style={styles.goodMorning}>WELCOME,</Text>
-        <Text style={styles.userName}>{userData?.name || userData?.phone_number} 👋</Text>
+        <View style={localStyles.userNameRow}>
+          <Text style={styles.userName}>{userData?.name || userData?.phone_number}</Text>
+          <Icon name="pan-tool" size={24} color="#ffffff" style={localStyles.waveIcon} />
+        </View>
       </View>
 
       {/* ── SOS Button ── */}
@@ -351,6 +354,16 @@ export default HomeScreen;
 
 // ─── Local styles (streaming panel + hold ring) ───────────────────────────────
 const localStyles = StyleSheet.create({
+  userNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 8,
+  },
+
+  waveIcon: {
+    marginTop: 4,
+  },
+
   holdRing: {
     position: 'absolute',
     width: 185,

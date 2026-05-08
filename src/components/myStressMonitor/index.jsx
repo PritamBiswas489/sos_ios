@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import styles from './style';
 import {useStress, STRESS_STATE} from '../../context/StressContext';
-import {useGoogleFit} from '../../context/GoogleFitContext';
 import {useBle} from '../../context/BleContext';
 import { formatDateSeparator, formatMessageTime } from '../../config/utility';
 
@@ -381,7 +380,7 @@ function ScanDots() {
   );
 }
 
-function DevicesPanel({ble, gf}) {
+function DevicesPanel({ble}) {
   const ringAnim = useRef(new Animated.Value(0)).current;
   const ringLoop = useRef(null);
 
@@ -400,23 +399,18 @@ function DevicesPanel({ble, gf}) {
   const ringScale   = ringAnim.interpolate({inputRange: [0, 1], outputRange: [1, 1.9]});
   const ringOpacity = ringAnim.interpolate({inputRange: [0, 0.6, 1], outputRange: [0.5, 0.15, 0]});
 
-  const isIOS      = Platform.OS === 'ios';
-  const hcLabel     = isIOS ? 'Apple Health' : 'Health Connect';
   const bleColor    = ble.connected ? '#00E5A0' : ble.scanning ? '#7EB8F7' : '#3D4E6A';
-  const hcColor     = gf.authorized ? '#AA3CFF' : gf.loading   ? '#7EB8F7' : '#3D4E6A';
-  const activeCount = (ble.connected ? 1 : 0) + (gf.authorized ? 1 : 0);
-  const hcLatestHR  = gf.hrReadings?.[gf.hrReadings.length - 1]?.value;
+  const activeCount = ble.connected ? 1 : 0;
 
   return (
     <View style={styles.devicesPanel}>
       {/* ── Header ── */}
       <View style={styles.devicesPanelHeader}>
-        <Text style={styles.devicesPanelTitle}>Data Sources</Text>
+        <Text style={styles.devicesPanelTitle}>Data Source</Text>
         <View style={styles.devicesPanelMeta}>
           <View style={[styles.devicesPanelDot, {backgroundColor: bleColor}]} />
-          <View style={[styles.devicesPanelDot, {backgroundColor: hcColor}]} />
           <Text style={styles.devicesPanelCount}>
-            {activeCount === 0 ? 'None active' : `${activeCount}/2 active`}
+            {activeCount === 0 ? 'None active' : `${activeCount}/1 active`}
           </Text>
         </View>
       </View>
@@ -484,75 +478,11 @@ function DevicesPanel({ble, gf}) {
         )}
       </View>
 
-      {/* ── Divider ── */}
-      <View style={styles.devicesDivider} />
-
-      {/* ── Health row (Health Connect on Android, Apple Health on iOS) ── */}
-      <View style={styles.deviceRow}>
-        <View style={styles.bleIconWrap}>
-          <View style={[styles.bleIconCircle, {
-            borderColor:     hcColor + '60',
-            backgroundColor: hcColor + '10',
-          }]}>
-            <Text style={styles.bleIconText}>❤️</Text>
-          </View>
-          <View style={[styles.bleStatusDot, {backgroundColor: hcColor}]} />
-        </View>
-
-        <View style={styles.bleInfo}>
-          <Text style={styles.bleDeviceName} numberOfLines={1}>
-            {gf.authorized ? hcLabel
-              : gf.loading  ? 'Connecting…'
-              : hcLabel}
-          </Text>
-          {gf.authorized && hcLatestHR ? (
-            <View style={styles.bleHrRow}>
-              <Text style={[styles.bleHrVal, {color: '#AA3CFF'}]}>{hcLatestHR}</Text>
-              <Text style={styles.bleHrUnit}> bpm</Text>
-              <View style={[styles.bleLiveBadge, {backgroundColor: '#AA3CFF12', borderColor: '#AA3CFF30'}]}>
-                <View style={[styles.bleLiveDot, {backgroundColor: '#AA3CFF'}]} />
-                <Text style={[styles.bleLiveText, {color: '#AA3CFF'}]}>LIVE</Text>
-              </View>
-            </View>
-          ) : (
-            <Text style={styles.bleDeviceSub}>
-              {gf.authorized
-                ? 'Waiting for HR data…'
-                : gf.loading ? 'Requesting permissions…'
-                : 'Tap to connect heart rate data'}
-            </Text>
-          )}
-        </View>
-
-        {!gf.authorized ? (
-          <TouchableOpacity
-            style={[styles.bleActionBtn, gf.loading && styles.bleActionBtnMuted]}
-            onPress={gf.authorize}
-            disabled={gf.loading}
-            activeOpacity={0.75}>
-            {gf.loading ? <ScanDots /> : <Text style={styles.bleActionBtnText}>Connect</Text>}
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.bleActionBtnDisconnect}
-            onPress={gf.disconnect}
-            activeOpacity={0.75}>
-            <Text style={styles.bleActionBtnDisconnectText}>Disconnect</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
       {/* ── Errors ── */}
       {ble.error ? (
         <View style={styles.bleErrorBox}>
           <Text style={styles.bleErrorIcon}>⚠</Text>
           <Text style={styles.bleErrorText}>BLE: {ble.error}</Text>
-        </View>
-      ) : null}
-      {gf.error ? (
-        <View style={[styles.bleErrorBox, {marginTop: ble.error ? 4 : 8}]}>
-          <Text style={styles.bleErrorIcon}>⚠</Text>
-          <Text style={styles.bleErrorText}>{hcLabel}: {gf.error}</Text>
         </View>
       ) : null}
     </View>
@@ -573,17 +503,14 @@ export default function MyStressMonitor() {
     setManualHR,
     clearManualHR,
   } = useStress();
-  const gf  = useGoogleFit();
   const ble = useBle();
 
   const [hrModalVisible, setHrModalVisible] = useState(false);
 
   const displayHR = ble.connected && ble.currentHR ? ble.currentHR : stress.currentHR;
-  const isAndroid  = Platform.OS === 'android';
-  const hcName     = isAndroid ? 'Health Connect' : 'Apple Health';
   const hrSource = isUsingLastRecord
-    ? `Last saved (${activeSource === 'ble' ? 'BLE' : hcName})`
-    : (ble.connected ? 'Live BLE' : hcName);
+    ? `Last saved (${activeSource === 'ble' ? 'BLE' : 'Manual'})`
+    : (ble.connected ? 'Live BLE' : 'Device data');
 
   const fallbackDate = isUsingLastRecord ? formatDateSeparator(lastRecordedAt) : '';
   const fallbackTime = isUsingLastRecord ? formatMessageTime(lastRecordedAt) : '';
@@ -599,8 +526,8 @@ export default function MyStressMonitor() {
       {/* ── Header ── */}
      
 
-      {/* ── Data Sources (BLE + Health Connect) ── */}
-      <DevicesPanel ble={ble} gf={gf} />
+      {/* ── Data Source (BLE) ── */}
+      <DevicesPanel ble={ble} />
 
       <ScrollView
         style={styles.scroll}
@@ -617,7 +544,6 @@ export default function MyStressMonitor() {
 
         {/* ── Source Status ── */}
         <View style={styles.badgeRow}>
-          <SourceBadge active={gf.authorized} label={hcName} icon="❤️" />
           <SourceBadge active={ble.connected}  label={ble.connected ? ble.deviceName : 'BLE Device'} icon="📡" />
         </View>
 

@@ -538,7 +538,6 @@ const App = () => {
             <HealthProvider
               userAge={28}              // user's age → used for max HR calculation
               criticalThreshold={76}   // stress score that triggers SOS alert
-              gfRefreshMs={10_000}     // Google Fit polling interval
                  // called when user confirms SOS
 
             >

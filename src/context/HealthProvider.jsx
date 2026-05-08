@@ -7,8 +7,6 @@ export default function HealthProvider({
   children,
   userAge = 30,
   criticalThreshold = 76,
-  gfRefreshMs = 30_000, //
-   
 }) {
   return (
     
