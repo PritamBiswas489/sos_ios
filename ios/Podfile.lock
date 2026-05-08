@@ -1620,6 +1620,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-maps (1.27.2):
+    - react-native-maps/Maps (= 1.27.2)
   - react-native-maps/Generated (1.27.2):
     - hermes-engine
     - RCTRequired
@@ -2345,7 +2347,7 @@ PODS:
     - RNNotifee/NotifeeCore (= 9.1.8)
   - RNNotifee/NotifeeCore (9.1.8):
     - React-Core
-  - RNReanimated (4.3.1):
+  - RNReanimated (4.2.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2367,11 +2369,10 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - RNReanimated/apple (= 4.3.1)
-    - RNReanimated/common (= 4.3.1)
+    - RNReanimated/reanimated (= 4.2.3)
     - RNWorklets
     - Yoga
-  - RNReanimated/apple (4.3.1):
+  - RNReanimated/reanimated (4.2.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2393,9 +2394,10 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+    - RNReanimated/reanimated/apple (= 4.2.3)
     - RNWorklets
     - Yoga
-  - RNReanimated/common (4.3.1):
+  - RNReanimated/reanimated/apple (4.2.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2533,7 +2535,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNWorklets (0.8.3):
+  - RNWorklets (0.7.4):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2555,10 +2557,9 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - RNWorklets/apple (= 0.8.3)
-    - RNWorklets/common (= 0.8.3)
+    - RNWorklets/worklets (= 0.7.4)
     - Yoga
-  - RNWorklets/apple (0.8.3):
+  - RNWorklets/worklets (0.7.4):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2580,8 +2581,9 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+    - RNWorklets/worklets/apple (= 0.7.4)
     - Yoga
-  - RNWorklets/common (0.8.3):
+  - RNWorklets/worklets/apple (0.7.4):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2659,7 +2661,8 @@ DEPENDENCIES:
   - "react-native-document-picker (from `../node_modules/@react-native-documents/picker`)"
   - "react-native-geolocation (from `../node_modules/@react-native-community/geolocation`)"
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
-  - react-native-maps/Google (from `/Volumes/Macintosh_HD/Users/user289411/Desktop/Kobytech/sos_ios/node_modules/react-native-maps`)
+  - react-native-maps (from `../node_modules/react-native-maps`)
+  - react-native-maps/Google (from `../node_modules/react-native-maps`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-quick-base64 (from `../node_modules/react-native-quick-base64`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -2827,7 +2830,7 @@ EXTERNAL SOURCES:
   react-native-image-picker:
     :path: "../node_modules/react-native-image-picker"
   react-native-maps:
-    :path: "/Volumes/Macintosh_HD/Users/user289411/Desktop/Kobytech/sos_ios/node_modules/react-native-maps"
+    :path: "../node_modules/react-native-maps"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-quick-base64:
@@ -3047,13 +3050,13 @@ SPEC CHECKSUMS:
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
   RNGestureHandler: b4f6de20b30325ee40b693f558ad02213201ce91
   RNNotifee: 5e3b271e8ea7456a36eec994085543c9adca9168
-  RNReanimated: e47df7f4580997c3a46b1e736ce3f26010985bb7
+  RNReanimated: b18b23348b299d0f0b9bf9fc2688f6b4cff40152
   RNScreens: 6cb648bdad8fe9bee9259fe144df95b6d1d5b707
   RNSVG: c69f7709226108f5eb89b5aa8833c17a36345468
   RNVectorIcons: 4351544f100d4f12cac156a7c13399e60bab3e26
-  RNWorklets: 06ce05d69455cc14f5676c177050a39aa557d4d2
+  RNWorklets: 30f9a363d681c776a5f9d74f6d21a6d1bb7bfe80
   Yoga: c0b3f2c7e8d3e327e450223a2414ca3fa296b9a2
 
-PODFILE CHECKSUM: 70448f2b9dc2660c3333de51f93385902efc427e
+PODFILE CHECKSUM: 5ee2628d7d4d9b47b81296788179be54ca47f3af
 
 COCOAPODS: 1.16.2

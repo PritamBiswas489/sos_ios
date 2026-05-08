@@ -18,10 +18,9 @@ if linkage != nil
 end
 
 target 'SOS_FRESH_SETUP' do
-  rn_maps_path = File.dirname(`node --print "require.resolve('react-native-maps/package.json')"`)
   config = use_native_modules!
 
-  pod 'react-native-maps/Google', :path => rn_maps_path
+  pod 'react-native-maps/Google', :path => '../node_modules/react-native-maps'
 
   use_react_native!(
     :path => config[:reactNativePath],
