@@ -226,6 +226,7 @@ const ConversationList = ({
   const loadedRoomIdsRef = useRef(new Set());
   const shouldScrollAfterLoadRef = useRef(false);
   const pendingAutoScrollPassesRef = useRef(0);
+  const {userData, hasLicense} = useUserData();
   const wasConnectedRef = useRef(false);
   const AUTO_SCROLL_PASSES = 6;
   const [refreshing, setRefreshing] = useState(false);
@@ -249,7 +250,7 @@ const ConversationList = ({
   const { showSuccess, showError } = useToast();
   const { conversations, pagination, messageStatuses } = useChatMessages();
   const chatSelectedTrustedContact = useSelector(state => state.chatSelectedTrustedContact);
-  const {userData} = useUserData();
+ 
   const selectedContact = chatSelectedTrustedContact;
   const currentUserId = userData?.id;
   const currentRoomId = selectedContact?.roomId;

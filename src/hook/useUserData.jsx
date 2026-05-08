@@ -38,12 +38,18 @@ export const useUserData = () => {
         dispatch(userActions.setFullData(updatedData));
     }, [dispatch, userData]);
 
+
+    let hasLicense = userData?.licenses?.status === 'active';
+    // hasLicense = false;
+
+
      
 
     return {
         userData,
         fetchUserData,
         setUserData,
+        hasLicense,
     }
 }
 

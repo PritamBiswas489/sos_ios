@@ -1,34 +1,72 @@
+import { Platform, PermissionsAndroid } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
-import notifee, { AuthorizationStatus } from '@notifee/react-native';
 
 /**
- * Request location permissions on iOS.
- * Prompts for 'always' authorization via CLLocationManager.
- * Returns: 'full' | 'denied'
+ * Request foreground + background location permissions on Android.
+ * Returns: 'full' | 'foreground-only' | 'denied'
  */
-export const requestLocationPermissions = async () => {
-  Geolocation.setRNConfiguration({ authorizationLevel: 'always' });
-  return new Promise(resolve => {
-    Geolocation.getCurrentPosition(
-      () => resolve('full'),
-      error => {
-        // error.code 1 = PERMISSION_DENIED; other codes (timeout/unavailable) are not denials
-        resolve(error.code === 1 ? 'denied' : 'full');
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 },
+export const requestAndroidLocationPermissions = async () => {
+  const fgGranted = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    {
+      title: 'Foreground Location Permission',
+      message: 'This app needs access to your location.',
+      buttonPositive: 'OK',
+    },
+  );
+
+  if (fgGranted !== PermissionsAndroid.RESULTS.GRANTED) {
+    return 'denied';
+  }
+
+  // Android 10+ requires a separate background permission request.
+  if (Platform.Version >= 29) {
+    const bgGranted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
+      // {
+      //   title: 'Background Location Permission',
+      //   message:
+      //     'Allow this app to access your location in the background so your room stays updated.',
+      //   buttonPositive: 'Allow',
+      // },
     );
-  });
+    return bgGranted === PermissionsAndroid.RESULTS.GRANTED
+      ? 'full'
+      : 'foreground-only';
+  }
+
+  return 'full';
 };
 
 /**
- * Request microphone (audio) permission on iOS.
- * iOS shows the system prompt on first use when NSMicrophoneUsageDescription
- * is declared in Info.plist. No explicit pre-request API is available without
- * react-native-permissions, so the system dialog will appear on first recording attempt.
- * Returns: 'granted'
+ * Request location permissions for the current platform.
+ * Returns: 'full' | 'foreground-only' | 'denied'
+ */
+export const requestLocationPermissions = async () => {
+  if (Platform.OS === 'android') {
+    return requestAndroidLocationPermissions();
+  }
+
+  // iOS – @react-native-community/geolocation
+  const auth = await Geolocation.requestAuthorization('always');
+  return auth === 'granted' ? 'full' : auth;
+};
+
+/**
+ * Request microphone (RECORD_AUDIO) permission on Android.
  */
 export const requestMicrophonePermission = async () => {
-  return 'granted';
+  if (Platform.OS !== 'android') return 'granted';
+  const result = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    {
+      title: 'Microphone Permission',
+      message: 'This app needs microphone access to stream live audio during an SOS.',
+      buttonPositive: 'Allow',
+      buttonNegative: 'Deny',
+    },
+  );
+  return result === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied';
 };
 
 /**
@@ -39,10 +77,30 @@ export const requestMicrophonePermission = async () => {
 export const checkRequiredPermissions = async () => {
   const missing = [];
 
-  const notifeeSettings = await notifee.getNotificationSettings();
-  if (notifeeSettings.authorizationStatus < AuthorizationStatus.AUTHORIZED) {
-    missing.push('notification');
-  }
+  if (Platform.OS === 'android') {
+    const fgLocation = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    );
+    let bgLocation = true;
+    if (Platform.Version >= 29) {
+      bgLocation = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
+      );
+    }
+    if (!fgLocation || !bgLocation) missing.push('location');
 
+    if (Platform.Version >= 33) {
+      const notif = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      if (!notif) missing.push('notification');
+    }
+
+    const mic = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    );
+    if (!mic) missing.push('microphone');
+  }
+  // iOS: permissions are handled by system dialogs; treated as granted here.
   return missing;
 };

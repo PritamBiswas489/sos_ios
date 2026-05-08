@@ -174,4 +174,131 @@ export default StyleSheet.create({
     marginTop: SW(12),
     fontSize: SF(12),
   },
+
+  licensePanel: {
+    borderWidth: 0.7,
+    borderColor: 'rgba(255,59,92,0.35)',
+    backgroundColor: appColors.primaryAA,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: SH(20),
+  },
+
+  licensePanelAccent: {
+    height: SH(3),
+    backgroundColor: appColors.primary,
+    width: '100%',
+  },
+
+  licensePanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SW(12),
+    paddingTop: SH(10),
+    paddingBottom: SH(8),
+  },
+
+  licensePanelHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  licensePanelTitle: {
+    color: appColors.white,
+    fontSize: SF(11),
+    fontFamily: appFonts.NunitoBold,
+    letterSpacing: SW(1.5),
+    marginLeft: SW(5),
+  },
+
+  licenseChip: {
+    backgroundColor: 'rgba(255,59,92,0.15)',
+    borderRadius: 20,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,59,92,0.5)',
+    paddingHorizontal: SW(8),
+    paddingVertical: SW(2),
+  },
+
+  licenseChipText: {
+    color: appColors.primary,
+    fontSize: SF(9),
+    fontFamily: appFonts.NunitoBold,
+    letterSpacing: SW(1),
+  },
+
+  licenseInnerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: SW(12),
+    paddingBottom: SH(10),
+  },
+
+  licenseFieldWrap: {
+    backgroundColor: appColors.secondary,
+    borderRadius: 10,
+    borderWidth: 0.7,
+    borderColor: '#1E2A44',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+
+  licenseInput: {
+    color: appColors.white,
+    height: SH(46),
+    width: '100%',
+    textAlign: 'center',
+    fontSize: SF(16),
+    fontFamily: appFonts.NunitoBold,
+    letterSpacing: SW(2),
+    paddingHorizontal: SW(4),
+  },
+
+  licenseInputDisabled: {
+    color: appColors.primary,
+    backgroundColor: 'rgba(255,59,92,0.12)',
+  },
+
+  licenseSegLabel: {
+    color: '#3a4a66',
+    fontSize: SF(8),
+    fontFamily: appFonts.NunitoBold,
+    letterSpacing: SW(1),
+    textAlign: 'center',
+    paddingBottom: SW(4),
+  },
+
+  licenseSep: {
+    color: 'rgba(255,59,92,0.6)',
+    fontSize: SF(18),
+    fontWeight: 'bold',
+    marginHorizontal: SW(5),
+    marginTop: SH(12),
+  },
+
+  licensePreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingVertical: SH(7),
+    borderTopWidth: 0.5,
+    borderTopColor: '#1E2A44',
+  },
+
+  licensePreviewLabel: {
+    color: '#3a4a66',
+    fontSize: SF(9),
+    fontFamily: appFonts.NunitoBold,
+    letterSpacing: SW(1.5),
+    marginRight: SW(8),
+  },
+
+  licensePreviewValue: {
+    color: appColors.primary,
+    fontSize: SF(13),
+    fontFamily: appFonts.NunitoBold,
+    letterSpacing: SW(2.5),
+  },
 });

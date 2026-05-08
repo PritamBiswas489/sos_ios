@@ -36,7 +36,7 @@ const ContactAvatarList = ({
      const dispatch = useDispatch();
     
      const chatSelectedTrustedContact = useSelector(state => state.chatSelectedTrustedContact);
-     const {userData} = useUserData();
+     const {userData, hasLicense} = useUserData();
      const usrId = userData?.id;
 
     
@@ -208,19 +208,21 @@ const getAvatarColor = item => {
         
         
         ListFooterComponent={
-          <TouchableOpacity
-            style={[styles.avatarItem, styles.addItem]}
-            activeOpacity={0.7}
-            onPress={navigateToAddContact}
-          >
-            <View style={styles.avatarAdd}>
-              <Text style={{ color: '#4DA3FF', fontSize: 20 }}>+</Text>
-            </View>
-            <View style={styles.avatarMeta}>
-              <Text style={styles.avatarLabel}>Add Contact</Text>
-              <Text style={styles.avatarPhoneNumber}>Create new chat</Text>
-            </View>
-          </TouchableOpacity>
+          hasLicense ? (
+            <TouchableOpacity
+              style={[styles.avatarItem, styles.addItem]}
+              activeOpacity={0.7}
+              onPress={navigateToAddContact}
+            >
+              <View style={styles.avatarAdd}>
+                <Text style={{ color: '#4DA3FF', fontSize: 20 }}>+</Text>
+              </View>
+              <View style={styles.avatarMeta}>
+                <Text style={styles.avatarLabel}>Add Contact</Text>
+                <Text style={styles.avatarPhoneNumber}>Create new chat</Text>
+              </View>
+            </TouchableOpacity>
+          ) : null
         }
       />
       <TouchableOpacity

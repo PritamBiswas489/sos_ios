@@ -284,7 +284,7 @@ const HealthAvatarList = ({ chatContacts, fetchChatContacts }) => {
      const healthSelectedContact = useSelector(state => state.healthSelectedContact);
      console.log("healthSelectedContact?", healthSelectedContact?.item?.id);
     const {userData: currentUser}= useUserData();
-     ;
+     const {hasLicense} = useUserData();
 
     const isMe =  healthSelectedContact?.isMe;
 
@@ -376,12 +376,12 @@ const HealthAvatarList = ({ chatContacts, fetchChatContacts }) => {
   return (
     <View style={styles.avatarRowContainer}>
       {/* ── Me button ── */}
-      <MeButton
+     {hasLicense && <MeButton
         currentUser={currentUser}
         isMe={isMe}
         onPress={selectMe}
         stressState={stress?.state ?? null}
-      />
+      />}
 
       <FlatList
         ref={flatListRef}

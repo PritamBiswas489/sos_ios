@@ -160,13 +160,11 @@ const ProcessScreen = payload => {
         console.log('=====================================================');
 
         const isPermissionGranted = await requestUserPermission();
+        let fcmToken = null;
         if (isPermissionGranted) {
-          const fcmToken = await getFCMToken();
-          console.log("fcmToken in process screen:", fcmToken);
-          if (fcmToken) {
-            saveFcmTokenData(fcmToken);
-          }
+           fcmToken = await getFCMToken();
         }
+        saveFcmTokenData(fcmToken);
          
 
 

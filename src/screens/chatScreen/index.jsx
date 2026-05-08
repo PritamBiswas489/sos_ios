@@ -29,7 +29,7 @@ const ChatScreen = ({ route }) => {
   const onlineCount = Object.values(onlineUsers || {}).filter(status => status).length;
   const { contactList: chatContacts, fetchChatContacts } = useChatContacts();
   const chatSelectedTrustedContact = useSelector(state => state.chatSelectedTrustedContact);
-  const { userData } = useUserData();
+  const { userData, hasLicense } = useUserData();
   const usrId = userData?.id;
   const selectedReceipentId = route?.params?.selectedReceipentId;
   console.log('ChatScreen selectedReceipentId from route params:', selectedReceipentId);
@@ -220,7 +220,8 @@ const ChatScreen = ({ route }) => {
                 <Icon name="person-search" size={28} color="#8FA3C8" />
               </View>
               <Text style={styles.emptyStateTitle}>No Contacts Found</Text>
-              <Text style={styles.emptyStateSubtitle}>
+              
+              {hasLicense && <> <Text style={styles.emptyStateSubtitle}>
                 Add a trusted contact to start chatting and sharing SOS updates.
               </Text>
               <TouchableOpacity
@@ -229,6 +230,9 @@ const ChatScreen = ({ route }) => {
               >
                 <Text style={{ color: '#4DA3FF', fontWeight: '700' }}>Add Contact</Text>
               </TouchableOpacity>
+              </>}
+              
+             
             </View>
           </View>
         ) : (

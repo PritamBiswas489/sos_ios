@@ -64,6 +64,8 @@ const LoginScreen = () => {
       );
       if (deviceCountryCode === 'IN') {
         setUserPhone('9830990065');
+        setLicPart2('08')
+        setLicPart3('000001');
       }
     }
   }, [deviceCountryCode]);
@@ -77,6 +79,10 @@ const LoginScreen = () => {
   };
   const [activeIndex, setActiveIndex] = useState(0);
   const inputs = useRef([]);
+  const [licPart2, setLicPart2] = useState('');
+  const [licPart3, setLicPart3] = useState('');
+  const licRef2 = useRef(null);
+  const licRef3 = useRef(null);
 
   const handleOTP = (value, index) => {
     const newOtp = [...otp];
@@ -115,6 +121,11 @@ const LoginScreen = () => {
 
       const fullPhoneNumber = `${selectedCountry.dial_code}${requestPhone}`;
       const payload = { phoneNumber: fullPhoneNumber };
+      let licenseNumber = null;
+      if (licPart2 && licPart3) {
+        licenseNumber = `KBY-${licPart2}-${licPart3}`;
+        payload.licenseNumber = licenseNumber;
+      }
       const requestOtp = await new Promise((resolve, reject) => {
         LoginService.requestOtp(payload, response => {
           console.log('OTP Request Response:', response);
@@ -135,11 +146,11 @@ const LoginScreen = () => {
       const splitItpCode = requestOtp?.data?.data?.otpCode.split('');
       setOtp(splitItpCode);
     } catch (error) {
-      console.error('OTP Request Error:', error);
+      console.log('OTP Request Error:', error);
       setIsLoading(false);
       showError(
         'OTP Request Failed',
-        'Unable to request OTP. Please try again.',
+        error?.message || 'Unable to request OTP. Please try again.',
       );
     }
     // Proceed with OTP request
@@ -250,6 +261,80 @@ const LoginScreen = () => {
           }}
           editable={isGetOtp ? false : true}
         />
+      </View>
+
+      {/* LICENSE NUMBER */}
+      <View style={[styles.licensePanel, isGetOtp && { opacity: 0.5 }]}>
+        {/* Accent top bar */}
+        <View style={styles.licensePanelAccent} />
+
+        {/* Header */}
+        <View style={styles.licensePanelHeader}>
+          <View style={styles.licensePanelHeaderLeft}>
+            <Icon name="badge" size={15} color="#ff3b5c" />
+            <Text style={styles.licensePanelTitle}>LICENSE NUMBER</Text>
+          </View>
+         
+        </View>
+
+        {/* Fields row */}
+        <View style={styles.licenseInnerRow}>
+          {/* Field 1 — KBY (disabled) */}
+          <View style={[styles.licenseFieldWrap, { flex: 1.1 }]}>
+            <TextInput
+              style={[styles.licenseInput, styles.licenseInputDisabled]}
+              value="KBY"
+              editable={false}
+              selectTextOnFocus={false}
+            />
+           
+          </View>
+
+          <Text style={styles.licenseSep}>—</Text>
+
+          {/* Field 2 — e.g. 08 */}
+          <View style={[styles.licenseFieldWrap, { flex: 1.5 }]}>
+            <TextInput
+              ref={licRef2}
+              style={styles.licenseInput}
+              placeholder="08"
+              placeholderTextColor="#3a4a66"
+              keyboardType="number-pad"
+              editable={!isGetOtp}
+              value={licPart2}
+              onChangeText={text => {
+                setLicPart2(text);
+                
+              }}
+            />
+            
+          </View>
+
+          <Text style={styles.licenseSep}>—</Text>
+
+          {/* Field 3 — e.g. 000003 */}
+          <View style={[styles.licenseFieldWrap, { flex: 1.5 }]}>
+            <TextInput
+              ref={licRef3}
+              style={styles.licenseInput}
+              placeholder="000003"
+              placeholderTextColor="#3a4a66"
+              keyboardType="number-pad"
+              editable={!isGetOtp}
+              value={licPart3}
+              onChangeText={text => setLicPart3(text)}
+            />
+             
+          </View>
+        </View>
+
+        {/* Live preview */}
+        <View style={styles.licensePreviewRow}>
+          <Text style={styles.licensePreviewLabel}>FULL ID</Text>
+          <Text style={styles.licensePreviewValue}>
+            {`KBY-${licPart2 || '··'}-${licPart3 || '······'}`}
+          </Text>
+        </View>
       </View>
 
       {!isGetOtp && (

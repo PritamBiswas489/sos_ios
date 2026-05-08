@@ -247,7 +247,7 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
       )}
 
       {/* ── Accept / Decline (pending only) ── */}
-      {responseStatus === 'pending' && (
+      {responseStatus === 'pending' && sessionStatus === 'active' && (
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={styles.declineBtn}
@@ -267,7 +267,7 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
           </TouchableOpacity>
         </View>
       )}
-      {responseStatus === 'accepted' && (
+      {responseStatus === 'accepted' && sessionStatus === 'active' && (
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={styles.declineBtn}
@@ -287,7 +287,7 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
           </TouchableOpacity>
         </View>
       )}
-      {responseStatus === 'on_the_way' && (
+      {responseStatus === 'on_the_way' && sessionStatus === 'active' && (
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={styles.declineBtn}
@@ -415,6 +415,28 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
             <Icon name="map-outline" size={20} color="#FFA502" />
           </View>
           <Text style={[styles.actionLabel, { color: '#FFA502' }]}>Map</Text>
+        </TouchableOpacity>
+        <View style={styles.actionSep} />
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => {
+            if (navigationRef.isReady()) {
+              onClose?.();
+              navigationRef.navigate('Main', {
+                screen: 'MainTabs',
+                params: {
+                  screen: 'Health',
+                  params: { selectedHealthRecipentId: item.sos_session?.user?.id },
+                },
+              });
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIconWrap, styles.actionIconHealth]}>
+            <Icon name="heart-pulse" size={20} color="#FF3B5C" />
+          </View>
+          <Text style={[styles.actionLabel, { color: '#FF3B5C' }]}>Health</Text>
         </TouchableOpacity>
       </View>
 
@@ -641,9 +663,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionIconChat:  { backgroundColor: 'rgba(74,158,255,0.12)' },
-  actionIconAudio: { backgroundColor: 'rgba(0,255,156,0.10)'  },
-  actionIconMap:   { backgroundColor: 'rgba(255,165,2,0.10)'  },
+  actionIconChat:   { backgroundColor: 'rgba(74,158,255,0.12)' },
+  actionIconAudio:  { backgroundColor: 'rgba(0,255,156,0.10)'  },
+  actionIconMap:    { backgroundColor: 'rgba(255,165,2,0.10)'  },
+  actionIconHealth: { backgroundColor: 'rgba(255,59,92,0.12)'  },
   actionLabel: {
     fontSize: 12,
     fontWeight: '600',

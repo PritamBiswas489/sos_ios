@@ -1,5 +1,6 @@
-import React,{useState, useEffect, useRef, useMemo} from 'react';
-import { View, StatusBar, StyleSheet, Platform } from 'react-native';
+import React,{useState, useEffect, useRef, useMemo, use} from 'react';
+import { View, Text, StatusBar, StyleSheet, Platform } from 'react-native';
+import IconMC from 'react-native-vector-icons/MaterialCommunityIcons';
 import MyStressMonitor from '../../components/myStressMonitor';
 import { useChatPresence } from '../../context/ChatContext';
 import { useChatContacts } from '../../hook/useChatContacts';
@@ -13,23 +14,29 @@ import { useStress } from '../../context/StressContext';
 import { formatDateSeparator, formatMessageTime } from '../../config/utility';
 
 export default function StressMonitorScreen({ route }) {
+  console.log('Rendering StressMonitorScreen');
   const { userData } = useUserData();
   const { contactsLastHealthData } = useStress();
   const selectedHealthRecipentId = route?.params?.selectedHealthRecipentId;
   const [normalizedselectedHealthRecipentId, setNormalizedselectedHealthRecipentId] =
     useState(null);
   const hasAutoSelectedFromParamRef = useRef(false);
+  const healthSelectedContactRef = useRef(null);
   const onlineUsers = useChatPresence();
   const usrId = userData?.id;
   const { contactList: chatContactList, fetchChatContacts } = useChatContacts();
   const healthSelectedContact = useSelector(state => state.healthSelectedContact);
+  healthSelectedContactRef.current = healthSelectedContact;
   const dispatch = useDispatch();
+  const { hasLicense } = useUserData();
   useEffect(() => {
     hasAutoSelectedFromParamRef.current = false;
     setNormalizedselectedHealthRecipentId(
       selectedHealthRecipentId == null ? null : String(selectedHealthRecipentId),
     );
   }, [selectedHealthRecipentId]);
+
+   
   
   const isMe = healthSelectedContact?.isMe;
   // Auto-select logic: when contact list changes, try to maintain the same selection if possible. If a selected contact no longer exists, select "Me". If there's a selectedHealthRecipentId from params and we haven't already auto-selected from it, try to select that contact.
@@ -96,6 +103,7 @@ export default function StressMonitorScreen({ route }) {
 
   useEffect(() => {
     if (mappedHealthContacts.length === 0) return;
+    const currentSelected = healthSelectedContactRef.current;
     if (
       normalizedselectedHealthRecipentId &&
       !hasAutoSelectedFromParamRef.current
@@ -112,26 +120,62 @@ export default function StressMonitorScreen({ route }) {
       );
       return;
     }
-    const stillExists = healthSelectedContact?.item?.id
-      ? mappedHealthContacts.some(c => c.id === healthSelectedContact.item.id)
+    const stillExists = currentSelected?.item?.id
+      ? mappedHealthContacts.some(c => c.id === currentSelected.item.id)
       : false;
-      if (healthSelectedContact?.item?.id && !stillExists) {
-        console.log('Previously selected contact no longer exists. Auto-selecting the first contact in the list.');
+    if (currentSelected?.item?.id && !stillExists) {
+      if (hasLicense) {
         dispatch(
           healthSelectedContactActions.setHealthSelectedContact({isMe: true, item: null}),
         );
+      } else {
+        dispatch(
+          healthSelectedContactActions.setHealthSelectedContact({isMe: false, item: mappedHealthContacts[0]}),
+        );
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [healthSelectedContact, normalizedselectedHealthRecipentId, dispatch, contactsLastHealthData]);
+    } else if (!currentSelected?.item?.id && !currentSelected?.isMe) {
+      if (hasLicense) {
+        dispatch(
+          healthSelectedContactActions.setHealthSelectedContact({isMe: true, item: null}),
+        );
+      } else {
+        dispatch(
+          healthSelectedContactActions.setHealthSelectedContact({isMe: false, item: mappedHealthContacts[0]}),
+        );
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mappedHealthContacts, normalizedselectedHealthRecipentId, dispatch, hasLicense]);
    
+  const showNoContactsPanel = !hasLicense && mappedHealthContacts.length === 0;
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#07090F" />
-      {isMe ? <MyStressMonitor /> : null}
 
-      {!isMe ? (
-        <ContactStressMonitor/>
-      ) : null}
+      {showNoContactsPanel ? (
+        <View style={styles.noContactsWrap}>
+          <View style={styles.noContactsCard}>
+            <View style={styles.noContactsIconWrap}>
+              <IconMC name="account-group-outline" size={48} color="#FF3B5C" />
+            </View>
+            <Text style={styles.noContactsTitle}>No Contacts Yet</Text>
+            
+            <View style={styles.noContactsDivider} />
+            <View style={styles.noContactsHintRow}>
+              <IconMC name="information-outline" size={14} color="#6B7C99" />
+              <Text style={styles.noContactsHint}>
+                Contacts appear here once a connection is accepted.
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : (
+        <>
+          {isMe ? <MyStressMonitor /> : null}
+          {!isMe ? <ContactStressMonitor /> : null}
+        </>
+      )}
 
       <HealthAvatarList
         chatContacts={mappedHealthContacts}
@@ -143,4 +187,67 @@ export default function StressMonitorScreen({ route }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#07090F' },
+  noContactsWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  noContactsCard: {
+    width: '100%',
+    backgroundColor: '#0E1A33',
+    borderRadius: 20,
+    paddingVertical: 36,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,59,92,0.15)',
+    shadowColor: '#FF3B5C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  noContactsIconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: 'rgba(255,59,92,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,59,92,0.25)',
+  },
+  noContactsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 10,
+    letterSpacing: 0.3,
+  },
+  noContactsSubtitle: {
+    fontSize: 13.5,
+    color: '#6B7C99',
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: 24,
+  },
+  noContactsDivider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginBottom: 16,
+  },
+  noContactsHintRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  noContactsHint: {
+    fontSize: 12,
+    color: '#6B7C99',
+    flex: 1,
+    lineHeight: 18,
+  },
 });
