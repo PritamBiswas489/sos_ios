@@ -66,18 +66,26 @@ export class SOSService {
       callback({ success: false, error: error.message });
     }
   }
-  static async triggerStressSos({hr, stress_score}, callback) {
-    console.log(`Triggering stress SOS with HR: ${hr} and Stress Score: ${stress_score}`);
-    try {
-      const response = await api.post('/sos/trigger-stress-sos', {
-        hr,
-        stress_score,
+  static async triggerStressSos(request, callback) {
+     try{
+      const { payload, headers, user } = request;
+      const {hr, stress_score, latitude, longitude } = payload;
+      const userId = user?.id;
+
+      return await this.registerSosSession({ userid: userId, payload: { hr, stress_score, latitude, longitude, type: "stress" }, headers }, (err, response) => {
+        if (err) {
+          return callback(err, null);
+        }
+        return callback(null, { data: response.data });
       });
-      callback({ success: true, data: response.data });
-    } catch (error) {
-      console.log('❌ Error triggering stress SOS:', error?.message);
-      callback({ success: false, error: error.message });
-    }
+      
+     }catch(e){
+      process.env.SENTRY_ENABLED === "true" && Sentry.captureException(e);
+      logger.error("ERROR In triggerStressSos", { error: e });
+      console.error("Error triggering stress SOS:", e.message);
+      return callback(new Error("TRIGGER_STRESS_SOS_FAILED"), null);
+     }
+
   }
   
    

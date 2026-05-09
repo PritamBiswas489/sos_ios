@@ -19,6 +19,7 @@ import { SOSService } from '../../services/sos.service';
 import { useMySosSessions } from '../../hook/useMySosSessions';
 import { useChatContacts } from '../../hook/useChatContacts';
 import { useStress } from '../../context/StressContext';
+import { useLocation } from '../../context/LocationContext';
  
 
 // ─── Status badge config ──────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ const HomeScreen = () => {
   const { fetchMySosSessions } = useMySosSessions();
   const {contactList} = useChatContacts();
   const {stress} = useStress();
+  const { getCurrentPosition } = useLocation();
 
   const { userData } = useUserData();
   const {
@@ -116,10 +118,15 @@ const HomeScreen = () => {
 
   const handleLongPress = useCallback(async () => {
     if (isInRoom) return;
+    const currentLocation = await getCurrentPosition();
+    const args = {
+      latitude: currentLocation?.latitude,
+      longitude: currentLocation?.longitude,
+    };
     const createSOS = await new Promise((resolve) => {
-        SOSService.createNewSOS(result => {
-          resolve(result.data);
-        });
+      SOSService.createNewSOS(args, (result) => {
+        resolve(result.data);
+      });
     });
      
     console.log('Joining room...'+userData?.id);
