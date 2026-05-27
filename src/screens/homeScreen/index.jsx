@@ -41,7 +41,6 @@ const HomeScreen = () => {
   const {contactList} = useChatContacts();
   const {stress} = useStress();
   const { getCurrentPosition } = useLocation();
-
   const { userData } = useUserData();
   const {
     status,
@@ -155,16 +154,14 @@ const HomeScreen = () => {
   const panelMaxH    = panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 260] });
 
   const spinRotate = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
- 
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 20 }}>
+
       {/* ── Greeting ── */}
       <View style={styles.greetingContainer}>
         <Text style={styles.goodMorning}>WELCOME,</Text>
-        <View style={localStyles.userNameRow}>
-          <Text style={styles.userName}>{userData?.name || userData?.phone_number}</Text>
-          <Icon name="pan-tool" size={24} color="#ffffff" style={localStyles.waveIcon} />
-        </View>
+        <Text style={styles.userName}>{userData?.name || userData?.phone_number} 👋</Text>
       </View>
 
       {/* ── SOS Button ── */}
@@ -360,16 +357,6 @@ export default HomeScreen;
 
 // ─── Local styles (streaming panel + hold ring) ───────────────────────────────
 const localStyles = StyleSheet.create({
-  userNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    columnGap: 8,
-  },
-
-  waveIcon: {
-    marginTop: 4,
-  },
-
   holdRing: {
     position: 'absolute',
     width: 185,
@@ -571,8 +558,3 @@ const localStyles = StyleSheet.create({
     width: 54,
   },
 });
-
-// probe_1778254351
-// poll_probe_1778254695
-// fastrefresh_final_test
-// myprobe123

@@ -43,9 +43,19 @@ export class UserService {
       callback({ success: false, error: error.message });
     }
   }
+  static async analytics(callback) {
+    try {
+      const response = await uploadMedia('/user/profile/analytics');
+      callback({ success: true, data: response.data });
+    } catch (error) {
+      callback({ success: false, error: error.message });
+    }
+  }
   static async checkDeviceidLastLogin(callback) {
     try {
-      const response = await api.get('/user/profile/device-is-equal-to-last-login');
+      const response = await api.get(
+        '/user/profile/device-is-equal-to-last-login',
+      );
       callback({ success: true, data: response.data });
     } catch (error) {
       callback({ success: false, error: error.message });

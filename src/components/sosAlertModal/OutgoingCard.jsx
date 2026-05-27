@@ -74,6 +74,7 @@ const OutgoingCard = ({ item:outgoingItem, onCancel, onResolve }) => {
   const [isAudioModalVisible, setIsAudioModalVisible] = useState(false);
   const status = item.status ?? 'active';
   const stressData = item.stress_data ?? null;
+  const location = item.location ?? null;
   const stressHR = stressData?.hr ?? null;
   const stressScore = stressData?.stress_score ?? null;
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.active;
@@ -216,7 +217,14 @@ const OutgoingCard = ({ item:outgoingItem, onCancel, onResolve }) => {
         </>
       )}
 
-       
+      {/* ── Location ── */}
+      {!!location && (
+        <View style={styles.locationRow}>
+          <Icon name="map-marker" size={15} color="#FFA502" />
+          <Text style={styles.locationText}>{location}</Text>
+        </View>
+      )}
+
       <View style={styles.statsSection}>
         <Text style={styles.statsHeading}>Response summary</Text>
         <View style={styles.statsGrid}>
@@ -387,6 +395,24 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  // location
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,165,2,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,165,2,0.2)',
+  },
+  locationText: {
+    color: '#FFA502',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
   },
   // stats
   statsSection: {

@@ -84,6 +84,10 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
   const stressHR       = stressData?.hr ?? null;
   const stressScore    = stressData?.stress_score ?? null;
   const hasStressData  = stressHR !== null || stressScore !== null;
+  const latitude       = stressData?.latitude ?? session.latitude ?? null;
+  const longitude      = stressData?.longitude ?? session.longitude ?? null;
+  const location       = session?.location;
+  const hasLocation    = latitude !== null && longitude !== null;
   
    
   const sCfg =
@@ -244,6 +248,32 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
           </View>
           <View style={styles.divider} />
         </>
+      )}
+
+      {/* ── Location ── */}
+      {hasLocation && (
+        <TouchableOpacity
+          style={styles.locationRow}
+          activeOpacity={0.7}
+          onPress={() => {
+            if (navigationRef.isReady()) {
+              onClose?.();
+              navigationRef.navigate('Main', {
+                screen: 'MainTabs',
+                params: {
+                  screen: 'Map',
+                  params: { selectedMapRecipentId: item.sos_session?.user?.id },
+                },
+              });
+            }
+          }}
+        >
+          <Icon name="map-marker" size={15} color="#FFA502" />
+          <Text style={styles.locationText}>
+            {location}
+          </Text>
+          <Icon name="chevron-right" size={16} color="#FFA502" />
+        </TouchableOpacity>
       )}
 
       {/* ── Accept / Decline (pending only) ── */}
@@ -705,6 +735,24 @@ const styles = StyleSheet.create({
     color: '#4ADE80',
     fontSize: 13,
     fontWeight: '700',
+  },
+  // location
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,165,2,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,165,2,0.2)',
+  },
+  locationText: {
+    color: '#FFA502',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
   },
   // stress vitals
   stressRow: {
