@@ -12,10 +12,10 @@ export const USE_GOOGLE_MAPS = true;
 export const GOOGLE_MAPS_API_KEY = _GOOGLE_MAPS_API_KEY;
 
 export const env = {
-  type: 'prod', //prod staging dev
+  type: 'dev', //prod staging dev
   appUrls: {
     dev: {
-      apiUrl: 'https://99bpkvn6-4000.inc1.devtunnels.ms',
+      apiUrl: 'https://jhsbs886-4000.inc1.devtunnels.ms',
     },
     staging: {
       apiUrl: 'https://back-sos.pritamaqua.aqualeafitsol.com',
@@ -26,7 +26,7 @@ export const env = {
   },
   mediaUrls: {
     dev: {
-      apiUrl: 'https://back-sos.pritamaqua.aqualeafitsol.com',
+      apiUrl: 'https://jhsbs886-4000.inc1.devtunnels.ms',
     },
     staging: {
       apiUrl: 'https://back-sos.pritamaqua.aqualeafitsol.com',

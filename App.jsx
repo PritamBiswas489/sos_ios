@@ -544,20 +544,21 @@ const App = () => {
             <GestureHandlerRootView style={{ flex: 1 }}>
               <SafeAreaProvider>
                 {renderContent()}
+                {/* Floating SOS alert button + modal — isolated component so open/close never re-renders App */}
+                <SOSController
+                  fabVisible={
+                    isConnected &&
+                    Array.isArray(missingPermissions) &&
+                    missingPermissions.length === 0 &&
+                    activeScreen !== null &&
+                    !['Splash', 'Process', 'Login', 'CompleteProfile','AuthLoading'].includes(activeScreen) &&
+                    !(Platform.OS === 'ios' && activeScreen === 'Analysis')
+                  }
+                  navigationRef={navigationRef}
+                  sosModalVisible={sosModalVisible}
+                  setSosModalVisible={setSosModalVisible}
+                />
               </SafeAreaProvider>
-              {/* Floating SOS alert button + modal — isolated component so open/close never re-renders App */}
-              <SOSController
-                fabVisible={
-                  isConnected &&
-                  Array.isArray(missingPermissions) &&
-                  missingPermissions.length === 0 &&
-                  activeScreen !== null &&
-                  !['Splash', 'Process', 'Login', 'CompleteProfile','AuthLoading'].includes(activeScreen)
-                }
-                navigationRef={navigationRef}
-                sosModalVisible={sosModalVisible}
-                setSosModalVisible={setSosModalVisible}
-              />
             </GestureHandlerRootView>
             </HealthProvider>
           </LocationProvider>

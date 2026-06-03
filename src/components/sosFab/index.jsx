@@ -8,47 +8,43 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const FAB_SIZE = 40;
-const PADDING = 10; // min distance from screen edges
+const PADDING = 10;
 
 const SosFab = ({ onPress, visible = true, loading = false }) => {
+  const insets = useSafeAreaInsets();
   const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+  const initialX = SCREEN_W - FAB_SIZE - PADDING;
+  const initialY = Math.max(
+    PADDING + insets.top,
+    SCREEN_H - FAB_SIZE - PADDING - insets.bottom,
+  );
 
-  // Position — start top-right (near header)
   const position = useRef(
     new Animated.ValueXY({
-      x: SCREEN_W - FAB_SIZE - PADDING,
-      y: 20,
+      x: initialX,
+      y: initialY,
     }),
   ).current;
 
-  // Track raw coords for clamping
   const posRef = useRef({
-    x: SCREEN_W - FAB_SIZE - PADDING,
-    y: 20,
+    x: initialX,
+    y: initialY,
   });
 
-  // Entrance scale
   const scaleAnim = useRef(new Animated.Value(0)).current;
-
-  // Drag scale (shrink slightly while dragging)
   const dragScale = useRef(new Animated.Value(1)).current;
-
-  // Pulse ring
   const ringScale = useRef(new Animated.Value(1)).current;
   const ringOpacity = useRef(new Animated.Value(0.7)).current;
-
-  // Snapshot of position at the moment a drag starts (before extractOffset resets values to 0)
   const startPosRef = useRef({
-    x: SCREEN_W - FAB_SIZE - PADDING,
-    y: 60,
+    x: initialX,
+    y: initialY,
   });
-
   const pulseLoop = useRef(null);
 
-  // ── Entrance / exit ─────────────────────────────────────────────────────
   useEffect(() => {
     if (visible) {
       Animated.spring(scaleAnim, {
@@ -66,7 +62,6 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
     }
   }, [visible, scaleAnim]);
 
-  // ── Pulse ring ──────────────────────────────────────────────────────────
   useEffect(() => {
     pulseLoop.current = Animated.loop(
       Animated.parallel([
@@ -85,28 +80,25 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
     return () => pulseLoop.current?.stop();
   }, [ringScale, ringOpacity]);
 
-  // ── PanResponder ────────────────────────────────────────────────────────
   const panResponder = useRef(
     PanResponder.create({
-      // Do NOT intercept touch start — lets TouchableOpacity handle taps normally.
-      // Only claim the gesture once real movement is detected.
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, g) =>
         Math.abs(g.dx) > 5 || Math.abs(g.dy) > 5,
 
       onPanResponderGrant: () => {
-        // Snapshot position BEFORE extractOffset resets values to 0
         startPosRef.current = { ...posRef.current };
         position.extractOffset();
         Animated.spring(dragScale, { toValue: 0.88, useNativeDriver: true }).start();
       },
 
       onPanResponderMove: (_, g) => {
-        // g.dx/dy are always relative to original touch-start, use snapshot for absolute pos
+        const minY = PADDING + insets.top;
+        const maxY = SCREEN_H - FAB_SIZE - PADDING - insets.bottom;
         const rawX = startPosRef.current.x + g.dx;
         const rawY = startPosRef.current.y + g.dy;
         const clampedX = Math.max(PADDING, Math.min(SCREEN_W - FAB_SIZE - PADDING, rawX));
-        const clampedY = Math.max(PADDING, Math.min(SCREEN_H - FAB_SIZE - PADDING, rawY));
+        const clampedY = Math.max(minY, Math.min(maxY, rawY));
         position.setValue({
           x: clampedX - startPosRef.current.x,
           y: clampedY - startPosRef.current.y,
@@ -114,6 +106,8 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
       },
 
       onPanResponderRelease: (_, g) => {
+        const minY = PADDING + insets.top;
+        const maxY = SCREEN_H - FAB_SIZE - PADDING - insets.bottom;
         position.flattenOffset();
         const currentX = startPosRef.current.x + g.dx;
         const currentY = startPosRef.current.y + g.dy;
@@ -121,7 +115,7 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
           currentX + FAB_SIZE / 2 < SCREEN_W / 2
             ? PADDING
             : SCREEN_W - FAB_SIZE - PADDING;
-        const clampedY = Math.max(PADDING, Math.min(SCREEN_H - FAB_SIZE - PADDING, currentY));
+        const clampedY = Math.max(minY, Math.min(maxY, currentY));
 
         Animated.parallel([
           Animated.spring(position, {
@@ -143,7 +137,6 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
     }),
   ).current;
 
-  // ── Sync posRef when position changes (for clamping reference) ───────────
   useEffect(() => {
     const listenerId = position.addListener(({ x, y }) => {
       posRef.current = { x, y };
@@ -152,7 +145,6 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
   }, [position]);
 
   return (
-    // Outer view: position only — useNativeDriver: false (left/top are layout props)
     <Animated.View
       {...panResponder.panHandlers}
       style={[
@@ -160,12 +152,8 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
         { left: position.x, top: position.y },
       ]}
       pointerEvents={visible ? 'box-none' : 'none'}>
-
-      {/* Inner view: scale only — useNativeDriver: true */}
       <Animated.View
         style={{ transform: [{ scale: Animated.multiply(scaleAnim, dragScale) }] }}>
-
-        {/* Outer pulse ring */}
         <Animated.View
           style={[
             styles.pulseRing,
@@ -173,7 +161,6 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
           ]}
         />
 
-        {/* Second softer ring */}
         <Animated.View
           style={[
             styles.pulseRingSoft,
@@ -184,7 +171,6 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
           ]}
         />
 
-        {/* Main button */}
         <TouchableOpacity
           style={styles.fab}
           onPress={onPress}
@@ -198,7 +184,6 @@ const SosFab = ({ onPress, visible = true, loading = false }) => {
             : <Icon name="shield-alert" size={26} color="#FFFFFF" />}
           <View style={styles.liveDot} />
         </TouchableOpacity>
-
       </Animated.View>
     </Animated.View>
   );

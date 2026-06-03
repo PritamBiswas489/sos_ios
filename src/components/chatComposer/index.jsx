@@ -196,8 +196,9 @@ const ChatComposer = ({
 
   const handlePickFromGallery = useCallback((type) => {
     closeActionMenu();
+    setTimeout(() => {
     launchImageLibrary(
-      { mediaType: type, selectionLimit: 1, quality: 0.8 },
+      { mediaType: type, selectionLimit: 1, quality: 0.8, videoQuality: 'high' },
       async response => {
         if (response.didCancel || response.errorCode) return;
         const asset = response?.assets?.[0];
@@ -253,6 +254,7 @@ const ChatComposer = ({
         setIsUploadingMedia(false);
       },
     );
+    }, 400);
   }, [closeActionMenu]);
 
   const uploadAudioUri = useCallback(
@@ -436,6 +438,7 @@ const ChatComposer = ({
 
   const handleCaptureFromCamera = useCallback(() => {
     closeActionMenu();
+    setTimeout(() => {
     launchCamera(
       { mediaType: 'photo', quality: 0.8, saveToPhotos: true },
       async response => {
@@ -484,6 +487,7 @@ const ChatComposer = ({
         setIsUploadingMedia(false);
       },
     );
+    }, 400);
   }, [closeActionMenu]);
 
   const handleShareCurrentLocation = useCallback(async () => {

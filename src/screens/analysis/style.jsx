@@ -97,6 +97,7 @@ const styles = StyleSheet.create({
     paddingVertical: SH(3),
     borderRadius: SW(20),
     borderWidth: 1,
+    
   },
   badgeText: {
     fontFamily: appFonts.NunitoSemiBold,
@@ -112,14 +113,20 @@ const styles = StyleSheet.create({
 
   // ── Profile Card ──────────────────────────────────────────────────────────────
   profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'stretch',
     borderRadius: SW(16),
-    padding: SW(14),
+    // paddingVertical: SH(14),
+    // paddingHorizontal: SW(14),
     marginBottom: SH(14),
     borderWidth: 1,
     borderColor: appColors.whiteBdrTransparent,
-    gap: SW(12),
+  },
+  profileTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    width: '100%',
+    padding: SW(14),
   },
   profileAvatar: {
     width: SW(50),
@@ -127,13 +134,18 @@ const styles = StyleSheet.create({
     borderRadius: SW(25),
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: SH(8),
   },
   profileInitial: {
     fontFamily: appFonts.NunitoBlack,
     fontSize: SF(20),
     color: appColors.white,
   },
-  profileMid: { flex: 1 },
+  profileMid: {
+    flex: 1,
+    minWidth: 0,
+    marginHorizontal: SW(12),
+  },
   profileName: {
     fontFamily: appFonts.NunitoExtraBold,
     fontSize: SF(15),
@@ -149,8 +161,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SW(10),
+    flexShrink: 0,
+    marginTop: SH(8),
   },
-  profileStatItem: { alignItems: 'center' },
+  profileStatsRow: {
+    alignItems: 'flex-end',
+  },
+  profileStatItem: {
+    alignItems: 'center',
+    minWidth: SW(28),
+  },
   profileStatNum: {
     fontFamily: appFonts.NunitoBlack,
     fontSize: SF(18),
@@ -160,6 +180,7 @@ const styles = StyleSheet.create({
     fontFamily: appFonts.NunitoRegular,
     fontSize: SF(10),
     color: appColors.bodyColor,
+    textAlign: 'center',
   },
   profileStatDivider: {
     width: 1,
@@ -172,14 +193,24 @@ const styles = StyleSheet.create({
     borderRadius: SW(14),
     borderWidth: 1,
     borderColor: appColors.whiteBdrTransparent,
-    padding: SW(12),
+    // padding: SW(12),
     marginBottom: SH(14),
     gap: SH(10),
+  },
+  licenseTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   licenseTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SW(10),
+    flex: 1,
+  },
+  licenseTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginHorizontal: SW(10),
   },
   licenseIconWrap: {
     width: SW(36),
@@ -193,7 +224,7 @@ const styles = StyleSheet.create({
     fontFamily: appFonts.NunitoExtraBold,
     fontSize: SF(12),
     color: appColors.white,
-    letterSpacing: 1.2,
+    letterSpacing: 0.9,
   },
   licenseTitleSub: {
     fontFamily: appFonts.NunitoRegular,
@@ -205,7 +236,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SW(8),
-    paddingVertical: SH(3),
+    paddingVertical: SH(4),
     borderRadius: SW(20),
     borderWidth: 1,
     gap: SW(4),
@@ -218,7 +249,7 @@ const styles = StyleSheet.create({
   licenseStatusText: {
     fontFamily: appFonts.NunitoExtraBold,
     fontSize: SF(9),
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   licenseKeyBox: {
     backgroundColor: 'rgba(255,255,255,0.05)',
@@ -469,5 +500,3 @@ const styles = StyleSheet.create({
 });
 
 export default styles;
-
-

@@ -227,46 +227,48 @@ const AnalysisScreen = () => {
           end={{ x: 1, y: 1 }}
           style={styles.profileCard}
         >
-          <LinearGradient colors={[appColors.primary, '#FF6B8A']} style={styles.profileAvatar}>
-            <Text style={styles.profileInitial}>
-              {(userData?.name ?? 'U').charAt(0).toUpperCase()}
-            </Text>
-          </LinearGradient>
+          <View style={styles.profileTopRow}>
+            <LinearGradient colors={[appColors.primary, '#FF6B8A']} style={styles.profileAvatar}>
+              <Text style={styles.profileInitial}>
+                {(userData?.name ?? 'U').charAt(0).toUpperCase()}
+              </Text>
+            </LinearGradient>
 
-          <View style={styles.profileMid}>
-            <Text style={styles.profileName}>{userData?.name ?? 'User'}</Text>
-            <Text style={styles.profileSub} numberOfLines={1}>
-              {userData?.email ?? userData?.phone_number ?? '—'}
-            </Text>
-            <View style={styles.badgeRow}>
-              
-              <View style={[styles.badge, {
-                backgroundColor: isLicenseActive ? '#00E5A022' : appColors.yellow + '22',
-                borderColor:     isLicenseActive ? '#00E5A044' : appColors.yellow + '44',
-              }]}>
-                <IconMC
-                  name={isLicenseActive ? 'shield-check' : 'shield-off'}
-                  size={10}
-                  color={isLicenseActive ? '#00E5A0' : appColors.yellow}
-                />
-                <Text style={[styles.badgeText, { color: isLicenseActive ? '#00E5A0' : appColors.yellow, marginLeft: 3 }]}>
-                  {isLicenseActive ? 'Licensed' : 'No License'}
-                </Text>
+            <View style={styles.profileMid}>
+              <Text style={styles.profileName} numberOfLines={1}>
+                {userData?.name ?? 'User'}
+              </Text>
+              <Text style={styles.profileSub} numberOfLines={1}>
+                {userData?.email ?? userData?.phone_number ?? '—'}
+              </Text>
+              <View style={styles.badgeRow}>
+                <View style={[styles.badge, {
+                  backgroundColor: isLicenseActive ? '#00E5A022' : appColors.yellow + '22',
+                  borderColor:     isLicenseActive ? '#00E5A044' : appColors.yellow + '44',
+                }]}>
+                  <IconMC
+                    name={isLicenseActive ? 'shield-check' : 'shield-off'}
+                    size={10}
+                    color={isLicenseActive ? '#00E5A0' : appColors.yellow}
+                  />
+                  <Text style={[styles.badgeText, { color: isLicenseActive ? '#00E5A0' : appColors.yellow, marginLeft: 3 }]}>
+                    {isLicenseActive ? 'Licensed' : 'No License'}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
 
-          <View style={styles.profileStats}>
-            <View style={styles.profileStatItem}>
-              <Text style={styles.profileStatNum}>{totalSos}</Text>
-              <Text style={styles.profileStatLbl}>SOS</Text>
+            <View style={styles.profileStats}>
+              <View style={styles.profileStatItem}>
+                <Text style={styles.profileStatNum}>{totalSos}</Text>
+                <Text style={styles.profileStatLbl}>SOS</Text>
+              </View>
+              <View style={styles.profileStatDivider} />
+              <View style={styles.profileStatItem}>
+                <Text style={styles.profileStatNum}>{contactList.length}</Text>
+                <Text style={styles.profileStatLbl}>Contacts</Text>
+              </View>
             </View>
-            <View style={styles.profileStatDivider} />
-            <View style={styles.profileStatItem}>
-              <Text style={styles.profileStatNum}>{contactList.length}</Text>
-              <Text style={styles.profileStatLbl}>Contacts</Text>
-            </View>
-
           </View>
         </LinearGradient>
 
@@ -281,18 +283,20 @@ const AnalysisScreen = () => {
           end={{ x: 1, y: 1 }}
           style={styles.licenseCard}
         >
-          {/* top row */}
-          <View style={styles.licenseTitleRow}>
-            <View style={styles.licenseIconWrap}>
-              <IconMC
-                name={isLicenseActive ? 'shield-star' : 'shield-off'}
-                size={22}
-                color={isLicenseActive ? '#00E5A0' : appColors.yellow}
-              />
+          <View style={styles.licenseTopRow}>
+            <View style={styles.licenseTitleRow}>
+              <View style={styles.licenseIconWrap}>
+                <IconMC
+                  name={isLicenseActive ? 'shield-star' : 'shield-off'}
+                  size={22}
+                  color={isLicenseActive ? '#00E5A0' : appColors.yellow}
+                />
+              </View>
+              <View style={styles.licenseTitleWrap}>
+                <Text style={styles.licenseTitleLabel}>LICENSE KEY</Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.licenseTitleLabel}>LICENSE KEY</Text>
-            </View>
+
             <View style={[
               styles.licenseStatusPill,
               {
@@ -307,7 +311,9 @@ const AnalysisScreen = () => {
               <Text style={[
                 styles.licenseStatusText,
                 { color: isLicenseActive ? '#00E5A0' : appColors.yellow },
-              ]}>
+              ]}
+                numberOfLines={1}
+              >
                 {isLicenseActive ? 'ACTIVE' : 'INACTIVE'}
               </Text>
             </View>
@@ -428,4 +434,3 @@ const AnalysisScreen = () => {
 };
 
 export default AnalysisScreen;
-
