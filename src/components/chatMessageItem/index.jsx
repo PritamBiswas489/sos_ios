@@ -20,6 +20,7 @@ const ChatMessageItem = ({
   renderStatusIcon,
 }) => {
   const isMediaOnlyMessage = chatItem => {
+    console.log("Item in isMediaOnlyMessage:", chatItem);
     const hasMedia = !!chatItem?.mediaUrl;
     const hasText = !!chatItem?.text?.trim?.();
     const hasLocation = !!chatItem?.locationJson;

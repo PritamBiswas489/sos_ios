@@ -26,8 +26,8 @@ import styles from './style';
 import MessageInput from './MessageInput';
 import { selectedReplyMessageActions } from '../../store/redux/selectedReplyMessage.redux';
 import { useUserData } from '../../hook/useUserData';
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
-const MAX_VIDEO_SIZE_BYTES = 30 * 1024 * 1024;
+const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 const MAX_AUDIO_SIZE_BYTES = 20 * 1024 * 1024;
 const MAX_DOCUMENT_SIZE_BYTES = 20 * 1024 * 1024;
 const getMediaSizeLimit = mediaCategory =>

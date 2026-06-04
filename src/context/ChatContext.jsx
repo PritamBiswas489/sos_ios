@@ -373,6 +373,12 @@ export const ChatProvider = ({ children }) => {
           response?.data?.data ||
           [];
 
+          // console.log('===============================================');
+          // console.log(
+          //   `ChatProvider: Received response for loadMessages with ${JSON.stringify(messages)} messages`,
+          // );
+          // console.log('===============================================');
+
         const normalizedMessages = Array.isArray(messages) ? messages : [];
 
         if (page <= 1) {
