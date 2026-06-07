@@ -13,7 +13,7 @@ import { useSocket } from './SocketContext';
 import { useChatContacts } from '../hook/useChatContacts';
 import { displayRemoteNotification } from '../services/notification.service';
 import { useUserData } from '../hook/useUserData';
-import api from '../config/authApi.config'
+import api from '../config/authApi.config';
 const ChatContext = createContext(null);
 const ChatMessagesContext = createContext(null);
 const ChatTypingContext = createContext(null);
@@ -125,6 +125,19 @@ const chatReducer = (state, action) => {
         messageStatuses: { ...state.messageStatuses, [messageId]: status },
       };
     }
+    case 'UPDATE_MESSAGE': {
+      const { chatId, messageId, updates } = action;
+      const existing = state.conversations[chatId] || [];
+      return {
+        ...state,
+        conversations: {
+          ...state.conversations,
+          [chatId]: existing.map(msg =>
+            msg.id === messageId ? { ...msg, ...updates } : msg,
+          ),
+        },
+      };
+    }
     case 'SET_TYPING': {
       const { chatId, userId, userName, isTyping } = action;
       const current = { ...state.typingIndicators };
@@ -155,7 +168,7 @@ export const ChatProvider = ({ children }) => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const { on, off, emit, isConnected } = useSocket();
   const typingTimers = useRef({});
-  const {userData} = useUserData();
+  const { userData } = useUserData();
   const { contactList } = useChatContacts();
   const currentUserId = userData?.id;
   const currentScreenName = useSelector(state => state.currentScreen?.name);
@@ -367,17 +380,11 @@ export const ChatProvider = ({ children }) => {
 
       try {
         const payload = { roomId, page, limit };
-        const response = await api.get('/chat/chat-history', { params: payload });
+        const response = await api.get('/chat/chat-history', {
+          params: payload,
+        });
 
-        const messages =
-          response?.data?.data ||
-          [];
-
-          // console.log('===============================================');
-          // console.log(
-          //   `ChatProvider: Received response for loadMessages with ${JSON.stringify(messages)} messages`,
-          // );
-          // console.log('===============================================');
+        const messages = response?.data?.data || [];
 
         const normalizedMessages = Array.isArray(messages) ? messages : [];
 
@@ -448,6 +455,10 @@ export const ChatProvider = ({ children }) => {
     [emit],
   );
 
+  const updateMessage = useCallback((chatId, messageId, updates) => {
+    dispatch({ type: 'UPDATE_MESSAGE', chatId, messageId, updates });
+  }, []);
+
   const messagesValue = useMemo(
     () => ({
       conversations: state.conversations,
@@ -470,8 +481,9 @@ export const ChatProvider = ({ children }) => {
       loadMessages,
       sendTyping,
       markAsRead,
+      updateMessage,
     }),
-    [sendMessage, loadMessages, sendTyping, markAsRead],
+    [sendMessage, loadMessages, sendTyping, markAsRead, updateMessage],
   );
 
   const value = useMemo(

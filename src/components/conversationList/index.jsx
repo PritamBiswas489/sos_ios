@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -33,8 +39,8 @@ import useToast from '../../hook/useToast';
 import { selectedReplyMessageActions } from '../../store/redux/selectedReplyMessage.redux';
 import { useUserData } from '../../hook/useUserData';
 import { formatDateSeparator, formatMessageTime } from '../../config/utility';
- 
-const NUMBER_OF_MESSAGES_TO_LOAD = 50; 
+
+const NUMBER_OF_MESSAGES_TO_LOAD = 50;
 const getMessageTimestamp = message => {
   return (
     message?.timestamp ||
@@ -54,8 +60,6 @@ const getDateKey = timestamp => {
   return date.toISOString().split('T')[0];
 };
 
- 
-
 const getReplyTargetId = message => {
   const replyObject = message?.reply_to_message;
 
@@ -64,7 +68,8 @@ const getReplyTargetId = message => {
     message?.reply_to_message_id ??
     message?.replyToId ??
     message?.reply_to_id ??
-    (typeof message?.replyTo === 'string' || typeof message?.replyTo === 'number'
+    (typeof message?.replyTo === 'string' ||
+    typeof message?.replyTo === 'number'
       ? message.replyTo
       : message?.replyTo?.id);
 
@@ -72,14 +77,23 @@ const getReplyTargetId = message => {
   return String(targetId);
 };
 
-const buildConversationItems = (messages, selectedContact, statuses = {}, styles) => {
+const buildConversationItems = (
+  messages,
+  selectedContact,
+  statuses = {},
+  styles,
+) => {
   if (!Array.isArray(messages) || messages.length === 0) {
     return [];
   }
 
   const sortedMessages = [...messages].sort((firstMessage, secondMessage) => {
-    const firstTime = new Date(getMessageTimestamp(firstMessage) || 0).getTime();
-    const secondTime = new Date(getMessageTimestamp(secondMessage) || 0).getTime();
+    const firstTime = new Date(
+      getMessageTimestamp(firstMessage) || 0,
+    ).getTime();
+    const secondTime = new Date(
+      getMessageTimestamp(secondMessage) || 0,
+    ).getTime();
     return firstTime - secondTime;
   });
 
@@ -90,7 +104,10 @@ const buildConversationItems = (messages, selectedContact, statuses = {}, styles
     const timestamp = getMessageTimestamp(message);
     const dateKey = getDateKey(timestamp);
     const computedMessageId =
-      message?.id ?? `${getMessageTimestamp(message) || 'no-time'}-${message?.text || message?.message || 'msg'}`;
+      message?.id ??
+      `${getMessageTimestamp(message) || 'no-time'}-${
+        message?.text || message?.message || 'msg'
+      }`;
     const replyToMessage = message?.reply_to_message || null;
     const replyTargetId = getReplyTargetId(message);
 
@@ -119,7 +136,7 @@ const buildConversationItems = (messages, selectedContact, statuses = {}, styles
       avatarStyle: message?.isSelf ? undefined : styles.avatarSmallBlue,
       avatarText: message?.isSelf
         ? 'Y'
-        : (selectedContact?.initial || selectedContact?.name?.charAt(0) || 'U'),
+        : selectedContact?.initial || selectedContact?.name?.charAt(0) || 'U',
     });
   });
 
@@ -130,13 +147,29 @@ const renderStatusIcon = status => {
   if (!status) return null;
 
   if (status === 'read') {
-    return <Icon name="done-all" size={14} color="#2ED573" style={{ marginLeft: 4 }} />;
+    return (
+      <Icon
+        name="done-all"
+        size={14}
+        color="#2ED573"
+        style={{ marginLeft: 4 }}
+      />
+    );
   }
   if (status === 'delivered') {
-    return <Icon name="done-all" size={14} color="#8FA3C8" style={{ marginLeft: 4 }} />;
+    return (
+      <Icon
+        name="done-all"
+        size={14}
+        color="#8FA3C8"
+        style={{ marginLeft: 4 }}
+      />
+    );
   }
   if (status === 'sent') {
-    return <Icon name="done" size={14} color="#8FA3C8" style={{ marginLeft: 4 }} />;
+    return (
+      <Icon name="done" size={14} color="#8FA3C8" style={{ marginLeft: 4 }} />
+    );
   }
   return null;
 };
@@ -165,69 +198,65 @@ const renderMessageActionButtonSecondary = (styles, iconName, onPress) => {
   );
 };
 
-const ReplySwipeWrapper = React.memo(({
-  children,
-  item,
-  onSwipeReply,
-  enabled = true,
-}) => {
-  const translateX = useRef(new Animated.Value(0)).current;
+const ReplySwipeWrapper = React.memo(
+  ({ children, item, onSwipeReply, enabled = true }) => {
+    const translateX = useRef(new Animated.Value(0)).current;
 
-  const resetPosition = useCallback(() => {
-    Animated.spring(translateX, {
-      toValue: 0,
-      useNativeDriver: true,
-      bounciness: 6,
-      speed: 16,
-    }).start();
-  }, [translateX]);
+    const resetPosition = useCallback(() => {
+      Animated.spring(translateX, {
+        toValue: 0,
+        useNativeDriver: true,
+        bounciness: 6,
+        speed: 16,
+      }).start();
+    }, [translateX]);
 
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_, gestureState) => {
-          if (!enabled) return false;
-          const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-          return isHorizontal && gestureState.dx > 6;
-        },
-        onPanResponderMove: (_, gestureState) => {
-          if (!enabled) return;
-          const dx = Math.max(0, Math.min(gestureState.dx, 90));
-          translateX.setValue(dx);
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          if (enabled && gestureState.dx > 62) {
-            onSwipeReply?.(item);
-          }
-          resetPosition();
-        },
-        onPanResponderTerminate: () => {
-          resetPosition();
-        },
-      }),
-    [enabled, item, onSwipeReply, resetPosition, translateX],
-  );
+    const panResponder = useMemo(
+      () =>
+        PanResponder.create({
+          onStartShouldSetPanResponder: () => false,
+          onMoveShouldSetPanResponder: (_, gestureState) => {
+            if (!enabled) return false;
+            const isHorizontal =
+              Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+            return isHorizontal && gestureState.dx > 6;
+          },
+          onPanResponderMove: (_, gestureState) => {
+            if (!enabled) return;
+            const dx = Math.max(0, Math.min(gestureState.dx, 90));
+            translateX.setValue(dx);
+          },
+          onPanResponderRelease: (_, gestureState) => {
+            if (enabled && gestureState.dx > 62) {
+              onSwipeReply?.(item);
+            }
+            resetPosition();
+          },
+          onPanResponderTerminate: () => {
+            resetPosition();
+          },
+        }),
+      [enabled, item, onSwipeReply, resetPosition, translateX],
+    );
 
-  return (
-    <Animated.View
-      style={{ transform: [{ translateX }] }}
-      {...(enabled ? panResponder.panHandlers : {})}
-    >
-      {children}
-    </Animated.View>
-  );
-});
+    return (
+      <Animated.View
+        style={{ transform: [{ translateX }] }}
+        {...(enabled ? panResponder.panHandlers : {})}
+      >
+        {children}
+      </Animated.View>
+    );
+  },
+);
 
-const ConversationList = ({
-  styles,
-}) => {
+const ConversationList = ({ styles }) => {
   const navigation = useNavigation();
   const flatListRef = useRef(null);
   const loadedRoomIdsRef = useRef(new Set());
   const shouldScrollAfterLoadRef = useRef(false);
   const pendingAutoScrollPassesRef = useRef(0);
-  const {userData, hasLicense} = useUserData();
+  const { userData, hasLicense } = useUserData();
   const wasConnectedRef = useRef(false);
   const AUTO_SCROLL_PASSES = 6;
   const [refreshing, setRefreshing] = useState(false);
@@ -239,26 +268,30 @@ const ConversationList = ({
   const didInitialRoomScrollRef = useRef(false);
   const dispatch = useDispatch();
   const replyingItem = useSelector(state => state.selectedReplyMessage);
-//   console.log("replyingItem", replyingItem);
+  //   console.log("replyingItem", replyingItem);
 
   const [forwardingItem, setForwardingItem] = useState(null);
   const [menuItem, setMenuItem] = useState(null);
   const menuItemRef = useRef(null);
-   
 
-  const { loadMessages, markAsRead, sendMessage:sendMessageToRecipent } = useChatActions();
-    const { isConnected } = useSocket();
+  const {
+    loadMessages,
+    markAsRead,
+    sendMessage: sendMessageToRecipent,
+  } = useChatActions();
+  const { isConnected } = useSocket();
   const { showSuccess, showError } = useToast();
   const { conversations, pagination, messageStatuses } = useChatMessages();
-  const chatSelectedTrustedContact = useSelector(state => state.chatSelectedTrustedContact);
- 
+  const chatSelectedTrustedContact = useSelector(
+    state => state.chatSelectedTrustedContact,
+  );
+
   const selectedContact = chatSelectedTrustedContact;
   const currentUserId = userData?.id;
   const currentRoomId = selectedContact?.roomId;
   const currentRoomPagination = pagination?.[currentRoomId] || {};
   const isHistoryLoading = !!currentRoomPagination.loading;
   const hasMoreHistory = currentRoomPagination.hasMore !== false;
-
 
   const currentRoomConversations = useMemo(
     () =>
@@ -292,7 +325,6 @@ const ConversationList = ({
 
   const handleOpenVideoModal = useCallback(videoUrl => {
     if (!videoUrl) return;
-    console.log("=====================", videoUrl);
     setActiveVideoUrl(videoUrl);
     setIsVideoModalVisible(true);
   }, []);
@@ -313,89 +345,110 @@ const ConversationList = ({
     setActiveAudioUrl('');
   }, []);
 
-  const handleOpenDocument = useCallback(async documentUrl => {
-    if (!documentUrl) return false;
+  const handleOpenDocument = useCallback(
+    async documentUrl => {
+      if (!documentUrl) return false;
 
-    try {
-      let finalUrl = documentUrl.trim();
+      try {
+        let finalUrl = documentUrl.trim();
 
-      if (!finalUrl.match(/^[a-zA-Z][a-zA-Z\d+\-.]*:/)) {
-        if (finalUrl.startsWith('//')) {
-          finalUrl = 'https:' + finalUrl;
-        } else if (finalUrl.startsWith('/')) {
-          finalUrl = 'https:' + finalUrl;
-        } else {
-          finalUrl = 'https://' + finalUrl;
+        if (!finalUrl.match(/^[a-zA-Z][a-zA-Z\d+\-.]*:/)) {
+          if (finalUrl.startsWith('//')) {
+            finalUrl = 'https:' + finalUrl;
+          } else if (finalUrl.startsWith('/')) {
+            finalUrl = 'https:' + finalUrl;
+          } else {
+            finalUrl = 'https://' + finalUrl;
+          }
         }
-      }
 
-      // Request Android storage permission for API < 29
-      if (Platform.OS === 'android' && Platform.Version < 29) {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          Alert.alert('Permission denied', 'Storage permission is required to download files.');
-          return;
+        // Request Android storage permission for API < 29
+        if (Platform.OS === 'android' && Platform.Version < 29) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert(
+              'Permission denied',
+              'Storage permission is required to download files.',
+            );
+            return;
+          }
         }
-      }
 
-      const fileName = finalUrl.split('/').pop()?.split('?')[0] || `document_${Date.now()}`;
-      const downloadDir =
-        Platform.OS === 'ios'
-          ? RNBlobUtil.fs.dirs.DocumentDir
-          : RNBlobUtil.fs.dirs.DownloadDir;
-      const filePath = `${downloadDir}/${fileName}`;
+        const fileName =
+          finalUrl.split('/').pop()?.split('?')[0] || `document_${Date.now()}`;
+        const downloadDir =
+          Platform.OS === 'ios'
+            ? RNBlobUtil.fs.dirs.DocumentDir
+            : RNBlobUtil.fs.dirs.DownloadDir;
+        const filePath = `${downloadDir}/${fileName}`;
 
-      showSuccess('Downloading', `Saving ${fileName}...`);
+        showSuccess('Downloading', `Saving ${fileName}...`);
 
-      await RNBlobUtil.config({
-        path: filePath,
-        addAndroidDownloads: {
-          useDownloadManager: true,
-          notification: true,
-          title: fileName,
-          description: 'Downloading document...',
-          mime: 'application/octet-stream',
-          mediaScannable: true,
+        await RNBlobUtil.config({
           path: filePath,
-        },
-      }).fetch('GET', finalUrl);
+          addAndroidDownloads: {
+            useDownloadManager: true,
+            notification: true,
+            title: fileName,
+            description: 'Downloading document...',
+            mime: 'application/octet-stream',
+            mediaScannable: true,
+            path: filePath,
+          },
+        }).fetch('GET', finalUrl);
 
-      if (Platform.OS === 'ios') {
-        await RNBlobUtil.ios.openDocument(filePath);
-      } else {
-        showSuccess('Download complete', `${fileName} saved to Downloads.`);
+        if (Platform.OS === 'ios') {
+          await RNBlobUtil.ios.openDocument(filePath);
+        } else {
+          showSuccess('Download complete', `${fileName} saved to Downloads.`);
+        }
+        return true;
+      } catch {
+        Alert.alert(
+          'Download error',
+          'Unable to download this document. Please try again.',
+        );
+        return false;
       }
-      return true;
-    } catch {
-      Alert.alert('Download error', 'Unable to download this document. Please try again.');
-      return false;
-    }
-  }, [showSuccess]);
+    },
+    [showSuccess],
+  );
 
   const forwardMessage = useCallback(async (contacts, item) => {
     //sendMessageToRecipent
-       console.log('Forwarding message/item:', item);
-       console.log('Forwarding to contacts:', contacts);
+    console.log('Forwarding message/item:', item);
+    console.log('Forwarding to contacts:', contacts);
 
-       if(contacts.length > 0){
-         for(const contact of contacts){
-            const roomId = contact.roomId;
-            const recipientId = contact.receipent_id;
-            const text = item.text;
-            const media = item.mediaUrl ? { url: item.mediaUrl, mediaType: item.mediaType } : null;
-            const location = item.locationJson ? item.locationJson : null;
-            try {
-                await sendMessageToRecipent(roomId, recipientId, text, media, location);
-                showSuccess('Success', `Message forwarded to ${contact.name}`);
-            } catch (error) {
-                console.log(`Error forwarding message to ${contact.name} (ID: ${contact.id}):`, error);
-                showError('Failed', `Failed to forward message to ${contact.name}`);
-            }
-         }
-       }
-  },[]);
+    if (contacts.length > 0) {
+      for (const contact of contacts) {
+        const roomId = contact.roomId;
+        const recipientId = contact.receipent_id;
+        const text = item.text;
+        const media = item.mediaUrl
+          ? { url: item.mediaUrl, mediaType: item.mediaType }
+          : null;
+        const location = item.locationJson ? item.locationJson : null;
+        try {
+          await sendMessageToRecipent(
+            roomId,
+            recipientId,
+            text,
+            media,
+            location,
+          );
+          showSuccess('Success', `Message forwarded to ${contact.name}`);
+        } catch (error) {
+          console.log(
+            `Error forwarding message to ${contact.name} (ID: ${contact.id}):`,
+            error,
+          );
+          showError('Failed', `Failed to forward message to ${contact.name}`);
+        }
+      }
+    }
+  }, []);
 
   const handleOpenLocationInMaps = useCallback(async (latitude, longitude) => {
     const mapLabel = encodeURIComponent('Shared Location');
@@ -417,9 +470,12 @@ const ConversationList = ({
     }
   }, []);
 
-  const handleReplyPress = useCallback(item => {
-    dispatch(selectedReplyMessageActions.setSelectedReplyMessage(item));
-  }, [dispatch]);
+  const handleReplyPress = useCallback(
+    item => {
+      dispatch(selectedReplyMessageActions.setSelectedReplyMessage(item));
+    },
+    [dispatch],
+  );
 
   const handleForwardPress = useCallback(item => {
     setForwardingItem(item);
@@ -453,7 +509,7 @@ const ConversationList = ({
 
   const handleOpenHealth = useCallback(() => {
     if (!selectedContact?.receipent_id) return;
-    navigation.navigate('Main', { 
+    navigation.navigate('Main', {
       screen: 'MainTabs',
       params: {
         screen: 'Health',
@@ -519,18 +575,19 @@ const ConversationList = ({
     return idToIndex;
   }, [chatItems]);
 
-   
-
   const isInitialConversationLoading =
     isHistoryLoading && currentRoomConversations.length === 0;
   const isLoadingOlderConversations =
-    isHistoryLoading && currentRoomConversations.length > 0 && (currentRoomPagination.page || 1) > 1;
+    isHistoryLoading &&
+    currentRoomConversations.length > 0 &&
+    (currentRoomPagination.page || 1) > 1;
 
   const handleScroll = useCallback(event => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const threshold = 150;
     const nearBottom =
-      layoutMeasurement.height + contentOffset.y >= contentSize.height - threshold;
+      layoutMeasurement.height + contentOffset.y >=
+      contentSize.height - threshold;
 
     setIsNearBottom(nearBottom);
     setShowScrollToBottom(!nearBottom);
@@ -557,9 +614,13 @@ const ConversationList = ({
   useEffect(() => {
     if (!currentRoomConversations.length) return;
 
-    const lastMessage = currentRoomConversations[currentRoomConversations.length - 1];
+    const lastMessage =
+      currentRoomConversations[currentRoomConversations.length - 1];
     const lastMessageKey =
-      lastMessage?.id || `${getMessageTimestamp(lastMessage) || 'no-time'}-${lastMessage?.text || lastMessage?.message || ''}`;
+      lastMessage?.id ||
+      `${getMessageTimestamp(lastMessage) || 'no-time'}-${
+        lastMessage?.text || lastMessage?.message || ''
+      }`;
 
     if (lastMessageKey === lastSeenMessageKeyRef.current) {
       return;
@@ -567,12 +628,17 @@ const ConversationList = ({
 
     const isIncomingMessage = !lastMessage?.isSelf;
     if (isIncomingMessage && !isNearBottom) {
-      const bannerEventKey = `${currentRoomId || 'unknown-room'}:${lastMessageKey}`;
+      const bannerEventKey = `${
+        currentRoomId || 'unknown-room'
+      }:${lastMessageKey}`;
       if (bannerEventKey !== lastBannerEventKeyRef.current) {
         lastBannerEventKeyRef.current = bannerEventKey;
         DeviceEventEmitter.emit('chat:new-message-banner', {
           title: selectedContact?.name || 'New Message',
-          body: lastMessage?.text || lastMessage?.message || 'You have received a new message.',
+          body:
+            lastMessage?.text ||
+            lastMessage?.message ||
+            'You have received a new message.',
         });
       }
     }
@@ -586,14 +652,12 @@ const ConversationList = ({
     lastSeenMessageKeyRef.current = lastMessageKey;
   }, [currentRoomConversations, isNearBottom, selectedContact, currentRoomId]);
 
-  
-
-   useEffect(() => {
+  useEffect(() => {
     if (!currentRoomId) return;
     const roomKey = String(currentRoomId);
 
     if (loadedRoomIdsRef.current.has(roomKey)) return; // ✅ use ref
-    loadedRoomIdsRef.current.add(roomKey);              // ✅ use ref
+    loadedRoomIdsRef.current.add(roomKey); // ✅ use ref
     shouldScrollAfterLoadRef.current = true;
     pendingAutoScrollPassesRef.current = AUTO_SCROLL_PASSES;
     didInitialRoomScrollRef.current = false;
@@ -601,35 +665,45 @@ const ConversationList = ({
     loadMessages(currentRoomId, 1, NUMBER_OF_MESSAGES_TO_LOAD).catch(() => {});
   }, [currentRoomId, loadMessages]);
 
+  const focusCallback = useCallback(() => {
+    if (!currentRoomId || !currentRoomConversations?.length) return;
 
-const focusCallback = useCallback(() => {
-  if (!currentRoomId || !currentRoomConversations?.length) return;
+    const unreadMessages = currentRoomConversations.filter(msg => {
+      const isIncoming = !msg.isSelf;
+      const messageStatus = msg?.status || messageStatuses[msg?.id];
+      const isUnread = messageStatus !== 'read';
+      return isIncoming && isUnread;
+    });
 
-  const unreadMessages = currentRoomConversations.filter(msg => {
-    const isIncoming = !msg.isSelf;
-    const messageStatus = msg?.status || messageStatuses[msg?.id];
-    const isUnread = messageStatus !== 'read';
-    return isIncoming && isUnread;
-  });
+    if (unreadMessages.length > 0) {
+      const messagesById = unreadMessages
+        .map(m => m?.id)
+        .filter(Boolean)
+        .sort();
+      const senderId =
+        unreadMessages[0]?.senderId || selectedContact?.receipent_id;
+      const unreadBatchKey = `${currentRoomId}:${
+        senderId || 'unknown'
+      }:${messagesById.join(',')}`;
 
-  if (unreadMessages.length > 0) {
-    const messagesById = unreadMessages.map(m => m?.id).filter(Boolean).sort();
-    const senderId = unreadMessages[0]?.senderId || selectedContact?.receipent_id;
-    const unreadBatchKey = `${currentRoomId}:${senderId || 'unknown'}:${messagesById.join(',')}`;
+      if (unreadBatchKey === lastReadBatchKeyRef.current) return;
 
-    if (unreadBatchKey === lastReadBatchKeyRef.current) return;
-
-    if (messagesById.length > 0 && senderId) {
-      lastReadBatchKeyRef.current = unreadBatchKey;
-      markAsRead(messagesById, senderId).catch(() => {});
+      if (messagesById.length > 0 && senderId) {
+        lastReadBatchKeyRef.current = unreadBatchKey;
+        markAsRead(messagesById, senderId).catch(() => {});
+      }
+    } else {
+      lastReadBatchKeyRef.current = '';
     }
-  } else {
-    lastReadBatchKeyRef.current = '';
-  }
-}, [currentRoomId, currentRoomConversations, messageStatuses, selectedContact, markAsRead]);
+  }, [
+    currentRoomId,
+    currentRoomConversations,
+    messageStatuses,
+    selectedContact,
+    markAsRead,
+  ]);
 
- 
-useFocusEffect(focusCallback);
+  useFocusEffect(focusCallback);
 
   const handleRefresh = useCallback(async () => {
     if (!currentRoomId || isHistoryLoading || !hasMoreHistory) {
@@ -639,16 +713,31 @@ useFocusEffect(focusCallback);
     setRefreshing(true);
     try {
       const nextPage = (currentRoomPagination.page || 1) + 1;
-      await loadMessages(currentRoomId, nextPage, currentRoomPagination.limit || NUMBER_OF_MESSAGES_TO_LOAD);
+      await loadMessages(
+        currentRoomId,
+        nextPage,
+        currentRoomPagination.limit || NUMBER_OF_MESSAGES_TO_LOAD,
+      );
     } finally {
       setRefreshing(false);
     }
-  }, [currentRoomId, isHistoryLoading, hasMoreHistory, currentRoomPagination.page, currentRoomPagination.limit, loadMessages]);
+  }, [
+    currentRoomId,
+    isHistoryLoading,
+    hasMoreHistory,
+    currentRoomPagination.page,
+    currentRoomPagination.limit,
+    loadMessages,
+  ]);
 
   useEffect(() => {
-    const lastRoomMessage = currentRoomConversations[currentRoomConversations.length - 1];
+    const lastRoomMessage =
+      currentRoomConversations[currentRoomConversations.length - 1];
     const baselineKey = lastRoomMessage
-      ? (lastRoomMessage?.id || `${getMessageTimestamp(lastRoomMessage) || 'no-time'}-${lastRoomMessage?.text || lastRoomMessage?.message || ''}`)
+      ? lastRoomMessage?.id ||
+        `${getMessageTimestamp(lastRoomMessage) || 'no-time'}-${
+          lastRoomMessage?.text || lastRoomMessage?.message || ''
+        }`
       : null;
 
     lastSeenMessageKeyRef.current = baselineKey;
@@ -661,56 +750,61 @@ useFocusEffect(focusCallback);
     didInitialRoomScrollRef.current = false;
   }, [currentRoomId]);
 
-  const scrollToRepliedMessage = useCallback((replyTargetId) => {
-    if (!replyTargetId) return;
+  const scrollToRepliedMessage = useCallback(
+    replyTargetId => {
+      if (!replyTargetId) return;
 
-    const targetIndex = messageIndexById.get(String(replyTargetId));
-    if (targetIndex === undefined) {
-      
-      return;
-    }
+      const targetIndex = messageIndexById.get(String(replyTargetId));
+      if (targetIndex === undefined) {
+        return;
+      }
 
-    flatListRef.current?.scrollToIndex({
-      index: targetIndex,
-      animated: true,
-      viewPosition: 0.5,
-    });
-  }, [messageIndexById]);
+      flatListRef.current?.scrollToIndex({
+        index: targetIndex,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    },
+    [messageIndexById],
+  );
 
-  const renderChatItem = useCallback(({ item }) => {
-    return (
-      <ChatMessageItem
-        item={item}
-        styles={styles}
-        ReplySwipeWrapper={ReplySwipeWrapper}
-        onReplyPress={handleReplyPress}
-        onMenuToggle={handleMenuToggle}
-        onPressReplyTarget={scrollToRepliedMessage}
-        onOpenLocationInMaps={handleOpenLocationInMaps}
-        handleOpenImageModal={handleOpenImageModal}
-        handleOpenVideoModal={handleOpenVideoModal}
-        handleOpenAudioModal={handleOpenAudioModal}
-        handleOpenDocument={handleOpenDocument}
-        renderStatusIcon={renderStatusIcon}
-      />
-    );
-  }, [
-    styles,
-    handleReplyPress,
-    handleMenuToggle,
-    scrollToRepliedMessage,
-    handleOpenLocationInMaps,
-    handleOpenImageModal,
-    handleOpenVideoModal,
-    handleOpenAudioModal,
-    handleOpenDocument,
-  ]);
+  const renderChatItem = useCallback(
+    ({ item }) => {
+      return (
+        <ChatMessageItem
+          item={item}
+          styles={styles}
+          ReplySwipeWrapper={ReplySwipeWrapper}
+          onReplyPress={handleReplyPress}
+          onMenuToggle={handleMenuToggle}
+          onPressReplyTarget={scrollToRepliedMessage}
+          onOpenLocationInMaps={handleOpenLocationInMaps}
+          handleOpenImageModal={handleOpenImageModal}
+          handleOpenVideoModal={handleOpenVideoModal}
+          handleOpenAudioModal={handleOpenAudioModal}
+          handleOpenDocument={handleOpenDocument}
+          renderStatusIcon={renderStatusIcon}
+        />
+      );
+    },
+    [
+      styles,
+      handleReplyPress,
+      handleMenuToggle,
+      scrollToRepliedMessage,
+      handleOpenLocationInMaps,
+      handleOpenImageModal,
+      handleOpenVideoModal,
+      handleOpenAudioModal,
+      handleOpenDocument,
+    ],
+  );
 
-const handleReload = useCallback(() => {
+  const handleReload = useCallback(() => {
     if (!currentRoomId) return;
     const roomKey = String(currentRoomId);
     loadedRoomIdsRef.current.delete(roomKey); // ✅ use ref
-  shouldScrollAfterLoadRef.current = true;
+    shouldScrollAfterLoadRef.current = true;
     pendingAutoScrollPassesRef.current = AUTO_SCROLL_PASSES;
     didInitialRoomScrollRef.current = false;
     loadMessages(currentRoomId, 1, NUMBER_OF_MESSAGES_TO_LOAD).catch(() => {});
@@ -719,14 +813,15 @@ const handleReload = useCallback(() => {
   useEffect(() => {
     const reconnected = !wasConnectedRef.current && isConnected;
 
-    if (reconnected && currentRoomId ) {
-      
+    if (reconnected && currentRoomId) {
       const roomKey = String(currentRoomId);
       loadedRoomIdsRef.current.delete(roomKey);
       shouldScrollAfterLoadRef.current = true;
       pendingAutoScrollPassesRef.current = AUTO_SCROLL_PASSES;
       didInitialRoomScrollRef.current = false;
-      loadMessages(currentRoomId, 1, NUMBER_OF_MESSAGES_TO_LOAD).catch(() => {});
+      loadMessages(currentRoomId, 1, NUMBER_OF_MESSAGES_TO_LOAD).catch(
+        () => {},
+      );
     }
 
     wasConnectedRef.current = isConnected;
@@ -735,7 +830,12 @@ const handleReload = useCallback(() => {
   const keyExtractor = useCallback(item => String(item.id), []);
 
   const renderListHeader = useCallback(
-    () => <OlderConversationLoader visible={isLoadingOlderConversations} styles={styles} />,
+    () => (
+      <OlderConversationLoader
+        visible={isLoadingOlderConversations}
+        styles={styles}
+      />
+    ),
     [isLoadingOlderConversations, styles],
   );
 
@@ -763,10 +863,7 @@ const handleReload = useCallback(() => {
   }, []);
 
   const handleContentSizeChange = useCallback(() => {
-    if (
-      !shouldScrollAfterLoadRef.current ||
-      chatItems.length === 0
-    ) {
+    if (!shouldScrollAfterLoadRef.current || chatItems.length === 0) {
       return;
     }
 
@@ -789,8 +886,12 @@ const handleReload = useCallback(() => {
         <View style={styles.historyLoaderScreen}>
           <View style={styles.historyLoaderCard}>
             <ActivityIndicator size="small" color="#2ED573" />
-            <Text style={styles.historyLoaderTitle}>Loading conversation...</Text>
-            <Text style={styles.historyLoaderSubtitle}>Fetching earlier messages for this chat.</Text>
+            <Text style={styles.historyLoaderTitle}>
+              Loading conversation...
+            </Text>
+            <Text style={styles.historyLoaderSubtitle}>
+              Fetching earlier messages for this chat.
+            </Text>
           </View>
         </View>
       );
@@ -803,19 +904,36 @@ const handleReload = useCallback(() => {
         </View>
         <Text style={styles.emptyStateTitle}>No conversations yet</Text>
         <Text style={styles.emptyStateSubtitle}>
-          Start a conversation with {selectedContact?.name || 'this contact'}. Your messages will appear here.
+          Start a conversation with {selectedContact?.name || 'this contact'}.
+          Your messages will appear here.
         </Text>
         <TouchableOpacity
           onPress={handleReload}
           activeOpacity={0.8}
-          style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 20, backgroundColor: 'rgba(46,213,115,0.15)', borderWidth: 1, borderColor: '#2ED573' }}
+          style={{
+            marginTop: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 18,
+            paddingVertical: 9,
+            borderRadius: 20,
+            backgroundColor: 'rgba(46,213,115,0.15)',
+            borderWidth: 1,
+            borderColor: '#2ED573',
+          }}
         >
           <Icon name="refresh" size={16} color="#2ED573" />
           <Text style={{ color: '#2ED573', fontSize: 13 }}>Reload</Text>
         </TouchableOpacity>
       </View>
     );
-  }, [isInitialConversationLoading, styles, selectedContact?.name, handleReload]);
+  }, [
+    isInitialConversationLoading,
+    styles,
+    selectedContact?.name,
+    handleReload,
+  ]);
 
   return (
     <>
@@ -869,7 +987,11 @@ const handleReload = useCallback(() => {
       />
 
       {showScrollToBottom && (
-        <TouchableOpacity style={styles.scrollToBottomBtn} onPress={scrollToBottom} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.scrollToBottomBtn}
+          onPress={scrollToBottom}
+          activeOpacity={0.85}
+        >
           <Icon name="keyboard-arrow-down" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       )}
@@ -912,10 +1034,15 @@ const handleReload = useCallback(() => {
               }}
             >
               <Icon name="map" size={16} color="#34D399" />
-              
             </TouchableOpacity>
 
-            <View style={{ width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+            <View
+              style={{
+                width: 1,
+                height: 28,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+              }}
+            />
 
             <TouchableOpacity
               activeOpacity={0.75}
@@ -930,10 +1057,15 @@ const handleReload = useCallback(() => {
               }}
             >
               <Icon name="mic" size={16} color="#60A6FF" />
-             
             </TouchableOpacity>
 
-            <View style={{ width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+            <View
+              style={{
+                width: 1,
+                height: 28,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+              }}
+            />
 
             <TouchableOpacity
               activeOpacity={0.75}
@@ -948,7 +1080,6 @@ const handleReload = useCallback(() => {
               }}
             >
               <Icon name="favorite" size={16} color="#AA3CFF" />
-              
             </TouchableOpacity>
           </View>
         </View>
@@ -1012,13 +1143,17 @@ const handleReload = useCallback(() => {
 
                 <View style={styles.messageActionModalDivider} />
 
-            
                 <TouchableOpacity
                   activeOpacity={0.82}
-                  style={[styles.messageActionModalItem, styles.messageActionModalCancelItem]}
+                  style={[
+                    styles.messageActionModalItem,
+                    styles.messageActionModalCancelItem,
+                  ]}
                   onPress={handleMenuClose}
                 >
-                  <Text style={styles.messageActionModalCancelText}>Cancel</Text>
+                  <Text style={styles.messageActionModalCancelText}>
+                    Cancel
+                  </Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>

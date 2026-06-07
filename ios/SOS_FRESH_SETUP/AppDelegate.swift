@@ -19,7 +19,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     FirebaseApp.configure()
-    GMSServices.provideAPIKey("AIzaSyBuJgwXvUOIobYc22GNonWo4gZ5ZTV88ec")
+    
+    let apiKey = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_API_KEY") as? String ?? ""
+    GMSServices.provideAPIKey(apiKey)
 
     // Set notification delegate and register for remote notifications
     UNUserNotificationCenter.current().delegate = self

@@ -100,5 +100,8 @@
     <array>
       <string>com.sos.kobytech.refresh</string>
     </array>
+	<key>GOOGLE_API_KEY</key>
+<string>$(GOOGLE_API_KEY)</string>
+	
 </dict>
 </plist>

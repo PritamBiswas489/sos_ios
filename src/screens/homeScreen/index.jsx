@@ -8,6 +8,7 @@ import {
   Animated,
   StyleSheet,
   Image,
+  Button
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useUserData } from '../../hook/useUserData';

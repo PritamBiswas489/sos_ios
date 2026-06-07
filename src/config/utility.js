@@ -1,7 +1,6 @@
 import moment from 'moment-timezone';
-import {env} from '../../environment';
- 
- 
+import { env } from '../../environment';
+import { Platform, Linking } from 'react-native';
 
 export const fileToBase64 = file => {
   return new Promise(resolve => {
@@ -37,11 +36,11 @@ export function limitWords(inputString, limit) {
   return limitedWords.join(' ') + '..';
 }
 export const getAppUrl = () => {
-  const {type, appUrls} = env;
+  const { type, appUrls } = env;
   return appUrls[type].apiUrl;
 };
 export const getMediaUrl = () => {
-  const {type, mediaUrls} = env;
+  const { type, mediaUrls } = env;
   return mediaUrls[type].apiUrl;
 };
 export const isValidUrl = str => {
@@ -177,12 +176,12 @@ export const formatNumberWithAbbreviation = num => {
     return num;
   }
   let si = [
-    {v: 1e3, s: 'K'},
-    {v: 1e6, s: 'M'},
-    {v: 1e9, s: 'B'},
-    {v: 1e12, s: 'T'},
-    {v: 1e15, s: 'P'},
-    {v: 1e18, s: 'E'},
+    { v: 1e3, s: 'K' },
+    { v: 1e6, s: 'M' },
+    { v: 1e9, s: 'B' },
+    { v: 1e12, s: 'T' },
+    { v: 1e15, s: 'P' },
+    { v: 1e18, s: 'E' },
   ];
   let index;
   for (index = si.length - 1; index > 0; index--) {
@@ -209,7 +208,7 @@ export function getCategory(category, categories) {
 }
 export function getDateString(inputDateString) {
   const inputDate = new Date(inputDateString);
-  const options = {day: 'numeric', month: 'long', year: '2-digit'};
+  const options = { day: 'numeric', month: 'long', year: '2-digit' };
   const formattedDate = inputDate.toLocaleDateString('en-GB', options);
   return formattedDate;
 }
@@ -272,7 +271,7 @@ export function formatNumberProcessing(num) {
   }
   return num.toString();
 }
- 
+
 export function timeformatting(timestamp) {
   // Create a new Date object from the timestamp
   const date = new Date(timestamp);
@@ -285,7 +284,7 @@ export function timeformatting(timestamp) {
     day: '2-digit', // Day with leading zero if needed
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true // 12-hour format with AM/PM
+    hour12: true, // 12-hour format with AM/PM
   };
 
   // Use Intl.DateTimeFormat to format the date
@@ -295,13 +294,12 @@ export function timeformatting(timestamp) {
   return formattedOutput;
 }
 
-
 export function timeformatting2(timestamp) {
   // Convert to a Date object
   const date = new Date(timestamp.replace(' ', 'T') + 'Z');
   // Extracting day, month, year, hour, and minute
   const day = date.getUTCDate();
-  const month = date.toLocaleString('en-US', {month: 'short'});
+  const month = date.toLocaleString('en-US', { month: 'short' });
   const year = date.getUTCFullYear();
   let hours = date.getUTCHours();
   const minutes = date.getUTCMinutes().toString().padStart(2, '0');
@@ -350,7 +348,6 @@ export function datetimeArr(timestamp) {
     ampm: dateObj.dayPeriod, // 'AM' or 'PM'
   };
 }
-
 
 export function calculateDaysDifference(dateString) {
   const givenDate = new Date(dateString); // Parse the given date
@@ -420,7 +417,7 @@ export function convertToScale(value) {
 }
 
 export function paymentSectionData(account_receivable, account_payable) {
-  console.log({account_receivable, account_payable});
+  console.log({ account_receivable, account_payable });
   //account_receivable: account receive from admin
   //account payable : account have to pay admin
   let returnData = {};
@@ -469,111 +466,115 @@ export function paymentSectionData(account_receivable, account_payable) {
 }
 
 export function utf8ToBase64(str) {
-  const utf8Bytes = new TextEncoder().encode(str);   
-  const binaryString = Array.from(utf8Bytes).map(byte => String.fromCharCode(byte)).join('');
-  return btoa(binaryString);   
+  const utf8Bytes = new TextEncoder().encode(str);
+  const binaryString = Array.from(utf8Bytes)
+    .map(byte => String.fromCharCode(byte))
+    .join('');
+  return btoa(binaryString);
 }
 export function base64ToUtf8(base64) {
-  const binaryString = atob(base64);   
-  const utf8Bytes = Uint8Array.from(binaryString, char => char.charCodeAt(0));   
-  return new TextDecoder().decode(utf8Bytes);   
+  const binaryString = atob(base64);
+  const utf8Bytes = Uint8Array.from(binaryString, char => char.charCodeAt(0));
+  return new TextDecoder().decode(utf8Bytes);
 }
 
 //compare times
 
-export function compareTimes(t1,t2){
-      const [hours1, minutes1] = t1.split(":").map(Number);
-      const [hours2, minutes2] = t2.split(":").map(Number);
+export function compareTimes(t1, t2) {
+  const [hours1, minutes1] = t1.split(':').map(Number);
+  const [hours2, minutes2] = t2.split(':').map(Number);
 
-      if (hours1 > hours2 || (hours1 === hours2 && minutes1 > minutes2)) {
-          return -1; // t1 is greater than t2
-      } else if (hours1 < hours2 || (hours1 === hours2 && minutes1 < minutes2)) {
-          return 1; // t1 is less than t2
-      } else {
-          return 0; // t1 is equal to t2
-      }
+  if (hours1 > hours2 || (hours1 === hours2 && minutes1 > minutes2)) {
+    return -1; // t1 is greater than t2
+  } else if (hours1 < hours2 || (hours1 === hours2 && minutes1 < minutes2)) {
+    return 1; // t1 is less than t2
+  } else {
+    return 0; // t1 is equal to t2
+  }
 }
 
-
 export function compareTimeTwelveHours(t1, t2) {
-  const parseTime = (time) => {
-      let [hours, minutes] = time.slice(0, -2).split(":").map(Number);
-      const period = time.slice(-2); // AM or PM
+  const parseTime = time => {
+    let [hours, minutes] = time.slice(0, -2).split(':').map(Number);
+    const period = time.slice(-2); // AM or PM
 
-      // Convert to 24-hour format
-      if (period === "AM" && hours === 12) hours = 0;
-      if (period === "PM" && hours !== 12) hours += 12;
+    // Convert to 24-hour format
+    if (period === 'AM' && hours === 12) hours = 0;
+    if (period === 'PM' && hours !== 12) hours += 12;
 
-      return { hours, minutes };
+    return { hours, minutes };
   };
 
   const { hours: hours1, minutes: minutes1 } = parseTime(t1);
   const { hours: hours2, minutes: minutes2 } = parseTime(t2);
 
   if (hours1 > hours2 || (hours1 === hours2 && minutes1 > minutes2)) {
-      return -1; // t1 is greater than t2
+    return -1; // t1 is greater than t2
   } else if (hours1 < hours2 || (hours1 === hours2 && minutes1 < minutes2)) {
-      return 1; // t1 is less than t2
+    return 1; // t1 is less than t2
   } else {
-      return 0; // t1 is equal to t2
+    return 0; // t1 is equal to t2
   }
 }
 
 export function convertTo24Hour(time) {
-  let [hours, minutes] = time.slice(0, -3).split(":").map(Number);
+  let [hours, minutes] = time.slice(0, -3).split(':').map(Number);
   const period = time.slice(-2); // AM or PM
 
-  if (period === "AM" && hours === 12) hours = 0;
-  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  if (period === 'PM' && hours !== 12) hours += 12;
 
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+  return `${hours.toString().padStart(2, '0')}:${minutes
+    .toString()
+    .padStart(2, '0')}`;
 }
 
 export function from24To12Hour(time) {
-  let [hours, minutes] = time.split(":").map(Number);
-  const period = hours >= 12 ? "PM" : "AM";
+  let [hours, minutes] = time.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
 
   // Convert 00:xx (midnight) to 12:xx AM and 12:xx (noon) stays 12:xx PM
   hours = hours % 12 || 12;
 
-  return `${hours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
-
 export function parseTime(time) {
-  const [hours, minutes] = time.split(":").map(Number);
+  const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
 }
 
 export function isTimeRangeWithin(timeRange, ranges) {
-  const [startTime, endTime] = timeRange.split("-").map(parseTime);
+  const [startTime, endTime] = timeRange.split('-').map(parseTime);
 
   // console.log({startTime,endTime})
-  
-  for (const range of ranges) {
-      const [rangeStart, rangeEnd] = range.split("-").map(parseTime);
 
-      // console.log({rangeStart,rangeEnd})
-      
-      // Check if any part of the timeRange falls within the range
-      if ((startTime >= rangeStart && startTime <= rangeEnd) ||
-          (endTime >= rangeStart && endTime <= rangeEnd) ||
-          (startTime <= rangeStart && endTime >= rangeEnd)) {
-          return true;
-      }
+  for (const range of ranges) {
+    const [rangeStart, rangeEnd] = range.split('-').map(parseTime);
+
+    // console.log({rangeStart,rangeEnd})
+
+    // Check if any part of the timeRange falls within the range
+    if (
+      (startTime >= rangeStart && startTime <= rangeEnd) ||
+      (endTime >= rangeStart && endTime <= rangeEnd) ||
+      (startTime <= rangeStart && endTime >= rangeEnd)
+    ) {
+      return true;
+    }
   }
-  
+
   return false;
 }
 export function convertToTitleCase(input) {
   return input
-      .split('_') // Split the string by underscores
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize the first letter of each word
-      .join(' '); // Join the words with a space
+    .split('_') // Split the string by underscores
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize the first letter of each word
+    .join(' '); // Join the words with a space
 }
 export function getIndianPriceFormat(price) {
   const formattedPrice = new Intl.NumberFormat('en-IN').format(price);
-  return formattedPrice
+  return formattedPrice;
 }
 export function getFileNameFromUrl(url) {
   const matches = url.match(/([^\/?#]+)(?=[^\/]*$)/);
@@ -582,16 +583,14 @@ export function getFileNameFromUrl(url) {
 }
 
 export function getProfileImage(rawUrl) {
-    const baseUrl = getAppUrl();
-              const mediaUrl = rawUrl.includes('http://localhost:4000')
-                ? rawUrl.replace('http://localhost:4000', baseUrl)
-                : rawUrl;
-
+  const baseUrl = getAppUrl();
+  const mediaUrl = rawUrl.includes('http://localhost:4000')
+    ? rawUrl.replace('http://localhost:4000', baseUrl)
+    : rawUrl;
 
   return mediaUrl;
-
 }
-export function getMediaUrlFromRawUrl(rawUrl){
+export function getMediaUrlFromRawUrl(rawUrl) {
   const baseUrl = getAppUrl();
   const mediaUrl = rawUrl.includes('http://localhost:4000')
     ? rawUrl.replace('http://localhost:4000', baseUrl)
@@ -606,8 +605,16 @@ export const formatDateSeparator = timestamp => {
   if (Number.isNaN(date.getTime())) return 'Unknown date';
 
   const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const startOfMessageDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const startOfMessageDay = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
   const diffDays = Math.round((startOfToday - startOfMessageDay) / 86400000);
 
   if (diffDays === 0) return 'TODAY';
@@ -617,7 +624,9 @@ export const formatDateSeparator = timestamp => {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(date).toUpperCase();
+  })
+    .format(date)
+    .toUpperCase();
 };
 
 export const formatMessageTime = timestamp => {
@@ -629,4 +638,28 @@ export const formatMessageTime = timestamp => {
     minute: '2-digit',
     hour12: true,
   }).format(date);
+};
+
+export const handleVideoClickProcess = ({
+  isMovFile,
+  startConversion,
+  onOpenVideoModal,
+} = {}) => {
+  // If the file is a MOV that needs conversion, trigger conversion
+  if (isMovFile && Platform.OS === 'android') {
+    startConversion &&
+      typeof startConversion === 'function' &&
+      startConversion();
+    return;
+  }
+
+  // Prefer the provided modal handler. If not provided, fall back to Linking.
+  if (onOpenVideoModal && typeof onOpenVideoModal === 'function') {
+    try {
+      onOpenVideoModal();
+      return true;
+    } catch (e) {}
+  }
+
+  return false;
 };
