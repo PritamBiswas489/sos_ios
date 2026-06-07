@@ -21,6 +21,7 @@ import { useMySosSessions } from '../../hook/useMySosSessions';
 import { useChatContacts } from '../../hook/useChatContacts';
 import { useStress } from '../../context/StressContext';
 import { useLocation } from '../../context/LocationContext';
+import * as Sentry from '@sentry/react-native';
  
 
 // ─── Status badge config ──────────────────────────────────────────────────────
@@ -163,6 +164,7 @@ const HomeScreen = () => {
       <View style={styles.greetingContainer}>
         <Text style={styles.goodMorning}>WELCOME,</Text>
         <Text style={styles.userName}>{userData?.name || userData?.phone_number} 👋</Text>
+        {/* <Button title='Try!' onPress={ () => { Sentry.captureException(new Error('First error')) }}/> */}
       </View>
 
       {/* ── SOS Button ── */}
