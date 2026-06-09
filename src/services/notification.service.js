@@ -1,4 +1,3 @@
-import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp } from '@react-native-firebase/app';
 import {
@@ -11,84 +10,45 @@ import {
   AuthorizationStatus,
   getToken,
 } from '@react-native-firebase/messaging';
-import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
-import { set } from '@react-native-firebase/app/dist/module/internal/web/firebaseDatabase';
+import notifee, { EventType } from '@notifee/react-native';
 
 // Modular API: get the messaging instance once
 const getMsg = () => getMessaging(getApp());
 
-export const NOTIFICATION_CHANNELS = {
-  CHAT: 'chat_channel',
-  SOS: 'sos_channel',
-  VICTIM: 'victim_channel',
-  DEFAULT: 'default_channel',
+// ─── iOS sound mapping ───────────────────────────────────────────────────────
+// Sound files must be added to your Xcode project under the app target.
+// Supported formats: .caf, .aiff, .wav (max 30 seconds).
+const IOS_SOUNDS = {
+  CHAT: 'chat_tone.caf',
+  SOS: 'sos_alert.caf',
+  VICTIM: 'victim_tone.caf',
+  DEFAULT: 'default_tone.caf',
 };
+
+const getSoundByMessage = remoteMessage => {
+  const type = remoteMessage?.data?.messageType || '';
+  const normalizedType = String(type).toUpperCase();
+
+  switch (normalizedType) {
+    case 'SOS':
+      return IOS_SOUNDS.SOS;
+    case 'VICTIM':
+      return IOS_SOUNDS.VICTIM;
+    case 'CHAT':
+      return IOS_SOUNDS.CHAT;
+    default:
+      return IOS_SOUNDS.DEFAULT;
+  }
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 let onNotificationPress = null;
 const PENDING_NOTIFICATION_PRESS_KEY = '@pending_notification_press_payload';
 
-const getChannelByMessage = remoteMessage => {
-  const type = remoteMessage?.data?.messageType  || '';
-  const normalizedType = String(type).toUpperCase();
-
-  if (normalizedType === 'SOS') {
-    return NOTIFICATION_CHANNELS.SOS;
-  } else if (normalizedType === 'VICTIM') {
-    //Alert.alert('SOS Alert', 'A new SOS alert has been received. Please check the app for details.');
-    return NOTIFICATION_CHANNELS.VICTIM;
-  }else if (normalizedType === 'CHAT') {
-    return NOTIFICATION_CHANNELS.CHAT;
-  }else{
-    return NOTIFICATION_CHANNELS.DEFAULT;
-  }
-  
-};
-
+// ─── Channel config is Android-only; on iOS notifee uses APNs categories ───
+// This is a no-op on iOS but kept so call sites in App.jsx don't break.
 export const createNotificationChannels = async () => {
-  if (Platform.OS !== 'android') {
-    return;
-  }
-
-
-  await notifee.deleteChannel(NOTIFICATION_CHANNELS.CHAT);
-  await notifee.deleteChannel(NOTIFICATION_CHANNELS.SOS);
-  await notifee.deleteChannel(NOTIFICATION_CHANNELS.VICTIM);
-  await notifee.deleteChannel(NOTIFICATION_CHANNELS.DEFAULT);
-
-  // Create channels with appropriate settings
-  await notifee.createChannel({
-    id: NOTIFICATION_CHANNELS.CHAT,
-    name: 'Chat Notifications',
-    importance: AndroidImportance.HIGH,
-    sound: 'chat_tone',
-    vibration: true,
-  });
-
-  // Create SOS channel with custom sound and high importance
-  await notifee.createChannel({
-    id: NOTIFICATION_CHANNELS.SOS,
-    name: 'SOS Notifications',
-    importance: AndroidImportance.HIGH,
-    sound: 'sos_alert',
-    vibration: true,
-  });
-
-  // Create Victim channel with custom sound and high importance
-  await notifee.createChannel({
-    id: NOTIFICATION_CHANNELS.VICTIM,
-    name: 'Victim Notifications',
-    importance: AndroidImportance.HIGH,
-    sound: 'victim_tone',
-    vibration: true,
-  });
-   
-   await notifee.createChannel({
-    id: NOTIFICATION_CHANNELS.DEFAULT,
-    name: 'Default Notifications',
-    importance: AndroidImportance.HIGH,
-    sound: 'default_tone',
-    vibration: true,
-  });
+  // No-op on iOS — notification channels are Android-only.
 };
 
 export const requestNotificationPermissions = async () => {
@@ -124,23 +84,30 @@ export const getFCMToken = async () => {
 };
 
 export const displayRemoteNotification = async remoteMessage => {
-  const channelId = getChannelByMessage(remoteMessage);
-  console.log('📩 Displaying notification for message:', {
-    channelId,
-    remoteMessage,
+  const title =
+    remoteMessage?.notification?.title ||
+    remoteMessage?.data?.title ||
+    'SOS App';
+  const body =
+    remoteMessage?.notification?.body || remoteMessage?.data?.body || '';
+
+  const sound = getSoundByMessage(remoteMessage);
+
+  console.log('📩 Displaying iOS notification:', {
+    sound,
+    messageType: remoteMessage?.data?.messageType,
   });
-  const title = remoteMessage?.notification?.title || remoteMessage?.data?.title || 'SOS App';
-  const body = remoteMessage?.notification?.body || remoteMessage?.data?.body || '';
 
   await notifee.displayNotification({
     title,
     body,
     data: remoteMessage?.data,
-    android: {
-      channelId,
-      smallIcon: 'ic_launcher',
-      pressAction: {
-        id: 'default',
+    ios: {
+      sound,                          // e.g. 'sos_alert.caf', 'chat_tone.caf', etc.
+      foregroundPresentationOptions: {
+        alert: true,
+        badge: true,
+        sound: true,
       },
     },
   });
@@ -162,7 +129,6 @@ export const subscribeForegroundNotifications = onForegroundMessage => {
 
 export const setBackgroundMessageHandler = () => {
   setFCMBackgroundHandler(getMsg(), async remoteMessage => {
-    await createNotificationChannels();
     await displayRemoteNotification(remoteMessage);
   });
 };
@@ -187,26 +153,30 @@ export const subscribeNotificationPress = handler => {
     }
   });
 
-  const messagingUnsubscribe = onNotificationOpenedApp(getMsg(), remoteMessage => {
-    triggerPressCallback({
-      source: 'messaging.opened',
-      remoteMessage,
-      data: remoteMessage?.data,
-    });
-  });
+  const messagingUnsubscribe = onNotificationOpenedApp(
+    getMsg(),
+    remoteMessage => {
+      triggerPressCallback({
+        source: 'messaging.opened',
+        remoteMessage,
+        data: remoteMessage?.data,
+      });
+    },
+  );
 
   getInitialNotification(getMsg()).then(remoteMessage => {
     console.log('App opened from quit state by notification:', remoteMessage);
-    if (remoteMessage) {
-      (async () => {
-        if (remoteMessage?.data) {
-          await AsyncStorage.setItem(PENDING_NOTIFICATION_PRESS_KEY, JSON.stringify({
-            source: 'messaging.initial',
-            remoteMessage,
-            data: remoteMessage?.data,
-          }));
-        }
-      })(); 
+    if (remoteMessage?.data) {
+      AsyncStorage.setItem(
+        PENDING_NOTIFICATION_PRESS_KEY,
+        JSON.stringify({
+          source: 'messaging.initial',
+          remoteMessage,
+          data: remoteMessage?.data,
+        }),
+      ).catch(err =>
+        console.log('Failed to persist FCM initial notification:', err),
+      );
     }
   });
 
@@ -214,7 +184,10 @@ export const subscribeNotificationPress = handler => {
     .getInitialNotification()
     .then(initialNotification => {
       if (initialNotification?.notification) {
-        console.log('App opened from quit state by Notifee notification:', initialNotification);
+        console.log(
+          'App opened from quit state by Notifee notification:',
+          initialNotification,
+        );
         triggerPressCallback({
           source: 'notifee.initial',
           notification: initialNotification.notification,
@@ -233,22 +206,28 @@ export const subscribeNotificationPress = handler => {
 
 export const consumePendingNotificationPress = async () => {
   try {
-    const storedPayload = await AsyncStorage.getItem(PENDING_NOTIFICATION_PRESS_KEY);
-    console.log('Checking for pending background notification press payload:', storedPayload);
+    const storedPayload = await AsyncStorage.getItem(
+      PENDING_NOTIFICATION_PRESS_KEY,
+    );
+    console.log(
+      'Checking for pending background notification press payload:',
+      storedPayload,
+    );
     if (!storedPayload) {
       return null;
     }
-
-   await AsyncStorage.removeItem(PENDING_NOTIFICATION_PRESS_KEY);
+    await AsyncStorage.removeItem(PENDING_NOTIFICATION_PRESS_KEY);
     return JSON.parse(storedPayload);
   } catch (error) {
-    console.log('Failed to consume pending background notification payload:', error);
+    console.log(
+      'Failed to consume pending background notification payload:',
+      error,
+    );
     return null;
   }
 };
 
 // Checks if the app was cold-started by tapping a notification (quit state).
-// notifee.onBackgroundEvent does NOT fire in quit state — use getInitialNotification instead.
 export const getQuitStateNotification = async () => {
   try {
     // Check Notifee quit-state tap

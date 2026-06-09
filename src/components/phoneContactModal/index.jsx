@@ -7,9 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  PermissionsAndroid,
-  Platform,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import Contacts from 'react-native-contacts';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -26,41 +25,37 @@ const PhoneContactModal = ({ visible, onSelectContact, onClose }) => {
     }
   }, [visible]);
 
-  const loadContacts = async () => {
-    setLoading(true);
-    setPermissionDenied(false);
-    try {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
-          {
-            title: 'Contacts Permission',
-            message: 'This app needs access to your contacts.',
-            buttonPositive: 'Allow',
-            buttonNegative: 'Deny',
-          },
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          setPermissionDenied(true);
-          setLoading(false);
-          return;
-        }
-      }
+const loadContacts = async () => {
+  setLoading(true);
+  setPermissionDenied(false);
+  try {
+    const permission = await Contacts.requestPermission();
 
-      const allContacts = await Contacts.getAll();
-      const filtered = allContacts
-        .filter(c => c.phoneNumbers && c.phoneNumbers.length > 0)
-        .sort((a, b) => {
-          const nameA = (a.givenName + ' ' + a.familyName).trim().toLowerCase();
-          const nameB = (b.givenName + ' ' + b.familyName).trim().toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-      setContacts(filtered);
-    } catch (error) {
-      console.error('Error loading contacts:', error);
-    } finally {
+    if (permission === 'denied' || permission === 'undefined') {
+      setPermissionDenied(true);
       setLoading(false);
+      return;
     }
+
+    // 'authorized' = full access, 'limited' = partial (iOS 18+)
+    const allContacts = await Contacts.getAll();
+    const filtered = allContacts
+      .filter(c => c.phoneNumbers && c.phoneNumbers.length > 0)
+      .sort((a, b) => {
+        const nameA = (a.givenName + ' ' + a.familyName).trim().toLowerCase();
+        const nameB = (b.givenName + ' ' + b.familyName).trim().toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    setContacts(filtered);
+  } catch (error) {
+    console.error('Error loading contacts:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const handleOpenSettings = () => {
+    Linking.openURL('app-settings:');
   };
 
   const handleClose = () => {
@@ -123,7 +118,6 @@ const PhoneContactModal = ({ visible, onSelectContact, onClose }) => {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
             <Icon name="arrow-back" size={22} color="#fff" />
@@ -132,7 +126,6 @@ const PhoneContactModal = ({ visible, onSelectContact, onClose }) => {
           <View style={{ width: 36 }} />
         </View>
 
-        {/* Search */}
         <View style={styles.searchBox}>
           <Icon name="search" size={18} color="#6B7C99" />
           <TextInput
@@ -149,7 +142,6 @@ const PhoneContactModal = ({ visible, onSelectContact, onClose }) => {
           )}
         </View>
 
-        {/* Count */}
         {!loading && !permissionDenied && (
           <Text style={styles.count}>
             {filteredContacts.length} contact
@@ -157,7 +149,6 @@ const PhoneContactModal = ({ visible, onSelectContact, onClose }) => {
           </Text>
         )}
 
-        {/* Body */}
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color="#ff3b5c" />
@@ -168,10 +159,10 @@ const PhoneContactModal = ({ visible, onSelectContact, onClose }) => {
             <Icon name="block" size={48} color="#FF4757" />
             <Text style={styles.deniedTitle}>Permission Denied</Text>
             <Text style={styles.deniedSubtitle}>
-              Allow contacts permission to pick from phonebook.
+              Enable contacts access in Settings, then come back.
             </Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={loadContacts}>
-              <Text style={styles.retryText}>Retry</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={handleOpenSettings}>
+              <Text style={styles.retryText}>Open Settings</Text>
             </TouchableOpacity>
           </View>
         ) : filteredContacts.length === 0 ? (

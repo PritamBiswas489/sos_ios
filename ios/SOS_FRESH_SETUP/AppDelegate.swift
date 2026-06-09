@@ -6,6 +6,7 @@ import GoogleMaps
 import FirebaseCore
 import FirebaseMessaging
 import UserNotifications
+import AVFoundation
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
@@ -26,12 +27,25 @@ func application(
   let apiKey = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_API_KEY") as? String ?? ""
   GMSServices.provideAPIKey(apiKey)
 
-  // 3. Notifications
+  // 3. Audio session for WebRTC + InCallManager
+  let audioSession = AVAudioSession.sharedInstance()
+  do {
+    try audioSession.setCategory(
+      .playAndRecord,
+      mode: .voiceChat,
+      options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
+    )
+    try audioSession.setActive(true)
+  } catch {
+    print("❌ AVAudioSession setup failed: \(error)")
+  }
+
+  // 4. Notifications
   UNUserNotificationCenter.current().delegate = self
   Messaging.messaging().delegate = self
   application.registerForRemoteNotifications()
 
-  // 4. React Native setup
+  // 5. React Native setup
   let delegate = ReactNativeDelegate()
   let factory = RCTReactNativeFactory(delegate: delegate)
   delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -41,7 +55,6 @@ func application(
 
   window = UIWindow(frame: UIScreen.main.bounds)
 
-  // ✅ Move to background to prevent main thread block
   DispatchQueue.global(qos: .userInitiated).async {
     DispatchQueue.main.async {
       factory.startReactNative(
@@ -54,6 +67,7 @@ func application(
 
   return true
 }
+
   // Forward APNs token to Firebase
   func application(_ application: UIApplication,
                    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

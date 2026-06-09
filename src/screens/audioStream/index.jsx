@@ -27,7 +27,7 @@ import { useUserData } from '../../hook/useUserData';
 import { getProfileImage } from '../../config/utility';
 import AudioVisualizer from '../../components/audioVisualizer';
 import AudioAvatarList from '../../components/audioAvatarList';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 // ─── Colour tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -90,17 +90,47 @@ const AudioStreamScreen = ({route}) => {
   const isInRoom    = status !== 'idle' && status !== 'error';
   const isListening = status === 'listening';
   const hasContact  = !!selectedContact?.id;
-  const selectedReceipentId = route?.params?.selectedReceipentId;
+  const selectedReceipentIdRef = useRef(null);
   const [normalizedSelectedReceipentId, setNormalizedSelectedReceipentId] = useState(null);
+  const selectedRef = useRef(false);
 
-  useEffect(() => {
+  // Sync ref with route params
+  // ─── Sync ref with route params ───────────────────────────────────────────
+useFocusEffect(
+  useCallback(() => {
+    const incoming = route.params?.selectedReceipentId ?? null;
+    console.log("Screen focused, selectedReceipentId:", incoming);
+
+    if (incoming === null || incoming === undefined) {
+      // ✅ Only reset if no param — normal tab navigation
+      return;
+    }
+
+    // ✅ Has param — reset previous contact then set new one
+    dispatch(audioSelectedContactActions.resetState());
+    selectedReceipentIdRef.current = incoming;
     hasAutoSelectedFromParamRef.current = false;
-    setNormalizedSelectedReceipentId(
-      selectedReceipentId === null || selectedReceipentId === undefined
-        ? null
-        : String(selectedReceipentId),
-    );
-  }, [selectedReceipentId]);
+    selectedRef.current = false;
+    setNormalizedSelectedReceipentId(String(incoming));
+
+  }, [route.params?.selectedReceipentId, dispatch]) // ✅ dispatch added
+);
+
+useEffect(() => {
+
+  console.log("normalizedSelectedReceipentId changed:", normalizedSelectedReceipentId);
+},[normalizedSelectedReceipentId]),
+
+// ─── Only clear ref if selectedContact changed AND no pending param ───────
+useEffect(() => {
+  console.log("selectedContact?.id", selectedContact?.id);
+
+  // ✅ Don't wipe the param ref if we're still trying to auto-select from it
+  if (selectedReceipentIdRef.current !== null) return;
+
+  selectedReceipentIdRef.current = null;
+}, [selectedContact?.id]);
+   
 
   const mappedAudioContacts = useMemo(() => {
     const list = chatContactList;
@@ -151,33 +181,48 @@ const AudioStreamScreen = ({route}) => {
   }, [chatContactList, usrId, onlineUsers, currentStreamingRoomIds]);
 
   useEffect(() => {
-    if (mappedAudioContacts.length === 0) return;
+  console.log("normalizedSelectedReceipentId", normalizedSelectedReceipentId);
 
-    if (normalizedSelectedReceipentId && !hasAutoSelectedFromParamRef.current) {
-      hasAutoSelectedFromParamRef.current = true;
-      const contactToSelect = mappedAudioContacts.find(
-        c => String(c.receipent_id) === normalizedSelectedReceipentId,
-      );
-      dispatch(
-        audioSelectedContactActions.setAudioSelectedContact(
-          contactToSelect ?? mappedAudioContacts[0],
-        ),
-      );
-      return;
+  if (mappedAudioContacts.length === 0) return;
+
+  // ✅ Guard: if already selected the right contact, skip
+  if (
+    normalizedSelectedReceipentId &&
+    selectedContact?.receipent_id &&
+    String(selectedContact.receipent_id) === normalizedSelectedReceipentId &&
+    !hasAutoSelectedFromParamRef.current === false
+  ) return;
+
+  if (normalizedSelectedReceipentId && !hasAutoSelectedFromParamRef.current) {
+    hasAutoSelectedFromParamRef.current = true;
+
+    const contactToSelect = mappedAudioContacts.find(
+      c => String(c.receipent_id) === normalizedSelectedReceipentId,
+    );
+
+    if (!contactToSelect) {
+      console.warn('Contact not found for receipent_id:', normalizedSelectedReceipentId);
+      return; // ✅ Don't fallback to first contact if param contact not found yet
     }
 
-    const stillExists = selectedContact?.id
-      ? mappedAudioContacts.some(c => c.id === selectedContact.id)
-      : false;
+    dispatch(audioSelectedContactActions.setAudioSelectedContact(contactToSelect));
+    return;
+  }
 
-    if (!stillExists) {
-      dispatch(
-        audioSelectedContactActions.setAudioSelectedContact(mappedAudioContacts[0]),
-      );
-    }
-  // selectedContact intentionally excluded — including it causes an infinite loop
+  if (selectedRef.current && !normalizedSelectedReceipentId) return;
+
+  const stillExists = selectedContact?.id
+    ? mappedAudioContacts.some(c => c.id === selectedContact.id)
+    : false;
+
+  if (!stillExists) {
+    console.log('Selected contact no longer in list, auto-selecting first contact');
+    dispatch(audioSelectedContactActions.setAudioSelectedContact(mappedAudioContacts[0]));
+  }
+
+  selectedRef.current = true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mappedAudioContacts, normalizedSelectedReceipentId, dispatch]);
+}, [mappedAudioContacts, normalizedSelectedReceipentId, selectedContact?.id, dispatch]);
 
   // ── Connecting spin animation ──────────────────────────────────────────────
   useEffect(() => {
@@ -216,6 +261,7 @@ const AudioStreamScreen = ({route}) => {
 
   // ── Auto switch room when selected contact changes ────────────────────────
   useEffect(() => {
+    console.log('Selected contact changed:', selectedContact?.name || 'None');
     const newId = selectedContact?.id;
     if (!newId || newId === prevContactIdRef.current) return;
 
@@ -237,6 +283,21 @@ const AudioStreamScreen = ({route}) => {
     switchRoom();
   }, [selectedContact?.id]);
 
+  // ── Cleanup when leaving screen (reset selected contact) ─────────────────
+  useFocusEffect(
+    useCallback(() => {
+      // This runs when screen comes into focus
+      console.log('AudioStreamScreen focused');
+      
+      // Cleanup function runs when screen loses focus
+      return () => {
+        console.log('AudioStreamScreen lost focus - resetting selected contact');
+        dispatch(audioSelectedContactActions.resetState());
+        selectedRef.current = false;
+      };
+    }, [dispatch])
+  );
+
   // ── Disconnect ─────────────────────────────────────────────────────────────
   const handleDisconnect = useCallback(() => {
     leaveRoom();
@@ -254,7 +315,7 @@ const AudioStreamScreen = ({route}) => {
   const spinRotate = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const panelMaxH  = panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 500] });
   const panelOpacity = panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
-
+  
   const navigateToChat = useCallback(() => {
     if (!selectedContact) return;
      
@@ -431,6 +492,13 @@ const AudioStreamScreen = ({route}) => {
                     <Icon name="headset" size={15} color="#fff" />
                     <Text style={ls.connectText}>CONNECT</Text>
                   </TouchableOpacity>
+                ) : status === 'connecting' ? (
+                  <View style={ls.connectingBtn}>
+                    <Animated.View style={{ transform: [{ rotate: spinRotate }] }}>
+                      <Icon name="sync" size={15} color="#fff" />
+                    </Animated.View>
+                    <Text style={ls.connectingText}>CONNECTING...</Text>
+                  </View>
                 ) : (
                   <TouchableOpacity
                     style={ls.disconnectBtn}
@@ -517,8 +585,10 @@ const ls = StyleSheet.create({
   waitingText:  { flex: 1, fontSize: 12, color: C.amber },
   errorCard:    { backgroundColor: 'rgba(239,68,68,0.06)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)', padding: 14, gap: 8 },
   errorHeader:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  errorTitle:   { fontSize: 10, fontWeight: '800', color: C.red, letterSpacing: 0.8 },
-  errorMessage: { fontSize: 13, color: '#f87171', lineHeight: 20 },
+  errorTitle:   { fontSize: 13, fontWeight: '600', color: C.red, flex: 1 },
+  errorMsg:     { fontSize: 12, color: C.muted, lineHeight: 18 },
+
+  // Retry button (for error state)
   retryBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', paddingHorizontal: 12, paddingVertical: 8 },
   retryText:    { fontSize: 12, color: C.red, fontWeight: '700' },
 
@@ -526,6 +596,8 @@ const ls = StyleSheet.create({
   actionRow:    { flexDirection: 'row', gap: 10 },
   connectBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 10, backgroundColor: C.accent },
   connectText:  { fontSize: 13, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
+  connectingBtn:{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 10, backgroundColor: C.amber, opacity: 0.8 },
+  connectingText:{ fontSize: 13, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
   disconnectBtn:{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 10, backgroundColor: C.red },
   disconnectText:{ fontSize: 13, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
 

@@ -40,7 +40,7 @@ import { selectedReplyMessageActions } from '../../store/redux/selectedReplyMess
 import { useUserData } from '../../hook/useUserData';
 import { formatDateSeparator, formatMessageTime } from '../../config/utility';
 
-const NUMBER_OF_MESSAGES_TO_LOAD = 50;
+const NUMBER_OF_MESSAGES_TO_LOAD = 20;
 const getMessageTimestamp = message => {
   return (
     message?.timestamp ||

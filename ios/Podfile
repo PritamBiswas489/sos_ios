@@ -21,6 +21,8 @@ target 'SOS_FRESH_SETUP' do
   config = use_native_modules!
 
   pod 'react-native-maps/Google', :path => '../node_modules/react-native-maps'
+  pod 'react-native-webrtc', :path => '../node_modules/react-native-webrtc'
+  pod 'ReactNativeIncallManager', :path => '../node_modules/react-native-incall-manager'
 
   use_react_native!(
     :path => config[:reactNativePath],

@@ -36,7 +36,6 @@ import CompleteProfileScreen from './src/screens/completeProfileScreen/index.jsx
 import AuthLoadingScreen from './src/screens/authLoadingScreen/index.jsx';
 import EditProfileScreen from './src/screens/editProfileScreen/index.jsx';
 import {
-  createNotificationChannels,
   requestNotificationPermissions,
   subscribeForegroundNotifications,
   subscribeNotificationPress,
@@ -206,6 +205,7 @@ const App = () => {
   }, []);
 
   const handleCheckPermissions = useCallback(async () => {
+    console.log('Checking permissions...');
     // First, prompt the user to grant permissions, then check what is still missing
     await requestLocationPermissions();
     await requestNotificationPermissions();
@@ -376,6 +376,9 @@ const App = () => {
       if (!messageType) {
         navigateToMain();
       }
+       if (!messageType || payloadData?.fromProcessScreen) {
+         navigateToMain();
+      }
     },
     [
       fetchMySosSessions,
@@ -485,10 +488,6 @@ const App = () => {
   );
 
   useEffect(() => {
-    const setupNotifications = async () => {
-      await createNotificationChannels();
-    };
-
     const bannerSubscription = DeviceEventEmitter.addListener(
       'chat:new-message-banner',
       payload => {
@@ -509,7 +508,6 @@ const App = () => {
       },
     );
 
-    setupNotifications();
     const unsubscribe = subscribeForegroundNotifications(
       handleForegroundNotification,
     );

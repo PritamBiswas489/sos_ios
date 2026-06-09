@@ -41,6 +41,8 @@
 	<string>We use your camera so you can take photos and make video calls.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>We access your contacts so you can add trusted contacts.</string>
+	<key>NSContactsFullAccessUsageDescription</key>
+    <string>Full access lets you search and select from all your contacts.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>KobyTech reads your heart rate from Apple Health to monitor stress levels.</string>
 	<key>NSHealthUpdateUsageDescription</key>

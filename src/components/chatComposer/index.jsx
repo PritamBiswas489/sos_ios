@@ -307,34 +307,29 @@ const ChatComposer = ({
 
   const handlePickAudio = useCallback(async () => {
     closeActionMenu();
-    try {
-      const [file] = await pick({ type: [types.audio] });
-      const uri = file?.uri;
-      if (!uri) return;
-      const mimeType = file?.type || 'audio/mpeg';
-      const fileSize = Number(file?.size || 0);
-      await uploadAudioUri({ uri, mimeType, name: file?.name || 'audio', fileSize });
-    } catch (err) {
-      if (!isErrorWithCode(err) || err.code !== errorCodes.OPERATION_CANCELED) {
-        Alert.alert('Error', 'Could not open audio picker. Please try again.');
+    setTimeout(async () => {
+      try {
+        const pickerTypes = Platform.OS === 'ios' 
+          ? [types.audio, 'public.audio', 'com.microsoft.waveform-audio', 'public.wav']
+          : [types.audio];
+        const [file] = await pick({ type: pickerTypes });
+        const uri = file?.uri;
+        if (!uri) return;
+        const mimeType = file?.type || (Platform.OS === 'ios' ? 'audio/x-m4a' : 'audio/mpeg');
+        const fileSize = Number(file?.size || 0);
+        await uploadAudioUri({ uri, mimeType, name: file?.name || 'audio', fileSize });
+      } catch (err) {
+        if (!isErrorWithCode(err) || err.code !== errorCodes.OPERATION_CANCELED) {
+          Alert.alert('Error', 'Could not open audio picker. Please try again.');
+        }
       }
-    }
+    }, 400);
   }, [closeActionMenu, uploadAudioUri]);
 
   const handleRecordAudio = useCallback(async () => {
     closeActionMenu();
     try {
       if (!isRecordingAudio) {
-        if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-          );
-          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            Alert.alert('Permission denied', 'Microphone permission is required to record audio.');
-            return;
-          }
-        }
-
         AudioRecord.init(AUDIO_RECORD_OPTIONS);
         AudioRecord.start();
         setIsRecordingAudio(true);
@@ -349,17 +344,9 @@ const ChatComposer = ({
         return;
       }
 
-      // Wait for the native audio recorder to fully flush the WAV file to disk.
-      // Without this delay, Android may return the path before the file is written,
-      // causing net::ERR_FAILED on the first upload attempt.
-      // Wait for the native audio encoder to finish flushing the WAV file to disk.
-      // AudioRecord.stop() resolves before the file is fully written on Android.
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const recordedUri =
-        recordedPath.startsWith('file://') || recordedPath.startsWith('content://')
-          ? recordedPath
-          : `file://${recordedPath}`;
+      const recordedUri = recordedPath.startsWith('file://')
+        ? recordedPath
+        : `file://${recordedPath}`;
 
       await uploadAudioUri({
         uri: recordedUri,
@@ -383,57 +370,59 @@ const ChatComposer = ({
 
   const handlePickDocument = useCallback(async () => {
     closeActionMenu();
-    try {
-      const [file] = await pick({ type: [types.allFiles] });
-      const uri = file?.uri;
-      if (!uri) return;
+    setTimeout(async () => {
+      try {
+        const [file] = await pick({ type: [types.allFiles] });
+        const uri = file?.uri;
+        if (!uri) return;
 
-      const mimeType = file?.type || 'application/octet-stream';
-      const fileSize = Number(file?.size || 0);
-      if (fileSize > 0 && fileSize > MAX_DOCUMENT_SIZE_BYTES) {
-        Alert.alert(
-          'File too large',
-          `Document exceeds ${formatMegabytes(MAX_DOCUMENT_SIZE_BYTES)}. Please choose a smaller file.`,
-        );
-        return;
-      }
+        const mimeType = file?.type || 'application/octet-stream';
+        const fileSize = Number(file?.size || 0);
+        if (fileSize > 0 && fileSize > MAX_DOCUMENT_SIZE_BYTES) {
+          Alert.alert(
+            'File too large',
+            `Document exceeds ${formatMegabytes(MAX_DOCUMENT_SIZE_BYTES)}. Please choose a smaller file.`,
+          );
+          return;
+        }
 
-      setSelectedMediaType('document');
-      setIsUploadingMedia(true);
-      setUploadingLocalUri(uri);
-      let lastError;
-      for (let attempt = 1; attempt <= 4; attempt++) {
-        try {
-          if (attempt === 2) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        setSelectedMediaType('document');
+        setIsUploadingMedia(true);
+        setUploadingLocalUri(uri);
+        let lastError;
+        for (let attempt = 1; attempt <= 4; attempt++) {
+          try {
+            if (attempt === 2) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            const formData = new FormData();
+            formData.append('file', { uri, type: mimeType, name: file?.name || 'document' });
+            const uploads = await uploadMedia('/chat/upload-media', formData);
+            const rawUrl = uploads?.data?.url;
+            if (rawUrl) {
+              const baseUrl = getAppUrl();
+              const mediaUrl = rawUrl.includes('http://localhost:4000')
+                ? rawUrl.replace('http://localhost:4000', baseUrl)
+                : rawUrl;
+              setSelectedMedia(mediaUrl);
+              setSelectedMediaType('document');
+            }
+            lastError = null;
+            break;
+          } catch (err) {
+            lastError = err;
           }
-          const formData = new FormData();
-          formData.append('file', { uri, type: mimeType, name: file?.name || 'document' });
-          const uploads = await uploadMedia('/chat/upload-media', formData);
-          const rawUrl = uploads?.data?.url;
-          if (rawUrl) {
-            const baseUrl = getAppUrl();
-            const mediaUrl = rawUrl.includes('http://localhost:4000')
-              ? rawUrl.replace('http://localhost:4000', baseUrl)
-              : rawUrl;
-            setSelectedMedia(mediaUrl);
-            setSelectedMediaType('document');
-          }
-          lastError = null;
-          break;
-        } catch (err) {
-          lastError = err;
+        }
+        if (lastError) {
+          Alert.alert('Upload failed', 'Could not upload the document. Please try again.');
+        }
+        setIsUploadingMedia(false);
+      } catch (err) {
+        if (!isErrorWithCode(err) || err.code !== errorCodes.OPERATION_CANCELED) {
+          Alert.alert('Error', 'Could not open document picker. Please try again.');
         }
       }
-      if (lastError) {
-        Alert.alert('Upload failed', 'Could not upload the document. Please try again.');
-      }
-      setIsUploadingMedia(false);
-    } catch (err) {
-      if (!isErrorWithCode(err) || err.code !== errorCodes.OPERATION_CANCELED) {
-        Alert.alert('Error', 'Could not open document picker. Please try again.');
-      }
-    }
+    }, 400);
   }, [closeActionMenu]);
 
   const handleCaptureFromCamera = useCallback(() => {

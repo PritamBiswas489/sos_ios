@@ -17,10 +17,11 @@ const PADDING = 10;
 const SosFab = ({ onPress, visible = true, loading = false }) => {
   const insets = useSafeAreaInsets();
   const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-  const initialX = SCREEN_W - FAB_SIZE - PADDING;
+  const initialX = PADDING;
+  const centerY = (SCREEN_H - FAB_SIZE) / 2;
   const initialY = Math.max(
     PADDING + insets.top,
-    SCREEN_H - FAB_SIZE - PADDING - insets.bottom,
+    Math.min(centerY, SCREEN_H - FAB_SIZE - PADDING - insets.bottom),
   );
 
   const position = useRef(

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getProfileImage } from '../../config/utility';
@@ -97,6 +97,40 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
   const { showError, showSuccess } = useToast();
   const [loading, setLoading] = useState(false);
 
+  const navigateToAudioStream = useCallback(() => {
+  if (!navigationRef.isReady()) return;
+  const receipentId = item.sos_session?.user?.id;
+  onClose?.();
+ 
+  // ✅ Step 1: Reset params to undefined first
+  navigationRef.navigate('Main', {
+    screen: 'MainTabs',
+    params: {
+      screen: 'AudioStream',
+      params: { selectedReceipentId: undefined },
+    },
+  });
+
+  // ✅ Step 2: Set actual params in next tick
+  setTimeout(() => {
+    console.log('Navigating to AudioStream with receipentId:', receipentId);
+    navigationRef.navigate('Main', {
+      screen: 'MainTabs',
+      params: {
+        screen: 'AudioStream',
+        params: { selectedReceipentId: receipentId },
+      },
+    });
+  }, 50);
+}, [item, navigationRef, onClose]);
+
+
+
+const onAcceptSOS = useCallback(() => {
+  navigateToAudioStream();
+}, [navigateToAudioStream]);
+
+
   const changeStatus = newStatus => {
     Alert.alert(
       'Confirm Status Update',
@@ -120,6 +154,10 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
                 } else {
                   setItem(prev => ({ ...prev, response_status: newStatus }));
                   showSuccess('SOS response status updated successfully');
+                  if(newStatus === 'accepted') {
+                    onAcceptSOS?.();
+                  }
+                   
                 }
               },
             );
@@ -257,14 +295,29 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
           activeOpacity={0.7}
           onPress={() => {
             if (navigationRef.isReady()) {
+              const receipentId = item.sos_session?.user?.id;
               onClose?.();
+              
+              // ✅ Step 1: Reset params to undefined first
               navigationRef.navigate('Main', {
                 screen: 'MainTabs',
                 params: {
                   screen: 'Map',
-                  params: { selectedMapRecipentId: item.sos_session?.user?.id },
+                  params: { selectedMapRecipentId: undefined },
                 },
               });
+
+              // ✅ Step 2: Set actual params in next tick
+              setTimeout(() => {
+                console.log('Navigating to Map with receipentId:', receipentId);
+                navigationRef.navigate('Main', {
+                  screen: 'MainTabs',
+                  params: {
+                    screen: 'Map',
+                    params: { selectedMapRecipentId: receipentId },
+                  },
+                });
+              }, 50);
             }
           }}
         >
@@ -385,14 +438,29 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
           style={styles.actionBtn}
           onPress={() => {
             if (navigationRef.isReady()) {
+              const receipentId = item.sos_session?.user?.id;
               onClose?.();
+              
+              // ✅ Step 1: Reset params to undefined first
               navigationRef.navigate('Main', {
                 screen: 'MainTabs',
                 params: {
                   screen: 'Chat',
-                  params: { selectedReceipentId: item.sos_session?.user?.id },
+                  params: { selectedReceipentId: undefined },
                 },
               });
+
+              // ✅ Step 2: Set actual params in next tick
+              setTimeout(() => {
+                console.log('Navigating to Chat with receipentId:', receipentId);
+                navigationRef.navigate('Main', {
+                  screen: 'MainTabs',
+                  params: {
+                    screen: 'Chat',
+                    params: { selectedReceipentId: receipentId },
+                  },
+                });
+              }, 50);
             }
           }}
           activeOpacity={0.7}
@@ -405,18 +473,7 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
         <View style={styles.actionSep} />
         <TouchableOpacity
           style={styles.actionBtn}
-          onPress={() => {
-            if (navigationRef.isReady()) {
-              onClose?.();
-              navigationRef.navigate('Main', {
-                screen: 'MainTabs',
-                params: {
-                  screen: 'AudioStream',
-                  params: { selectedReceipentId: item.sos_session?.user?.id },
-                },
-              });
-            }
-          }}
+          onPress={navigateToAudioStream}
           activeOpacity={0.7}
         >
           <View style={[styles.actionIconWrap, styles.actionIconAudio]}>
@@ -429,14 +486,29 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
           style={styles.actionBtn}
           onPress={() => {
             if (navigationRef.isReady()) {
+              const receipentId = item.sos_session?.user?.id;
               onClose?.();
+              
+              // ✅ Step 1: Reset params to undefined first
               navigationRef.navigate('Main', {
                 screen: 'MainTabs',
                 params: {
                   screen: 'Map',
-                  params: { selectedMapRecipentId: item.sos_session?.user?.id },
+                  params: { selectedMapRecipentId: undefined },
                 },
               });
+
+              // ✅ Step 2: Set actual params in next tick
+              setTimeout(() => {
+                console.log('Navigating to Map with receipentId:', receipentId);
+                navigationRef.navigate('Main', {
+                  screen: 'MainTabs',
+                  params: {
+                    screen: 'Map',
+                    params: { selectedMapRecipentId: receipentId },
+                  },
+                });
+              }, 50);
             }
           }}
           activeOpacity={0.7}
@@ -451,14 +523,29 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
           style={styles.actionBtn}
           onPress={() => {
             if (navigationRef.isReady()) {
+              const receipentId = item.sos_session?.user?.id;
               onClose?.();
+              
+              // ✅ Step 1: Reset params to undefined first
               navigationRef.navigate('Main', {
                 screen: 'MainTabs',
                 params: {
                   screen: 'Health',
-                  params: { selectedHealthRecipentId: item.sos_session?.user?.id },
+                  params: { selectedHealthRecipentId: undefined },
                 },
               });
+
+              // ✅ Step 2: Set actual params in next tick
+              setTimeout(() => {
+                console.log('Navigating to Health with receipentId:', receipentId);
+                navigationRef.navigate('Main', {
+                  screen: 'MainTabs',
+                  params: {
+                    screen: 'Health',
+                    params: { selectedHealthRecipentId: receipentId },
+                  },
+                });
+              }, 50);
             }
           }}
           activeOpacity={0.7}

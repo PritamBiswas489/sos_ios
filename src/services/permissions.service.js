@@ -1,5 +1,6 @@
 import { Platform, PermissionsAndroid } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
+import { mediaDevices } from 'react-native-webrtc';
 
 /**
  * Request foreground + background location permissions on Android.
@@ -61,17 +62,18 @@ export const requestLocationPermissions = async () => {
  * Request microphone (RECORD_AUDIO) permission on Android.
  */
 export const requestMicrophonePermission = async () => {
-  if (Platform.OS !== 'android') return 'granted';
-  const result = await PermissionsAndroid.request(
-    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-    {
-      title: 'Microphone Permission',
-      message: 'This app needs microphone access to stream live audio during an SOS.',
-      buttonPositive: 'Allow',
-      buttonNegative: 'Deny',
-    },
-  );
-  return result === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied';
+  console.log('Requesting microphone permission...');
+
+  
+
+  // iOS – getUserMedia triggers the system microphone permission dialog.
+  try {
+    const stream = await mediaDevices.getUserMedia({ audio: true, video: false });
+    stream.getTracks().forEach(track => track.stop());
+    return 'granted';
+  } catch {
+    return 'denied';
+  }
 };
 
 /**

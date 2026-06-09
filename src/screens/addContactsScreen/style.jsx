@@ -113,7 +113,10 @@ export default StyleSheet.create({
   input: {
     flex: 1,
     color: appColors.white,
-    marginLeft: 10,
+    marginLeft: SW(8),
+    fontSize: SF(14),
+    height: SH(41),
+    textAlignVertical: 'center',
   },
 
   relationRow: {
