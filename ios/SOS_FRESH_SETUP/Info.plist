@@ -71,6 +71,8 @@
 		<string>NunitoSans-SemiBold.ttf</string>
 		<string>SpaceMono-Regular.ttf</string>
 	</array>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+   <true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

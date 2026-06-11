@@ -257,6 +257,7 @@ export function BleProvider({ children }) {
 
   // ── 5. Scan ───────────────────────────────────────────────────────────────
   const startScan = useCallback(async () => {
+    console.log('Starting BLE scan...');
     if (state.scanning) return;
 
     if (!manager.current || destroyed.current) {
@@ -280,6 +281,7 @@ export function BleProvider({ children }) {
         [HR_SERVICE_UUID],
         { allowDuplicates: false },
         async (error, device) => {
+          console.log('Device found:', device.name ?? device.id);
           if (manager.current !== currentManager || destroyed.current) return;
 
           try {

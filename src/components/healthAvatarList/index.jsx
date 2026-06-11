@@ -134,7 +134,7 @@ const ContactItem = React.memo(({ item, isSelected, selectContact }) => {
 
           {stressState && (
             <View style={[styles.emojiBadge, isCritical && styles.emojiBadgeCritical]}>
-              <Icon name="favorite" size={11} color={stressState.color} />
+              <Icon name="favorite" size={10} color={stressState.color} />
             </View>
           )}
 
@@ -211,41 +211,46 @@ const MeButton = React.memo(({ currentUser, isMe, onPress, stressState }) => {
   const initial = currentUser?.name?.[0]?.toUpperCase() ?? 'M';
 
   return (
-    <Animated.View style={[
-      styles.meBtnWrap,
-      isMe && styles.meBtnWrapSelected,
-      { transform: [{ scale: pulseAnim }, { translateX: shakeAnim }] },
-    ]}>
+    <Animated.View style={{ transform: [{ scale: pulseAnim }, { translateX: shakeAnim }] }}>
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.8}
-        style={[isCritical && styles.meBtnCritical]}
+        style={styles.meBtnTouchable}
       >
         {isMe ? (
-          <LinearGradient
+          <View
             colors={['#1A6EFF', '#00C2FF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.meBtnGradient}
+             
+            style={[
+              styles.meBtnIdle,
+              { backgroundColor: '#00C2FF' },
+              isCritical && styles.meBtnCriticalGradient,
+            ]}
           >
-            <View style={styles.meBtnAvatarWrap}>
-              <View style={styles.meBtnAvatar}>
+             <View style={styles.meBtnAvatarWrap}>
+              <Animated.View style={[
+                styles.meBtnAvatarIdle,
+                isCritical && { borderColor: criticalBorder },
+              ]}>
                 {currentUser?.profile_photo ? (
                   <Image source={{ uri: getProfileImage(currentUser.profile_photo) }} style={styles.meBtnAvatarImg} />
                 ) : (
-                  <Text style={styles.meBtnAvatarInitial}>{initial}</Text>
+                  <Text style={styles.meBtnAvatarInitialIdle}>{initial}</Text>
                 )}
-              </View>
+              </Animated.View>
               {stressState && (
                 <View style={[styles.emojiBadge, isCritical && styles.emojiBadgeCritical]}>
-                  <Icon name="favorite" size={11} color={stressState.color} />
+                  <Icon name="favorite" size={10} color={stressState.color} />
                 </View>
               )}
             </View>
-            <Text style={styles.meBtnTextActive}>Me</Text>
-          </LinearGradient>
+            <Text style={styles.meBtnTextIdle}>Me</Text>
+          </View>
         ) : (
-          <View style={styles.meBtnIdle}>
+          <View style={[
+            styles.meBtnIdle,
+            isCritical && styles.meBtnCriticalIdle,
+          ]}>
             <View style={styles.meBtnAvatarWrap}>
               <Animated.View style={[
                 styles.meBtnAvatarIdle,
@@ -259,7 +264,7 @@ const MeButton = React.memo(({ currentUser, isMe, onPress, stressState }) => {
               </Animated.View>
               {stressState && (
                 <View style={[styles.emojiBadge, isCritical && styles.emojiBadgeCritical]}>
-                  <Icon name="favorite" size={11} color={stressState.color} />
+                  <Icon name="favorite" size={10} color={stressState.color} />
                 </View>
               )}
             </View>

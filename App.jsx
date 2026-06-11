@@ -66,6 +66,7 @@ import { Device } from 'mediasoup-client';
 import { UserService } from './src/services/user.service.js';
 import { resetAllState } from './src/store/index.jsx';
 import * as Sentry from '@sentry/react-native';
+import { waitUntilLocationSettled, waitUntilNotificationSettled, waitUntilMicrophoneSettled } from './src/services/permissions.service';
 
 Sentry.init({
   dsn: 'https://4c7ce135cfa3fd9b5810b5f3109c6366@o4511060608155648.ingest.us.sentry.io/4511521653587968',
@@ -206,11 +207,23 @@ const App = () => {
 
   const handleCheckPermissions = useCallback(async () => {
     console.log('Checking permissions...');
-    // First, prompt the user to grant permissions, then check what is still missing
-    await requestLocationPermissions();
-    await requestNotificationPermissions();
-    await requestMicrophonePermission();
+    // Request permissions one by one for iOS
+    if (Platform.OS === 'ios') {
+      await requestLocationPermissions();
+      await waitUntilLocationSettled();
+      
+      await requestNotificationPermissions();
+      await waitUntilNotificationSettled();
+       
+      await requestMicrophonePermission();
+      await waitUntilMicrophoneSettled();
+    } else {
+      await requestLocationPermissions();
+      await requestNotificationPermissions();
+      await requestMicrophonePermission();
+    }
     const missing = await checkRequiredPermissions();
+    console.log('Missing permissions:', missing);
     setMissingPermissions(missing);
   }, []);
 
@@ -481,10 +494,9 @@ const App = () => {
         'SOS App';
       const body =
         payload?.remoteMessage?.notification?.body || payload?.data?.body || '';
-      showBanner(title, body);
       notificationAction(payload);
     },
-    [notificationAction, showBanner],
+    [notificationAction],
   );
 
   useEffect(() => {

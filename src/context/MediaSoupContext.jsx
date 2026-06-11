@@ -24,7 +24,7 @@ import { ReactNative106 } from 'mediasoup-client/lib/handlers/ReactNative106';
 import { mediaDevices, MediaStream } from 'react-native-webrtc';
 import InCallManager from 'react-native-incall-manager';
 import { useSocket } from './SocketContext'; // adjust path as needed
-import { TURN_SERVER_DOMAIN , TURN_SERVER_USER, TURN_SERVER_PASS} from '../../environment'; // adjust path as needed
+import { TURN_SERVER_DOMAIN, TURN_SERVER_USER, TURN_SERVER_PASS } from '../../environment'; // adjust path as needed
 
 // ─── ICE servers ──────────────────────────────────────────────────────────────
 const ICE_SERVERS = [
@@ -50,24 +50,24 @@ export const MediaSoupProvider = ({ children }) => {
   const { socket, isConnected, emit } = useSocket();
 
   // mediasoup objects (not state — no re-renders on change)
-  const deviceRef        = useRef(null);
+  const deviceRef = useRef(null);
   const sendTransportRef = useRef(null);
   const recvTransportRef = useRef(null);
-  const producerRef      = useRef(null);
-  const consumerRef      = useRef(null);
-  const localStreamRef   = useRef(null);
-  const remoteStreamRef  = useRef(null);
+  const producerRef = useRef(null);
+  const consumerRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
 
   // Observable state
-  const [status, setStatus]           = useState('idle');   // see above
-  const [statusText, setStatusText]   = useState('Idle — not connected');
-  const [roomId, setRoomId]           = useState(null);
-  const [role, setRole]               = useState(null);     // 'creator' | 'listener'
-  const [isMuted, setIsMuted]         = useState(false);
-  const [iceState, setIceState]       = useState('—');
-  const [dtlsState, setDtlsState]     = useState('—');
-  const [iceServers, setIceServers]   = useState(ICE_SERVERS);
-  const [logs, setLogs]               = useState([]);
+  const [status, setStatus] = useState('idle');   // see above
+  const [statusText, setStatusText] = useState('Idle — not connected');
+  const [roomId, setRoomId] = useState(null);
+  const [role, setRole] = useState(null);     // 'creator' | 'listener'
+  const [isMuted, setIsMuted] = useState(false);
+  const [iceState, setIceState] = useState('—');
+  const [dtlsState, setDtlsState] = useState('—');
+  const [iceServers, setIceServers] = useState(ICE_SERVERS);
+  const [logs, setLogs] = useState([]);
   const [remoteStream, setRemoteStream] = useState(null);   // MediaStream for listener playback
   const [connectedListeners, setConnectedListeners] = useState({}); // Count of connected listeners (creator only) 
   // ─── Logging ────────────────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ export const MediaSoupProvider = ({ children }) => {
             setDtlsState(report.dtlsState || '—');
           }
         });
-      } catch (_) {}
+      } catch (_) { }
     }, 1500);
 
     // return cleanup in case caller needs it
@@ -113,15 +113,15 @@ export const MediaSoupProvider = ({ children }) => {
 
   // ─── Cleanup ────────────────────────────────────────────────────────────────
   const cleanup = useCallback(() => {
-    if (producerRef.current)      { producerRef.current.close();      producerRef.current = null; }
-    if (consumerRef.current)      { consumerRef.current.close();       consumerRef.current = null; }
-    if (sendTransportRef.current) { sendTransportRef.current.close();  sendTransportRef.current = null; }
-    if (recvTransportRef.current) { recvTransportRef.current.close();  recvTransportRef.current = null; }
-    if (localStreamRef.current)   {
+    if (producerRef.current) { producerRef.current.close(); producerRef.current = null; }
+    if (consumerRef.current) { consumerRef.current.close(); consumerRef.current = null; }
+    if (sendTransportRef.current) { sendTransportRef.current.close(); sendTransportRef.current = null; }
+    if (recvTransportRef.current) { recvTransportRef.current.close(); recvTransportRef.current = null; }
+    if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
     }
-     
+
     remoteStreamRef.current = null;
     setRemoteStream(null);
     InCallManager.setSpeakerphoneOn(false);
@@ -141,7 +141,16 @@ export const MediaSoupProvider = ({ children }) => {
       log('Requesting microphone access…');
 
       // React Native: use react-native-webrtc's getUserMedia
-      const stream = await mediaDevices.getUserMedia({ audio: true, video: false });
+      const stream = await mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: false,   // iOS AGC causes unclear/pumping audio
+          sampleRate: 48000,
+          channelCount: 1,
+        },
+        video: false,
+      });
       localStreamRef.current = stream;
       const audioTrack = stream.getAudioTracks()[0];
       log(`Microphone granted: ${audioTrack.label}`, 'ok');
@@ -153,7 +162,7 @@ export const MediaSoupProvider = ({ children }) => {
       const sendTransport = deviceRef.current.createSendTransport({
         ...tParams,
         iceServers: iceServersForTransport,
-        iceTransportPolicy: 'all',
+        iceTransportPolicy: 'relay',
       });
       sendTransportRef.current = sendTransport;
       log(`Send transport created: ${sendTransport.id}`, 'ok');
@@ -182,7 +191,14 @@ export const MediaSoupProvider = ({ children }) => {
 
       const producer = await sendTransport.produce({
         track: audioTrack,
-        codecOptions: { opusStereo: false, opusDtx: true },
+        codecOptions: {
+          opusStereo: false,
+          opusDtx: true,
+          opusFec: true,              // forward error correction — recovers lost packets
+          opusMaxPlaybackRate: 48000,
+          opusPtime: 20,
+        },
+        encodings: [{ maxBitrate: 64000 }],
       });
       producerRef.current = producer;
       log('Producer ready ✓', 'ok');
@@ -208,7 +224,7 @@ export const MediaSoupProvider = ({ children }) => {
       const recvTransport = deviceRef.current.createRecvTransport({
         ...tParams,
         iceServers: iceServersForRecv,
-        iceTransportPolicy: 'all',
+        iceTransportPolicy: 'relay',
       });
       recvTransportRef.current = recvTransport;
       log(`Recv transport created: ${recvTransport.id}`, 'ok');
@@ -231,21 +247,24 @@ export const MediaSoupProvider = ({ children }) => {
         roomId: currentRoomId,
         rtpCapabilities: deviceRef.current.rtpCapabilities,
       });
+
       const consumer = await recvTransport.consume(cParams);
       consumerRef.current = consumer;
       log(`Consumer ready — kind: ${consumer.kind}, id: ${consumer.id}`, 'ok');
 
+      // ✅ Resume local track first (critical on iOS)
+      await consumer.resume();
+
       await emitAsync('ms:resume-consumer', { roomId: currentRoomId });
       log('Consumer resumed — audio flowing', 'ok');
 
-      // Expose the MediaStream for the listener screen
       const stream = new MediaStream([consumer.track]);
       remoteStreamRef.current = stream;
       setRemoteStream(stream);
 
-      // Force audio to loudspeaker — 'video' mode defaults to speaker on Android/iOS
-     InCallManager.start({ media: 'audio', auto: true });
-     InCallManager.setSpeakerphoneOn(true);
+      // ✅ 'video' mode + explicit speaker — works correctly on both iOS and Android
+      InCallManager.start({ media: 'video', auto: false });
+      InCallManager.setSpeakerphoneOn(true);
 
       setStatus('listening');
       setStatusText('Listening — receiving audio');
@@ -347,7 +366,7 @@ export const MediaSoupProvider = ({ children }) => {
     const onListenerJoined = (data) => {
       setConnectedListeners(prev => ({ ...prev, [data.userId]: data }));
     }
-    const onListenerLeft = (data) => {      
+    const onListenerLeft = (data) => {
       setConnectedListeners(prev => {
         const updated = { ...prev };
         delete updated[data.userId];
@@ -373,18 +392,18 @@ export const MediaSoupProvider = ({ children }) => {
       setRemoteStream(null);
     };
 
-    socket.on('ms:new-producer',    onNewProducer);
-    socket.on('creator-left',       onCreatorLeft);
+    socket.on('ms:new-producer', onNewProducer);
+    socket.on('creator-left', onCreatorLeft);
     socket.on('ms:producer-closed', onProducerClosed);
-    socket.on('listener-joined',onListenerJoined);
-    socket.on('listener-left',onListenerLeft); // Reuse the same handler to update the list
+    socket.on('listener-joined', onListenerJoined);
+    socket.on('listener-left', onListenerLeft); // Reuse the same handler to update the list
 
     return () => {
-      socket.off('ms:new-producer',    onNewProducer);
-      socket.off('creator-left',       onCreatorLeft);
+      socket.off('ms:new-producer', onNewProducer);
+      socket.off('creator-left', onCreatorLeft);
       socket.off('ms:producer-closed', onProducerClosed);
-      socket.off('listener-joined',    onListenerJoined);
-      socket.off('listener-left',      onListenerLeft);
+      socket.off('listener-joined', onListenerJoined);
+      socket.off('listener-left', onListenerLeft);
     };
   }, [socket, role, roomId, startConsuming, log]);
 

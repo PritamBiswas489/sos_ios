@@ -15,58 +15,57 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
-func application(
-  _ application: UIApplication,
-  didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
-) -> Bool {
-  
-  // 1. Firebase first
-  FirebaseApp.configure()
-  
-  // 2. Google Maps key
-  let apiKey = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_API_KEY") as? String ?? ""
-  GMSServices.provideAPIKey(apiKey)
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
 
-  // 3. Audio session for WebRTC + InCallManager
-  let audioSession = AVAudioSession.sharedInstance()
-  do {
-    try audioSession.setCategory(
-      .playAndRecord,
-      mode: .voiceChat,
-      options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
-    )
-    try audioSession.setActive(true)
-  } catch {
-    print("❌ AVAudioSession setup failed: \(error)")
-  }
+    // 1. Firebase first
+    FirebaseApp.configure()
 
-  // 4. Notifications
-  UNUserNotificationCenter.current().delegate = self
-  Messaging.messaging().delegate = self
-  application.registerForRemoteNotifications()
+    // 2. Google Maps key
+    let apiKey = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_API_KEY") as? String ?? ""
+    GMSServices.provideAPIKey(apiKey)
 
-  // 5. React Native setup
-  let delegate = ReactNativeDelegate()
-  let factory = RCTReactNativeFactory(delegate: delegate)
-  delegate.dependencyProvider = RCTAppDependencyProvider()
-
-  reactNativeDelegate = delegate
-  reactNativeFactory = factory
-
-  window = UIWindow(frame: UIScreen.main.bounds)
-
-  DispatchQueue.global(qos: .userInitiated).async {
-    DispatchQueue.main.async {
-      factory.startReactNative(
-        withModuleName: "SOS_FRESH_SETUP",
-        in: self.window,
-        launchOptions: launchOptions
+    // 3. Audio session for WebRTC + InCallManager
+    let audioSession = AVAudioSession.sharedInstance()
+    do {
+      try audioSession.setCategory(
+        .playAndRecord,
+        mode: .voiceChat,
+        options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
       )
+      try audioSession.setActive(true)
+    } catch {
+      print("❌ AVAudioSession setup failed: \(error)")
     }
-  }
 
-  return true
-}
+    // 4. Notifications
+    UNUserNotificationCenter.current().delegate = self
+    Messaging.messaging().delegate = self
+    application.registerForRemoteNotifications()
+
+    // 5. React Native setup
+    let delegate = ReactNativeDelegate()
+    let factory = RCTReactNativeFactory(delegate: delegate)
+    delegate.dependencyProvider = RCTAppDependencyProvider()
+
+    reactNativeDelegate = delegate
+    reactNativeFactory = factory
+
+    window = UIWindow(frame: UIScreen.main.bounds)
+
+    // FIX: Removed unnecessary DispatchQueue.global wrapping which caused
+    // a race condition where background notifications could arrive before
+    // the JS bundle was loaded.
+    factory.startReactNative(
+      withModuleName: "SOS_FRESH_SETUP",
+      in: self.window,
+      launchOptions: launchOptions
+    )
+
+    return true
+  }
 
   // Forward APNs token to Firebase
   func application(_ application: UIApplication,
@@ -84,6 +83,40 @@ func application(
                                willPresent notification: UNNotification,
                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
     completionHandler([.banner, .sound, .badge])
+  }
+
+  // Handle notification tap (background/foreground)
+  func userNotificationCenter(_ center: UNUserNotificationCenter,
+                               didReceive response: UNNotificationResponse,
+                               withCompletionHandler completionHandler: @escaping () -> Void) {
+    completionHandler()
+  }
+
+  // FIX: Call Messaging.appDidReceiveMessage so Firebase processes the message
+  // and triggers setBackgroundMessageHandler in JS. Without this, background
+  // notifications are silently dropped and never reach the JS layer.
+ func application(
+  _ application: UIApplication,
+  didReceiveRemoteNotification userInfo: [AnyHashable : Any],
+  fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+) {
+
+  print("📩 APNS Payload: \(userInfo)")
+
+  Messaging.messaging().appDidReceiveMessage(userInfo)
+
+  completionHandler(.newData)
+}
+
+  // FIX: Implement MessagingDelegate token refresh callback.
+  // Without this, FCM token refreshes are silently dropped.
+  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmRegistrationToken: String?) {
+    print("🔑 FCM token refreshed: \(fcmRegistrationToken ?? "nil")")
+    // If you need to send the updated token to your backend, do it here.
+    // Example:
+    // if let token = fcmRegistrationToken {
+    //   YourAPIService.updateFCMToken(token)
+    // }
   }
 }
 

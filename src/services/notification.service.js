@@ -44,6 +44,15 @@ const getSoundByMessage = remoteMessage => {
 
 let onNotificationPress = null;
 const PENDING_NOTIFICATION_PRESS_KEY = '@pending_notification_press_payload';
+const displayedNotifications = new Set();
+
+const cleanupOldNotificationIds = () => {
+  if (displayedNotifications.size > 50) {
+    const arr = Array.from(displayedNotifications);
+    displayedNotifications.clear();
+    arr.slice(-25).forEach(id => displayedNotifications.add(id));
+  }
+};
 
 // ─── Channel config is Android-only; on iOS notifee uses APNs categories ───
 // This is a no-op on iOS but kept so call sites in App.jsx don't break.
@@ -84,53 +93,72 @@ export const getFCMToken = async () => {
 };
 
 export const displayRemoteNotification = async remoteMessage => {
+  console.log('Preparing to display notification for message:', remoteMessage); 
   const title =
-    remoteMessage?.notification?.title ||
     remoteMessage?.data?.title ||
+    remoteMessage?.notification?.title ||
     'SOS App';
+
   const body =
-    remoteMessage?.notification?.body || remoteMessage?.data?.body || '';
+    remoteMessage?.data?.body ||
+    remoteMessage?.notification?.body ||
+    '';
+
+  const notificationId =
+    remoteMessage?.messageId ||
+    `${title}-${body}-${remoteMessage?.data?.messageType || ''}`;
+
+  if (displayedNotifications.has(notificationId)) {
+    console.log('📩 Skipping duplicate notification:', notificationId);
+    return;
+  }
+
+  displayedNotifications.add(notificationId);
+  cleanupOldNotificationIds();
 
   const sound = getSoundByMessage(remoteMessage);
-
-  console.log('📩 Displaying iOS notification:', {
-    sound,
-    messageType: remoteMessage?.data?.messageType,
-  });
-
-  await notifee.displayNotification({
+  const d = {
+    id: notificationId,
     title,
     body,
     data: remoteMessage?.data,
+
     ios: {
-      sound,                          // e.g. 'sos_alert.caf', 'chat_tone.caf', etc.
+      sound,
+
       foregroundPresentationOptions: {
-        alert: true,
+        alert: true,   // prevent iOS banner
         badge: true,
         sound: true,
       },
     },
-  });
-};
+  }
+  console.log('Displaying notification with payload:', d);
 
+  await notifee.displayNotification(d);
+};
 export const subscribeForegroundNotifications = onForegroundMessage => {
   return onMessage(getMsg(), async remoteMessage => {
-    if (typeof onForegroundMessage === 'function') {
-      onForegroundMessage({
-        source: 'messaging.foreground',
-        remoteMessage,
-        data: remoteMessage?.data,
-      });
-    }
+    try {
+      console.log('📩 Foreground message:', remoteMessage);
 
-    await displayRemoteNotification(remoteMessage);
+      if (typeof onForegroundMessage === 'function') {
+        onForegroundMessage({
+          source: 'messaging.foreground',
+          remoteMessage,
+          data: remoteMessage?.data,
+        });
+      }
+
+      await displayRemoteNotification(remoteMessage);
+    } catch (error) {
+      console.error('Foreground notification error:', error);
+    }
   });
 };
 
 export const setBackgroundMessageHandler = () => {
-  setFCMBackgroundHandler(getMsg(), async remoteMessage => {
-    await displayRemoteNotification(remoteMessage);
-  });
+  // Background handler must be set at module load time
 };
 
 export const subscribeNotificationPress = handler => {

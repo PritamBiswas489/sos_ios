@@ -26,7 +26,8 @@ import { Provider } from 'react-redux';
 import store from './src/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee, { EventType } from '@notifee/react-native';
-import { setBackgroundMessageHandler, createNotificationChannels } from './src/services/notification.service';
+import { createNotificationChannels, displayRemoteNotification } from './src/services/notification.service';
+import messaging from '@react-native-firebase/messaging';
 
 const PENDING_NOTIFICATION_PRESS_KEY = '@pending_notification_press_payload';
 
@@ -54,10 +55,18 @@ notifee.onBackgroundEvent(async ({ type, detail }) => {
   }
 });
 
+// Background message handler must be set at top level
+messaging().setBackgroundMessageHandler(async remoteMessage => {
+  try {
+    console.log('📩 Background message received:', remoteMessage);
+    await displayRemoteNotification(remoteMessage);
+  } catch (error) {
+    console.error('Background notification error:', error);
+  }
+});
+
 // Create channels at startup so FCM auto-display uses the correct channel with custom sound
 createNotificationChannels();
-
-setBackgroundMessageHandler();
 
 const RootApp = () => (
   <Provider store={store}>

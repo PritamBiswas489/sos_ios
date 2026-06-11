@@ -10,6 +10,7 @@ import {
   PermissionsAndroid,
   Animated,
   TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSelector, useDispatch } from 'react-redux';
@@ -536,7 +537,10 @@ const ChatComposer = ({
   const handleCancelPreview = useCallback(() => setShowMediaPreview(false), []);
 
   return (
-    <>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
       {showTypingIndicator && typingInfo && (
         <View style={styles.typingIndicatorRow}>
           <View style={styles.typingDots}>
@@ -674,7 +678,7 @@ const ChatComposer = ({
         onCaptureFromCamera={handleCaptureFromCamera}
         onShareCurrentLocation={handleShareCurrentLocation}
       />
-    </>
+    </KeyboardAvoidingView>
   );
 };
 
