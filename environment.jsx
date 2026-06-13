@@ -12,27 +12,28 @@ export const USE_GOOGLE_MAPS = true;
 export const GOOGLE_MAPS_API_KEY = _GOOGLE_MAPS_API_KEY;
 
 export const env = {
-  type: MODE, //prod staging dev
+  type: 'prod', //prod staging dev
   appUrls: {
     dev: {
-      apiUrl: DEV_API_URL,
+      apiUrl: "https://jhsbs886-4000.inc1.devtunnels.ms",
     },
     staging: {
-      apiUrl: STAGGING_API_URL,
+      apiUrl: "https://back-sos.pritamaqua.aqualeafitsol.com",
     },
     prod: {
-      apiUrl: PROD_API_URL,
+      apiUrl: "https://back-sos.pritamaqua.aqualeafitsol.com",
     },
   },
   mediaUrls: {
     dev: {
-      apiUrl: DEV_API_URL,
+      apiUrl: "https://jhsbs886-4000.inc1.devtunnels.ms",
     },
     staging: {
-      apiUrl: STAGGING_API_URL,
+      apiUrl: "https://back-sos.pritamaqua.aqualeafitsol.com",
     },
     prod: {
-      apiUrl: PROD_API_URL,
+      apiUrl: "https://back-sos.pritamaqua.aqualeafitsol.com",
     },
   },
 };
+

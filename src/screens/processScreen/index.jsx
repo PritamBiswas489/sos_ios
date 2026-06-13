@@ -10,7 +10,7 @@ import { useChatContacts } from '../../hook/useChatContacts';
 import useUserAuth from '../../hook/useUserAuth';
 import { resetAllState } from '../../store';
 
-const ProfessionalLoader = () => {
+const ProfessionalLoader = ({ loadingMessage }) => {
   const spinValue = useRef(new Animated.Value(0)).current;
   const pulseValue = useRef(new Animated.Value(0)).current;
   const shimmerValue = useRef(new Animated.Value(0)).current;
@@ -90,7 +90,7 @@ const ProfessionalLoader = () => {
       <View style={styles.innerCore} />
 
       <Text style={styles.loaderTitle}>Setting Things Up</Text>
-      <Text style={styles.loaderSubtitle}>Preparing your secure environment...</Text>
+      <Text style={styles.loaderSubtitle}>{loadingMessage}</Text>
 
       <View style={styles.progressTrack}>
         <Animated.View
@@ -112,6 +112,7 @@ const ProcessScreen = payload => {
   const navigation = useNavigation();
   const { fetchUserData } = useUserData();
   const { isAuthenticated } = useUserAuth();
+  const [loadingMessage, setLoadingMessage] = React.useState('Preparing your secure environment...');
   
 
   const saveFcmTokenData = async fcmToken => {
@@ -206,12 +207,42 @@ const ProcessScreen = payload => {
             navigation.replace('Main');
         
       }
+      if (action === 'redirectToAudioScreen') {
+        setLoadingMessage('Redirecting...');
+        const userId = payload?.route?.params?.userId;
+        if (userId) {
+          navigation.navigate('Main', {
+            screen: 'MainTabs',
+            params: { screen: 'AudioStream', params: { selectedReceipentId: userId } },
+          });
+        } else {
+          navigation.navigate('Main', {
+            screen: 'MainTabs',
+            params: { screen: 'AudioStream' },
+          });
+        }
+      }
+      if (action === 'redirectToStressScreen') {
+        setLoadingMessage('Redirecting...');
+        const userId = payload?.route?.params?.userId;
+        if (userId) {
+          navigation.navigate('Main', {
+            screen: 'MainTabs',
+            params: { screen: 'Health', params: { selectedHealthRecipentId: userId } },
+          });
+        } else {
+          navigation.navigate('Main', {
+            screen: 'MainTabs',
+            params: { screen: 'Health' },
+          });
+        }
+      }
     };
     fetchData();
   }, [action, dispatch, fetchChatContacts, navigation,isAuthenticated]);
   return (
     <View style={styles.container}>
-      <ProfessionalLoader />
+      <ProfessionalLoader loadingMessage={loadingMessage} />
     </View>
   );
 };

@@ -96,6 +96,25 @@ const AudioStreamScreen = ({route}) => {
 
   // Sync ref with route params
   // ─── Sync ref with route params ───────────────────────────────────────────
+  useEffect(() => {
+
+console.log('=== Remote stream:', remoteStream?.getTracks());
+console.log('=== Audio tracks:', remoteStream?.getAudioTracks());
+
+remoteStream?.getAudioTracks().forEach(track => {
+  console.log('=== Track ID:', track.id);
+  console.log('=== Enabled:', track.enabled);
+  console.log('=== Muted:', track.muted);
+  console.log('=== ReadyState:', track.readyState);
+
+  console.log(
+  'RTCView stream URL:',
+  remoteStream ? remoteStream.toURL() : null
+);
+});
+
+
+  },[remoteStream]);
 useFocusEffect(
   useCallback(() => {
     const incoming = route.params?.selectedReceipentId ?? null;
@@ -115,7 +134,6 @@ useFocusEffect(
 
   }, [route.params?.selectedReceipentId, dispatch]) // ✅ dispatch added
 );
-
 useEffect(() => {
 
   console.log("normalizedSelectedReceipentId changed:", normalizedSelectedReceipentId);
@@ -259,44 +277,50 @@ useEffect(() => {
     }).start();
   }, [hasContact]);
 
-  // ── Auto switch room when selected contact changes ────────────────────────
+// ─── Auto switch room when selected contact changes ───────────────────────
   useEffect(() => {
-    console.log('Selected contact changed:', selectedContact?.name || 'None');
     const newId = selectedContact?.id;
     if (!newId || newId === prevContactIdRef.current) return;
 
+    let cancelled = false;
+
     const switchRoom = async () => {
-       
       if (isInRoom) {
-        console.log('Leaving room for previous contact...');
         leaveRoom();
         await new Promise(r => setTimeout(r, 300));
       }
-      if (isConnected) {
-        console.log('Joining room for new contact...');
-        console.log(`Joining room123: sos-live-${selectedContact.receipent_id}`);
+      if (!cancelled && isConnected) {
+        console.log('Joining room:', `sos-live-${selectedContact.receipent_id}`);
         joinRoom(`sos-live-${selectedContact.receipent_id}`);
       }
-      prevContactIdRef.current = newId;
+      if (!cancelled) {
+        prevContactIdRef.current = newId;
+      }
     };
 
     switchRoom();
+
+    return () => { cancelled = true; }; // ✅ cancel if contact changes rapidly
   }, [selectedContact?.id]);
 
   // ── Cleanup when leaving screen (reset selected contact) ─────────────────
-  useFocusEffect(
-    useCallback(() => {
-      // This runs when screen comes into focus
-      console.log('AudioStreamScreen focused');
-      
-      // Cleanup function runs when screen loses focus
-      return () => {
-        console.log('AudioStreamScreen lost focus - resetting selected contact');
-        dispatch(audioSelectedContactActions.resetState());
-        selectedRef.current = false;
-      };
-    }, [dispatch])
-  );
+
+useFocusEffect(
+  useCallback(() => {
+    return () => {
+      // Don't leaveRoom on focus loss — user may just be switching tabs briefly
+      prevContactIdRef.current = null;
+      dispatch(audioSelectedContactActions.resetState());
+      selectedRef.current = false;
+      hasAutoSelectedFromParamRef.current = false;
+      setNormalizedSelectedReceipentId(null);
+      selectedReceipentIdRef.current = null;
+      spinAnim.stopAnimation();
+      pulseAnim.stopAnimation();
+    };
+  }, [dispatch]) // ← remove leaveRoom from deps too
+)
+ 
 
   // ── Disconnect ─────────────────────────────────────────────────────────────
   const handleDisconnect = useCallback(() => {
@@ -451,11 +475,17 @@ useEffect(() => {
 
               {/* Hidden RTCView for audio pipeline */}
               {RTCView && remoteStream && (
-                <RTCView
-                  streamURL={remoteStream.toURL()}
-                  style={ls.rtcHidden}
-                  objectFit="cover"
-                />
+               <RTCView
+              streamURL={remoteStream.toURL()}
+              style={{
+                width: 10,
+                height: 10,
+                position: 'absolute',
+                top: -100,
+                left: -100,
+              }}
+              objectFit="cover"
+            />
               )}
 
               {/* Waiting hint */}

@@ -155,7 +155,7 @@ const onAcceptSOS = useCallback(() => {
                   setItem(prev => ({ ...prev, response_status: newStatus }));
                   showSuccess('SOS response status updated successfully');
                   if(newStatus === 'accepted') {
-                    onAcceptSOS?.();
+                    // onAcceptSOS?.();
                   }
                    
                 }

@@ -5,6 +5,9 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
+
+  require_relative '../node_modules/react-native-permissions/scripts/setup'
+
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
@@ -23,6 +26,12 @@ target 'SOS_FRESH_SETUP' do
   pod 'react-native-maps/Google', :path => '../node_modules/react-native-maps'
   pod 'react-native-webrtc', :path => '../node_modules/react-native-webrtc'
   pod 'ReactNativeIncallManager', :path => '../node_modules/react-native-incall-manager'
+
+
+  setup_permissions([
+    'LocationAlways',
+   'LocationWhenInUse',
+  ])
 
   use_react_native!(
     :path => config[:reactNativePath],

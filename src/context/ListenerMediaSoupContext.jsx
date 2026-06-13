@@ -28,6 +28,10 @@ import { useSocket } from './SocketContext';
 import { useChatContacts } from '../hook/useChatContacts';
 import { useUserData } from '../hook/useUserData';
 import { TURN_SERVER_DOMAIN , TURN_SERVER_USER, TURN_SERVER_PASS} from '../../environment'; // adjust path as needed
+import {
+  
+  Platform,
+} from 'react-native';
 
 // ─── ICE servers ──────────────────────────────────────────────────────────────
 const ICE_SERVERS = [
@@ -58,6 +62,8 @@ export const ListenerMediaSoupProvider = ({ children }) => {
 
   // Active room stored in a ref so socket handlers always see the latest value
   const activeRoomIdRef = useRef(null);
+   const disconnectTimerRef = useRef(null);
+   const creatorLeftTimerRef = useRef(null); 
 
   // Observable state
   const [status, setStatus]         = useState('idle');
@@ -82,6 +88,11 @@ export const ListenerMediaSoupProvider = ({ children }) => {
 
   // ── emitAsync helper ─────────────────────────────────────────────────────────
   const emitAsync = useCallback((event, data) => emit(event, data), [emit]);
+
+  const setRemoteStreamTraced = useCallback((val) => {
+  //console.log('🔴 setRemoteStream called with:', val, new Error().stack);
+  setRemoteStream(val);
+}, []);
 
   // ── Transport stats / state watcher ─────────────────────────────────────────
   const watchTransport = useCallback(transport => {
@@ -108,9 +119,9 @@ export const ListenerMediaSoupProvider = ({ children }) => {
     if (consumerRef.current)      { consumerRef.current.close();       consumerRef.current = null; }
     if (recvTransportRef.current) { recvTransportRef.current.close();  recvTransportRef.current = null; }
     remoteStreamRef.current = null;
-    setRemoteStream(null);
-    InCallManager.setSpeakerphoneOn(false);
-    InCallManager.stop();
+    setRemoteStreamTraced(null);
+    InCallManager.setForceSpeakerphoneOn(false);
+    InCallManager.stop({ busytone: '' });
     setIceState('—');
     setDtlsState('—');
     deviceRef.current = null;
@@ -150,18 +161,48 @@ export const ListenerMediaSoupProvider = ({ children }) => {
         rtpCapabilities: deviceRef.current.rtpCapabilities,
       });
       const consumer = await recvTransport.consume(cParams);
+
+      console.log('Track enabled:', consumer.track.enabled);
+      console.log('Track muted:', consumer.track.muted);
+      console.log('Track readyState:', consumer.track.readyState);
+
       consumerRef.current = consumer;
       log(`Consumer ready — kind: ${consumer.kind}, id: ${consumer.id}`, 'ok');
 
       await emitAsync('ms:resume-consumer', { roomId: currentRoomId });
       log('Consumer resumed — audio flowing', 'ok');
 
+            // 👇 Add here
+      setInterval(async () => {
+  const stats = await consumer.getStats();
+
+  stats.forEach(stat => {
+    if (stat.type === 'inbound-rtp') {
+      const total = stat.packetsReceived + stat.packetsLost;
+      const lossPct = total
+        ? ((stat.packetsLost / total) * 100).toFixed(2)
+        : 0;
+
+      console.log(
+        `[${Platform.OS}] received=${stat.packetsReceived} lost=${stat.packetsLost} loss=${lossPct}% jitter=${stat.jitter}`
+      );
+    }
+  });
+}, 5000);
+
+     
+
+      InCallManager.start({ media: 'audio', auto: false, ringback: '' });
+      InCallManager.setSpeakerphoneOn(true);
+      InCallManager.setForceSpeakerphoneOn(true);
+            
+      setTimeout(() => {
+        InCallManager.setForceSpeakerphoneOn(true);
+      }, 100);
+
       const stream = new MediaStream([consumer.track]);
       remoteStreamRef.current = stream;
-      setRemoteStream(stream);
-
-      InCallManager.start({ media: 'audio', auto: true });
-      InCallManager.setSpeakerphoneOn(true);
+      setRemoteStreamTraced(stream);
 
       setStatus('listening');
       setStatusText('Listening — receiving audio');
@@ -244,23 +285,36 @@ export const ListenerMediaSoupProvider = ({ children }) => {
     };
 
     const onCreatorLeft = (payload) => {
-      
-      log('Creator left the room', 'warn');
-      if (consumerRef.current)      { consumerRef.current.close();      consumerRef.current = null; }
-      if (recvTransportRef.current) { recvTransportRef.current.close(); recvTransportRef.current = null; }
-      setRemoteStream(null);
-      if(payload?.roomId) {
-         setCurrentStreamingRoomIds(prev => ({ ...prev, [payload.roomId]: false })); // Mark this room as no longer having an active stream
-      }
-      // Mark this room as no longer having an active stream
-      leaveRoom();
-    };
+  // Ignore if we're not currently consuming
+  if (!consumerRef.current && !recvTransportRef.current) {
+    log('creator-left ignored — not consuming', 'warn');
+    return;
+  }
+
+  // Debounce — ignore duplicate creator-left within 2 seconds
+  if (creatorLeftTimerRef.current) {
+    log('creator-left debounced — duplicate ignored', 'warn');
+    return;
+  }
+  creatorLeftTimerRef.current = setTimeout(() => {
+    creatorLeftTimerRef.current = null;
+  }, 2000);
+
+  log('Creator left the room', 'warn');
+  if (consumerRef.current)      { consumerRef.current.close();      consumerRef.current = null; }
+  if (recvTransportRef.current) { recvTransportRef.current.close(); recvTransportRef.current = null; }
+  setRemoteStreamTraced(null);
+  if (payload?.roomId) {
+    setCurrentStreamingRoomIds(prev => ({ ...prev, [payload.roomId]: false }));
+  }
+  leaveRoom();
+};
 
     const onProducerClosed = () => {
       log('Producer closed by server', 'warn');
       setStatus('idle');
       setStatusText('Stream ended');
-      setRemoteStream(null);
+      setRemoteStreamTraced(null);
     };
 
     socket.on('ms:new-producer',    onNewProducer);
@@ -275,15 +329,29 @@ export const ListenerMediaSoupProvider = ({ children }) => {
   }, [socket, startConsuming, leaveRoom, log]);
 
   // ── Cleanup on socket disconnect ─────────────────────────────────────────────
-  useEffect(() => {
-    if (!isConnected && status !== 'idle') {
-      cleanup();
-      activeRoomIdRef.current = null;
-      setStatus('idle');
-      setStatusText('Disconnected');
-      setRoomId(null);
-    }
-  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── Cleanup on socket disconnect (with grace period for remote reconnect) ────
+   
+
+    useEffect(() => {
+      if (!isConnected && status !== 'idle') {
+        // Wait 5s before cleanup — remote socket may briefly disconnect and reconnect
+        disconnectTimerRef.current = setTimeout(() => {
+          if (!isConnected) {
+            cleanup();
+            activeRoomIdRef.current = null;
+            setStatus('idle');
+            setStatusText('Disconnected');
+            setRoomId(null);
+          }
+        }, 5000);
+      } else if (isConnected) {
+        // Reconnected — cancel pending cleanup
+        if (disconnectTimerRef.current) {
+          clearTimeout(disconnectTimerRef.current);
+          disconnectTimerRef.current = null;
+        }
+      }
+    }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
       if (!isConnected || !currentUserId) return;
