@@ -124,9 +124,9 @@ export const MediaSoupProvider = ({ children }) => {
 
     remoteStreamRef.current = null;
     setRemoteStream(null);
-    InCallManager.setSpeakerphoneOn(false);
+    InCallManager.setForceSpeakerphoneOn(false);
     setConnectedListeners({});
-    InCallManager.stop();
+    InCallManager.stop({ busytone: '' });
     setIceState('—');
     setDtlsState('—');
     setIsMuted(false);
@@ -140,17 +140,20 @@ export const MediaSoupProvider = ({ children }) => {
       setStatusText('Requesting microphone…');
       log('Requesting microphone access…');
 
+      InCallManager.start({ media: 'audio', auto: false, ringback: '' });
+      InCallManager.setForceSpeakerphoneOn(false);
+
       // React Native: use react-native-webrtc's getUserMedia
       const stream = await mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: false,   // iOS AGC causes unclear/pumping audio
-          sampleRate: 48000,
-          channelCount: 1,
-        },
-        video: false,
-      });
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false,
+        sampleRate: 48000,
+        channelCount: 1,
+      },
+      video: false,
+    });
       localStreamRef.current = stream;
       const audioTrack = stream.getAudioTracks()[0];
       log(`Microphone granted: ${audioTrack.label}`, 'ok');
@@ -194,7 +197,7 @@ export const MediaSoupProvider = ({ children }) => {
         codecOptions: {
           opusStereo: false,
           opusDtx: true,
-          opusFec: true,              // forward error correction — recovers lost packets
+          opusFec: true,
           opusMaxPlaybackRate: 48000,
           opusPtime: 20,
         },
@@ -262,9 +265,12 @@ export const MediaSoupProvider = ({ children }) => {
       remoteStreamRef.current = stream;
       setRemoteStream(stream);
 
-      // ✅ 'video' mode + explicit speaker — works correctly on both iOS and Android
-      InCallManager.start({ media: 'video', auto: false });
-      InCallManager.setSpeakerphoneOn(true);
+      InCallManager.start({ media: 'audio', auto: false, ringback: '' });
+      InCallManager.setForceSpeakerphoneOn(true);
+      
+      setTimeout(() => {
+        InCallManager.setForceSpeakerphoneOn(true);
+      }, 100);
 
       setStatus('listening');
       setStatusText('Listening — receiving audio');

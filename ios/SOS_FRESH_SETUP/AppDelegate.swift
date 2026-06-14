@@ -27,18 +27,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     let apiKey = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_API_KEY") as? String ?? ""
     GMSServices.provideAPIKey(apiKey)
 
-    // 3. Audio session for WebRTC + InCallManager
-    let audioSession = AVAudioSession.sharedInstance()
-    do {
-      try audioSession.setCategory(
-        .playAndRecord,
-        mode: .voiceChat,
-        options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
-      )
-      try audioSession.setActive(true)
-    } catch {
-      print("❌ AVAudioSession setup failed: \(error)")
-    }
+   
+   
 
     // 4. Notifications
     UNUserNotificationCenter.current().delegate = self

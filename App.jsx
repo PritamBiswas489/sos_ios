@@ -30,7 +30,7 @@ import NoPermissionsScreen from './src/components/noPermissionsScreen/index.jsx'
 import {
   checkRequiredPermissions,
   requestLocationPermissions,
-  requestMicrophonePermission,
+  requestMicrophonePermission,  
 } from './src/services/permissions.service';
 import CompleteProfileScreen from './src/screens/completeProfileScreen/index.jsx';
 import AuthLoadingScreen from './src/screens/authLoadingScreen/index.jsx';
@@ -170,7 +170,7 @@ const App = () => {
 
   const [isConnected, setIsConnected] = useState(true);
   const [sosModalVisible, setSosModalVisible] = useState(false);
-  const [missingPermissions, setMissingPermissions] = useState(null); // null = checking
+  const [missingPermissions, setMissingPermissions] = useState([]); // null = checking 
   const appStateRef = useRef(AppState.currentState);
   const pendingNavigationRef = useRef(null);
   const pendingSosRef = useRef(false);
@@ -208,20 +208,14 @@ const App = () => {
   const handleCheckPermissions = useCallback(async () => {
     console.log('Checking permissions...');
     // Request permissions one by one for iOS
-    if (Platform.OS === 'ios') {
-      await requestLocationPermissions();
+     await requestLocationPermissions();
       await waitUntilLocationSettled();
-      
+
       await requestNotificationPermissions();
       await waitUntilNotificationSettled();
-       
+
       await requestMicrophonePermission();
       await waitUntilMicrophoneSettled();
-    } else {
-      await requestLocationPermissions();
-      await requestNotificationPermissions();
-      await requestMicrophonePermission();
-    }
     const missing = await checkRequiredPermissions();
     console.log('Missing permissions:', missing);
     setMissingPermissions(missing);
@@ -327,6 +321,41 @@ const App = () => {
     });
   }, []);
 
+  const redirectToStressScreen = useCallback(victimId => {
+    const currentRoute = navigationRef.getCurrentRoute();
+    if (currentRoute?.name === 'Health') {
+      console.log('Already on Health screen, skipping stress redirect');
+      return;
+    }
+     
+    if (!navigationRef.isReady()) {
+      pendingNavigationRef.current = () => {
+        navigationRef.navigate('Process',{action: 'redirectToStressScreen', userId: victimId });
+      };
+      return;
+    }
+
+    navigationRef.navigate('Process',{action: 'redirectToStressScreen', userId: victimId });
+  }, []);
+
+  const redirectToAudioScreen = useCallback(victimId => {
+    const currentRoute = navigationRef.getCurrentRoute();
+    if (currentRoute?.name === 'AudioStream') {
+      console.log('Already on Health screen, skipping stress redirect');
+      return;
+    }
+     if (!navigationRef.isReady()) {
+      pendingNavigationRef.current = () => {
+        navigationRef.navigate('Process',{action: 'redirectToAudioScreen', userId: victimId });
+      };
+      return;
+    }
+     
+    navigationRef.navigate('Process',{action: 'redirectToAudioScreen', userId: victimId });
+
+
+  }, []);
+
   const notificationAction = useCallback(
     payload => {
       const payloadData =
@@ -358,6 +387,18 @@ const App = () => {
           payloadData,
         );
         openSosModalFromNotification();
+        const victimId = payloadData?.fromUserId;
+        if (payloadData?.type === 'stress') {
+          if (victimId) {
+            console.log('Redirecting to stress screen for victimId:', victimId);
+            redirectToStressScreen(victimId);
+          }
+        } else {
+          if (victimId) {
+            console.log('Redirecting to audio screen for victimId:', victimId);
+            redirectToAudioScreen(victimId);
+          }
+        }
       }
       if (payloadData?.fetchVictimSOS) {
         fetchMySosSessions();
@@ -389,8 +430,8 @@ const App = () => {
       if (!messageType) {
         navigateToMain();
       }
-       if (!messageType || payloadData?.fromProcessScreen) {
-         navigateToMain();
+      if (!messageType || payloadData?.fromProcessScreen) {
+        navigateToMain();
       }
     },
     [
@@ -560,9 +601,7 @@ const App = () => {
     }
 
     // Still checking permissions on first load
-    if (missingPermissions === null) {
-      return null;
-    }
+    
 
     if (missingPermissions.length > 0) {
       return (
@@ -628,7 +667,7 @@ const App = () => {
                 <HealthProvider
                   userAge={28} // user's age → used for max HR calculation
                   criticalThreshold={76} // stress score that triggers SOS alert
-                  // called when user confirms SOS
+                // called when user confirms SOS
                 >
                   <GestureHandlerRootView style={{ flex: 1 }}>
                     <SafeAreaProvider>

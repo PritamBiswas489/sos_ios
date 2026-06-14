@@ -193,19 +193,19 @@ export const subscribeNotificationPress = handler => {
   );
 
   getInitialNotification(getMsg()).then(remoteMessage => {
-    console.log('App opened from quit state by notification:', remoteMessage);
-    if (remoteMessage?.data) {
-      AsyncStorage.setItem(
-        PENDING_NOTIFICATION_PRESS_KEY,
-        JSON.stringify({
-          source: 'messaging.initial',
-          remoteMessage,
-          data: remoteMessage?.data,
-        }),
-      ).catch(err =>
-        console.log('Failed to persist FCM initial notification:', err),
-      );
-    }
+    // console.log('App opened from quit state by notification:', remoteMessage);
+    // if (remoteMessage?.data) {
+    //   AsyncStorage.setItem(
+    //     PENDING_NOTIFICATION_PRESS_KEY,
+    //     JSON.stringify({
+    //       source: 'messaging.initial',
+    //       remoteMessage,
+    //       data: remoteMessage?.data,
+    //     }),
+    //   ).catch(err =>
+    //     console.log('Failed to persist FCM initial notification:', err),
+    //   );
+    // }
   });
 
   notifee

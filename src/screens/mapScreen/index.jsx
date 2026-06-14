@@ -240,15 +240,25 @@ const MapScreen = ({ route }) => {
     if (!userLocation?.latitude || !userLocation?.longitude) return;
     if (!selectedContactLocation?.latitude || !selectedContactLocation?.longitude) return;
 
-    // Skip if contact is more than 30 km away
+    // Skip if contact is more than 100 km away
     const distanceM = haversineMeters(
       { latitude: userLocation.latitude, longitude: userLocation.longitude },
       { latitude: selectedContactLocation.latitude, longitude: selectedContactLocation.longitude },
     );
-    if (distanceM > 30000) {
+    if (distanceM > 200000) {
       setRouteCoords([]);
       setRouteInfo(null);
       lastRouteRef.current = '';
+      mapRef.current?.fitToCoordinates(
+        [
+          userLocation,
+          {
+            latitude: selectedContactLocation.latitude,
+            longitude: selectedContactLocation.longitude,
+          },
+        ],
+        { edgePadding: { top: 120, right: 80, bottom: 220, left: 80 }, animated: true },
+      );
       return;
     }
     const routeKey =
@@ -326,6 +336,12 @@ const MapScreen = ({ route }) => {
   useEffect(() => {
     if (selectedContactLocation) fetchRoute();
   }, [fetchRoute]);
+
+  useFocusEffect(
+  useCallback(() => {
+    if (selectedContactLocation) fetchRoute();
+  }, [fetchRoute, selectedContactLocation]),
+);
 
   // Cancel any in-flight route request on unmount
   useEffect(() => {

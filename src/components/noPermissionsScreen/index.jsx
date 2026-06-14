@@ -56,7 +56,7 @@ const NoPermissionsScreen = ({ missingPermissions = [], onRetry }) => {
           <PermissionItem
             icon="location-on"
             label="Location (Foreground & Background)"
-            description="Required to share your real-time position with trusted contacts. Choose this option ''Allow all the time'' when granting permission."
+            description="Required to share your real-time position with trusted contacts. Choose this option ''Always'' when granting permission."
             granted={!locationMissing}
           />
           <View style={styles.divider} />
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   permDesc: {
     color: 'rgba(255,255,255,0.45)',
-    fontSize: 11,
+    fontSize: 14,
     lineHeight: 16,
   },
   statusBadge: {

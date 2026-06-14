@@ -3,6 +3,7 @@ import { getMessaging, AuthorizationStatus, requestPermission } from '@react-nat
 import notifee from '@notifee/react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { mediaDevices } from 'react-native-webrtc';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
 const getMsg = () => getMessaging(getApp());
 
@@ -22,6 +23,7 @@ export const requestLocationPermissions = async () => {
   if (status === 'always') return 'full';
   if (status === 'whenInUse') return 'foreground-only';
   return 'denied';
+  
 };
 
 /**
@@ -47,18 +49,29 @@ export const requestMicrophonePermission = async () => {
  * NOTE: iOS does not expose a synchronous "check" API for most permissions.
  * The reliable approach is to attempt access and catch the denial error.
  */
+
+
+
+const checkLocationPermission = async () => {
+ 
+const always = await request(
+  PERMISSIONS.IOS.LOCATION_ALWAYS,
+);
+
+ 
+  if(always === RESULTS.GRANTED) {
+    return true;
+  }
+  return false;
+};
 export const checkRequiredPermissions = async () => {
   const missing = [];
 
   // ── Location ──────────────────────────────────────────────────────────────
-  const locationGranted = await new Promise(resolve => {
-    Geolocation.getCurrentPosition(
-      () => resolve(true),
-      error => resolve(error.code !== 1), // code 1 = PERMISSION_DENIED
-      { timeout: 3000, maximumAge: 10000 },
-    );
-  });
-  if (!locationGranted) missing.push('location');
+  const locationGranted = await checkLocationPermission();
+  if(!locationGranted) {
+    missing.push('location');
+  }
 
   // ── Microphone ────────────────────────────────────────────────────────────
   try {

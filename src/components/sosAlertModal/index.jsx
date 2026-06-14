@@ -251,14 +251,14 @@ const SOSAlertModal = ({
             </Text>
           </View>
 
-          {/* List */}
+          {/* List */} 
           <View style={{ flex: 1 }}>
             {!listReady ? (
               <View style={styles.listLoader}>
                 <ActivityIndicator size="large" color="#FF3B5C" />
               </View>
             ) : isIncoming ? (
-              <IncomingSOSList
+              <IncomingSOSList 
                 navigationRef={navigationRef}
                 onAccept={onAcceptSOS}
                 onDecline={onDeclineSOS}

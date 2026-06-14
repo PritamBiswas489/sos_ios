@@ -122,8 +122,8 @@ const LoginScreen = () => {
       const fullPhoneNumber = `${selectedCountry.dial_code}${requestPhone}`;
       const payload = { phoneNumber: fullPhoneNumber };
       let licenseNumber = null;
-      if (licPart2 && licPart3) {
-        licenseNumber = `KBY-${licPart2}-${licPart3}`;
+      if (licPart3) {
+        licenseNumber = `KBY-${licPart3}`;
         payload.licenseNumber = licenseNumber;
       }
       const requestOtp = await new Promise((resolve, reject) => {
@@ -280,7 +280,7 @@ const LoginScreen = () => {
         {/* Fields row */}
         <View style={styles.licenseInnerRow}>
           {/* Field 1 — KBY (disabled) */}
-          <View style={[styles.licenseFieldWrap, { flex: 1.1 }]}>
+          <View style={[styles.licenseFieldWrap, { flex: 1 }]}>
             <TextInput
               style={[styles.licenseInput, styles.licenseInputDisabled]}
               value="KBY"
@@ -290,30 +290,12 @@ const LoginScreen = () => {
            
           </View>
 
-          <Text style={styles.licenseSep}>—</Text>
-
-          {/* Field 2 — e.g. 08 */}
-          <View style={[styles.licenseFieldWrap, { flex: 1.5 }]}>
-            <TextInput
-              ref={licRef2}
-              style={styles.licenseInput}
-              placeholder="08"
-              placeholderTextColor="#3a4a66"
-              keyboardType="number-pad"
-              editable={!isGetOtp}
-              value={licPart2}
-              onChangeText={text => {
-                setLicPart2(text);
-                
-              }}
-            />
-            
-          </View>
+          
 
           <Text style={styles.licenseSep}>—</Text>
 
           {/* Field 3 — e.g. 000003 */}
-          <View style={[styles.licenseFieldWrap, { flex: 1.5 }]}>
+          <View style={[styles.licenseFieldWrap, { flex: 3 }]}>
             <TextInput
               ref={licRef3}
               style={styles.licenseInput}
@@ -324,18 +306,18 @@ const LoginScreen = () => {
               value={licPart3}
               onChangeText={text => setLicPart3(text)}
             />
-             
-          </View>
-        </View>
+              
+          </View> 
+        </View> 
 
         {/* Live preview */}
         <View style={styles.licensePreviewRow}>
           <Text style={styles.licensePreviewLabel}>FULL ID</Text>
           <Text style={styles.licensePreviewValue}>
-            {`KBY-${licPart2 || '··'}-${licPart3 || '······'}`}
-          </Text>
+            {`KBY-${licPart3 || '······'}`}
+          </Text> 
         </View>
-      </View>
+      </View>  
 
       {!isGetOtp && (
         <TouchableOpacity style={styles.loginBtn} onPress={getLoginOtp}>
@@ -396,7 +378,7 @@ const LoginScreen = () => {
             onPress={() => {
               if (isGetOtp) {
                 setIsGetOtp(false);
-                setOtp(['', '', '', '']);
+                setOtp(['', '', '', '']);  
               }
             }}
           >
