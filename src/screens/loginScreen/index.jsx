@@ -15,8 +15,9 @@ import { Alert } from 'react-native';
 import { LoginService } from '../../services/login.service';
 import useToast from '../../hook/useToast';
 import { countries } from '../../config/countries';
-import { setAuthTokens } from '../../config/auth'; 
+import { setAuthTokens } from '../../config/auth';
 import useUserAuth from '../../hook/useUserAuth';
+import MaskInput from 'react-native-mask-input';
 
 export const getFlagEmoji = countryCode => {
   const codePoints = countryCode
@@ -185,19 +186,19 @@ const LoginScreen = () => {
           }
         });
       });
-     const processUserLogin = await new Promise((resolve, reject) => {
+      const processUserLogin = await new Promise((resolve, reject) => {
         LoginService.processLogin({ phoneNumber: `${selectedCountry.dial_code}${requestPhone}` }, response => {
           console.log('Process Login Response:', response);
           if (response.success === true) {
-              resolve(response);
+            resolve(response);
           } else {
             reject(
               new Error(response?.error || 'Login processing failed'),
             );
           }
         });
-     });
-      const accessToken = processUserLogin?.data?.data?.accessToken; 
+      });
+      const accessToken = processUserLogin?.data?.data?.accessToken;
       const refreshToken = processUserLogin?.data?.data?.refreshToken;
       await setAuthTokens(accessToken, refreshToken);
       console.log('Access Token:', accessToken);
@@ -209,8 +210,8 @@ const LoginScreen = () => {
         'SUCCESS',
         'OTP verified successfully and login processed',
       );
-       uAuth.login(true);
-       navigation.replace('Process',{action: 'retrieveDataAfterLogin'});
+      uAuth.login(true);
+      navigation.replace('Process', { action: 'retrieveDataAfterLogin' });
     } catch (error) {
       setIsLoading(false);
       console.error('OTP Verify Error:', error);
@@ -274,7 +275,7 @@ const LoginScreen = () => {
             <Icon name="badge" size={15} color="#ff3b5c" />
             <Text style={styles.licensePanelTitle}>LICENSE NUMBER</Text>
           </View>
-         
+
         </View>
 
         {/* Fields row */}
@@ -287,37 +288,41 @@ const LoginScreen = () => {
               editable={false}
               selectTextOnFocus={false}
             />
-           
+
           </View>
 
-          
+
 
           <Text style={styles.licenseSep}>—</Text>
 
           {/* Field 3 — e.g. 000003 */}
           <View style={[styles.licenseFieldWrap, { flex: 3 }]}>
-            <TextInput
-              ref={licRef3}
-              style={styles.licenseInput}
-              placeholder="000003"
+            <MaskInput
+              value={licPart3}
+              placeholder="######"
               placeholderTextColor="#3a4a66"
               keyboardType="number-pad"
               editable={!isGetOtp}
-              value={licPart3}
-              onChangeText={text => setLicPart3(text)}
+              ref={licRef3}
+              style={styles.licenseInput}
+              onChangeText={(masked, unmasked) => {
+                setLicPart3(masked); // you can use the unmasked value as well
+
+              }}
+              mask={[/\d/, /\d/, /\d/, /\d/, /\d/, /\d/]}
             />
-              
-          </View> 
-        </View> 
+
+          </View>
+        </View>
 
         {/* Live preview */}
         <View style={styles.licensePreviewRow}>
           <Text style={styles.licensePreviewLabel}>FULL ID</Text>
           <Text style={styles.licensePreviewValue}>
             {`KBY-${licPart3 || '······'}`}
-          </Text> 
+          </Text>
         </View>
-      </View>  
+      </View>
 
       {!isGetOtp && (
         <TouchableOpacity style={styles.loginBtn} onPress={getLoginOtp}>
@@ -378,7 +383,7 @@ const LoginScreen = () => {
             onPress={() => {
               if (isGetOtp) {
                 setIsGetOtp(false);
-                setOtp(['', '', '', '']);  
+                setOtp(['', '', '', '']);
               }
             }}
           >
