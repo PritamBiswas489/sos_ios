@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity ,  Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -13,26 +13,29 @@ import SettingsScreen from '../screens/settingsScreen';
 
 import AddContactsScreen from '../screens/addContactsScreen';
 import ContactsScreen from '../screens/contactsScreen';
+import EmergencyServicesScreen from '../screens/EmergencyServicesScreen/index.jsx';
 import analysisScreen from '../screens/analysis';
 import CreatorScreen from '../screens/soupCreatorScreen/index.jsx';
 import ListenerScreen from '../screens/soupListenerScreen/index.jsx';
- 
+import AppFeedback from '../screens/AppFeeback/index.jsx';
+import PrivacyPolicy from '../screens/PrivacyPolicy/index.jsx';
+import ReportFormScreen from '../screens/abuserReportFormScreen/index.jsx';
+
 import { Alert } from 'react-native';
- 
+
 import { UserService } from '../services/user.service';
 import { useDispatch } from 'react-redux';
 import { resetAllState } from '../store';
-import { useUserData } from '../hook/useUserData'; 
+import { useUserData } from '../hook/useUserData';
 import { getProfileImage } from '../config/utility';
 import useUserAuth from '../hook/useUserAuth.jsx';
-import { log } from '@react-native-firebase/app/dist/module/internal/web/firebaseFirestorePipelines';
-  
+import DeviceInfo from 'react-native-device-info';
 
 const Drawer = createDrawerNavigator();
 
 const logoutProcess = async (navigation, dispatch, callback) => {
   try {
-    await UserService.deleteFcmToken(() => {}); // Best effort to delete FCM token, ignoring result
+    await UserService.deleteFcmToken(() => { }); // Best effort to delete FCM token, ignoring result
     await UserService.logout();
     dispatch(resetAllState());
     callback();
@@ -51,9 +54,9 @@ const CustomDrawerContent = props => {
   const dispatch = useDispatch();
   console.log('=====================================================');
 
-  const { userData} = useUserData();
+  const { userData, hasLicense } = useUserData();
   const { logout } = useUserAuth();
-    
+
   return (
     <DrawerContentScrollView
       {...props}
@@ -63,7 +66,11 @@ const CustomDrawerContent = props => {
       <View style={styles.profileSection}>
         <View style={styles.profileAvatar}>
           {userData?.profile_photo ? (
-            <Image source={{ uri: getProfileImage(userData.profile_photo) }} resizeMode="cover" style={styles.avatarImage} />
+            <Image
+              source={{ uri: getProfileImage(userData.profile_photo) }}
+              resizeMode="cover"
+              style={styles.avatarImage}
+            />
           ) : (
             <Icon name="person" size={40} color="#FFFFFF" />
           )}
@@ -79,7 +86,10 @@ const CustomDrawerContent = props => {
 
         <TouchableOpacity
           style={styles.editProfileBtn}
-          onPress={() => { props.navigation.closeDrawer(); props.navigation.navigate('EditProfile'); }}
+          onPress={() => {
+            props.navigation.closeDrawer();
+            props.navigation.navigate('EditProfile');
+          }}
         >
           <Icon name="edit" size={14} color="#5352ED" />
           <Text style={styles.editProfileText}>Edit Profile</Text>
@@ -97,34 +107,29 @@ const CustomDrawerContent = props => {
       {/* Divider */}
       <View style={styles.divider} />
 
-      {/* Extra Options */}
-      <View style={styles.extraSection}>
-        <TouchableOpacity style={styles.extraItem}>
-          <Icon name="privacy-tip" size={22} color="#A4B0BE" />
-          <Text style={styles.extraItemText}>Privacy Policy</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Logout */}
       <View style={styles.bottomSection}>
         <TouchableOpacity
-          onPress={() => logoutProcess(props.navigation, dispatch, ()=>{
-            logout();
-          })}
+          onPress={() =>
+            logoutProcess(props.navigation, dispatch, () => {
+              logout();
+            })
+          }
           style={styles.logoutBtn}
         >
           <Icon name="logout" size={22} color="#FF4757" />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>Version {DeviceInfo.getVersion()}</Text>
       </View>
     </DrawerContentScrollView>
   );
 };
 
 const DrawerNavigator = () => {
-  const { userData } = useUserData();
+  const { userData, hasLicense } = useUserData();
   const isDevUser = userData?.phone_number?.includes('+9198309900');
 
   return (
@@ -157,17 +162,23 @@ const DrawerNavigator = () => {
           ),
         }}
       />
-      <Drawer.Screen
-        name="Contacts"
-        component={ContactsScreen}
-        options={{
-          drawerLabel: 'Contacts',
-          drawerIcon: ({ color, size }) => (
-            <Icon name="chat" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
+
+      {hasLicense && (
+        <Drawer.Screen
+          name="Contacts"
+          component={ContactsScreen}
+          options={{
+            drawerLabel: 'Contacts',
+            drawerIcon: ({ color, size }) => (
+              <Icon name="chat" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+
+
+
+      {/* <Drawer.Screen
         name="Settings"
         component={SettingsScreen}
         options={{
@@ -176,44 +187,64 @@ const DrawerNavigator = () => {
             <Icon name="settings" size={size} color={color} />
           ),
         }}
-      />
+      /> */}
+      {hasLicense && (
+        <Drawer.Screen
+          name="Analysis"
+          component={analysisScreen}
+          options={{
+            drawerLabel: 'Analysis',
+            drawerIcon: ({ color, size }) => (
+              <Icon name="analytics" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
       <Drawer.Screen
-        name="Analysis"
-        component={analysisScreen}
+        name="EmergencyServices"
+        component={EmergencyServicesScreen}
         options={{
-          drawerLabel: 'Analysis',
+          drawerLabel: 'Emergency Services',
           drawerIcon: ({ color, size }) => (
-            <Icon name="settings" size={size} color={color} />
+            <Icon name="emergency" size={size} color={color} />
           ),
         }}
       />
-      {isDevUser && (
-        <Drawer.Screen
-          name="CreatorSoup"
-          component={CreatorScreen}
-          options={{
-            drawerLabel: 'Creator soup',
-            drawerIcon: ({ color, size }) => (
-              <Icon name="settings" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
-      {isDevUser && (
-        <Drawer.Screen
-          name="ListenerSoup"
-          component={ListenerScreen}
-          options={{
-            drawerLabel: 'Listener soup',
-            drawerIcon: ({ color, size }) => (
-              <Icon name="settings" size={size} color={color} />
-            ),
-          }}
-        />
+      <Drawer.Screen
+        name="AppFeedback"
+        component={AppFeedback}
+        options={{
+          drawerLabel: 'Feedback',
+          drawerIcon: ({ color, size }) => (
+            <Icon name="feedback" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="AbuseReport"
+        component={ReportFormScreen}
+        options={{
+          drawerLabel: 'Report Abuse',
+          drawerIcon: ({ color, size }) => (
+            <Icon name="person-off" size={size} color={color} />
+          ),
+        }}
+      />
 
-      )}
 
-      
+      <Drawer.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicy}
+        options={{
+          drawerLabel: 'Privacy Policy',
+          drawerIcon: ({ color, size }) => (
+            <Icon name="privacy-tip" size={size} color={color} />
+          ),
+        }}
+      />
+
+
+
     </Drawer.Navigator>
   );
 };

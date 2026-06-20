@@ -67,7 +67,8 @@ import { UserService } from './src/services/user.service.js';
 import { resetAllState } from './src/store/index.jsx';
 import * as Sentry from '@sentry/react-native';
 import { waitUntilLocationSettled, waitUntilNotificationSettled, waitUntilMicrophoneSettled } from './src/services/permissions.service';
-
+import EmergencyServicesScreen from './src/screens/EmergencyServicesScreen/index.jsx';
+import ReportListScreen from './src/screens/abuserReportListScreen/index.jsx';
 Sentry.init({
   dsn: 'https://4c7ce135cfa3fd9b5810b5f3109c6366@o4511060608155648.ingest.us.sentry.io/4511521653587968',
 
@@ -650,6 +651,11 @@ const App = () => {
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="AddContact" component={AddContactsScreen} />
             <Stack.Screen name="Main" component={DrawerNavigator} />
+            <Stack.Screen
+              name="EmergencyServices"
+              component={EmergencyServicesScreen}
+            />
+            <Stack.Screen name="ReportList" component={ReportListScreen} />
           </Stack.Navigator>
         </NavigationContainer>
         <Toast config={toastConfig} />

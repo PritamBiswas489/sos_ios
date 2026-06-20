@@ -62,18 +62,18 @@ api.interceptors.response.use(async (res) => {
     }
     return res;
 }, error => {
-    console.error('Response Error:', error);
+    console.log('Response Error:', error);
     if (error.response) {
         // The request was made and the server responded with a status code outside the range of 2xx
-        console.error('Response Data:', error.response.data);
-        console.error('Response Status:', error.response.status);
-        console.error('Response Headers:', error.response.headers);
+        console.log('Response Data:', error.response.data);
+        console.log('Response Status:', error.response.status);
+        console.log('Response Headers:', error.response.headers);
     } else if (error.request) {
         // The request was made but no response was received
-        console.error('Request Data:', error.request);
+        console.log('Request Data:', error.request);
     } else {
         // Something happened in setting up the request that triggered an Error
-        console.error('Error Message:', error.message);
+        console.log('Error Message:', error.message);
     }
      console.log("================================")
     //console.error(error?.response?.data?.error?.message);
