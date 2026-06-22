@@ -10,6 +10,17 @@ export class EmergencyService {
         }
     }
 
+    static async fetchMyRequestedServices(page = 1, limit = 10, callback) {
+        try {
+            const url = `/emergency-services/get-my-requested-emergency-services?page=${page}&limit=${limit}`;
+            const response = await api.get(url);
+            callback({ success: true, data: response.data });
+        } catch (error) {
+            console.log('❌ Error fetching requested services:', error?.message);
+            callback({ success: false, error: error.message });
+        }
+    }
+
     static async fetchNearbyServices(latitude, longitude, radius, serviceType,  callback) {
         try {
             let url = `/emergency-services/get-nearby-emergency-services?latitude=${latitude}&longitude=${longitude}&radius=${radius}`;

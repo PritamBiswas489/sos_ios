@@ -258,7 +258,7 @@ const ConversationList = ({ styles }) => {
   const pendingAutoScrollPassesRef = useRef(0);
   const { userData, hasLicense } = useUserData();
   const wasConnectedRef = useRef(false);
-  const AUTO_SCROLL_PASSES = 6;
+  const AUTO_SCROLL_PASSES = 2;
   const [refreshing, setRefreshing] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -599,20 +599,14 @@ const ConversationList = ({ styles }) => {
   }, []);
 
   const scrollToBottomImmediate = useCallback(() => {
-    const runScroll = () => {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    };
-
-    requestAnimationFrame(() => {
-      runScroll();
-      requestAnimationFrame(runScroll);
-      setTimeout(runScroll, 40);
-      setTimeout(runScroll, 120);
-    });
-  }, []);
+  requestAnimationFrame(() => {
+    flatListRef.current?.scrollToEnd({ animated: false });
+  });
+}, []);
 
   useEffect(() => {
     if (!currentRoomConversations.length) return;
+    if (shouldScrollAfterLoadRef.current) return;
 
     const lastMessage =
       currentRoomConversations[currentRoomConversations.length - 1];
@@ -840,12 +834,9 @@ const ConversationList = ({ styles }) => {
   );
 
   const contentContainerStyle = useMemo(
-    () => [
-      styles.chatContent,
-      chatItems.length === 0 && styles.chatContentEmpty,
-    ],
-    [styles.chatContent, styles.chatContentEmpty, chatItems.length],
-  );
+  () => [styles.chatContent],
+  [styles.chatContent],
+);
 
   const handleFlatListScroll = useCallback(
     event => {

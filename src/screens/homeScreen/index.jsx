@@ -228,7 +228,7 @@ const HomeScreen = () => {
           onPress={() => {
             Sentry.captureException(new Error('First error'));
           }}
-        /> */}
+        />  */}
       </View>
 
       {/* ── SOS Button ── */}

@@ -272,6 +272,14 @@ const App = () => {
     routeNameRef.current = routeName;
     setActiveScreen(routeName);
     dispatch(currentScreenActions.setCurrentScreen(routeName));
+
+    // Sentry navigation tracking
+    Sentry.setTag('screen_name', routeName);
+    Sentry.addBreadcrumb({
+      category: 'navigation',
+      message: `Active screen: ${routeName}`,
+      level: 'info',
+    });
   }, [dispatch]);
 
   const navigateToContacts = useCallback(() => {

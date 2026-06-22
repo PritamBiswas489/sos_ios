@@ -150,8 +150,131 @@ const SERVICES = [
   // },
 ];
 
+// ─── STATUS BADGE HELPER ─────────────────────────────────────────────────────
+const STATUS_CONFIG = {
+  approved: { color: '#22C55E', bg: '#0F2A1A', label: 'Approved' },
+  pending:  { color: '#EAB308', bg: '#1A1A0A', label: 'Pending'  },
+  rejected: { color: '#E63946', bg: '#1A0A0A', label: 'Rejected' },
+};
+
+const StatusBadge = ({ status }) => {
+  const cfg = STATUS_CONFIG[status] || { color: '#8891A4', bg: '#1C2130', label: status };
+  return (
+    <View style={{ backgroundColor: cfg.bg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: cfg.color + '55' }}>
+      <Text style={{ fontSize: 11, fontWeight: '700', color: cfg.color }}>{cfg.label}</Text>
+    </View>
+  );
+};
+
+// ─── REQUEST LIST TAB ─────────────────────────────────────────────────────────
+const RequestListTab = () => {
+  const [requests, setRequests]       = useState([]);
+  const [page, setPage]               = useState(1);
+  const [hasMore, setHasMore]         = useState(true);
+  const [loading, setLoading]         = useState(false);
+  const [refreshing, setRefreshing]   = useState(false);
+  const loadingRef                    = useRef(false);
+  const LIMIT                         = 10;
+
+  const loadPage = (pageNum, isRefresh = false) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+
+    EmergencyService.fetchMyRequestedServices(pageNum, LIMIT, res => {
+      loadingRef.current = false;
+      if (isRefresh) setRefreshing(false); else setLoading(false);
+
+      if (res.success) {
+        const items = res.data?.data || [];
+        if (isRefresh) {
+          setRequests(items);
+          setPage(1);
+        } else {
+          setRequests(prev => [...prev, ...items]);
+        }
+        setHasMore(items.length === LIMIT);
+      } else {
+        console.log('❌ Request list error:', res.error);
+      }
+    });
+  };
+
+  useEffect(() => { loadPage(1, true); }, []);
+
+  const handleRefresh = () => {
+    setHasMore(true);
+    loadPage(1, true);
+  };
+
+  const handleEndReached = () => {
+    if (!hasMore || loadingRef.current) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadPage(nextPage);
+  };
+
+  const renderItem = ({ item }) => (
+    <View style={styles.reqCard}>
+      <View style={styles.reqCardHeader}>
+        <Text style={styles.reqCardName} numberOfLines={1}>{item.locationName}</Text>
+        <StatusBadge status={item.status} />
+      </View>
+      <Text style={styles.reqCardAddress} numberOfLines={2}>{item.address}</Text>
+      <View style={styles.reqCardFooter}>
+        <View style={styles.reqCardMeta}>
+          <Text style={styles.reqCardIcon}>🚨</Text>
+          <Text style={styles.reqCardType}>{item.serviceType?.replace(/-/g, ' ')}</Text>
+        </View>
+        <View style={styles.reqCardMeta}>
+          <Text style={styles.reqCardIcon}>📞</Text>
+          <Text style={styles.reqCardPhone}>{item.phoneNumber}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderFooter = () => {
+    if (!loading) return <View style={{ height: 20 }} />;
+    return (
+      <View style={styles.reqLoadingFooter}>
+        <Text style={styles.reqLoadingText}>Loading more…</Text>
+      </View>
+    );
+  };
+
+  const renderEmpty = () => (
+    !loading ? (
+      <View style={styles.reqEmptyState}>
+        <Text style={styles.reqEmptyIcon}>📋</Text>
+        <Text style={styles.reqEmptyTitle}>No Requests Yet</Text>
+        <Text style={styles.reqEmptySubtitle}>Your submitted emergency location requests will appear here.</Text>
+      </View>
+    ) : null
+  );
+
+  return (
+    <FlatList
+       
+      data={requests}
+      keyExtractor={item => String(item.id)}
+      renderItem={renderItem}
+      ListEmptyComponent={renderEmpty}
+      ListFooterComponent={renderFooter}
+      onEndReached={handleEndReached}
+      onEndReachedThreshold={0.4}
+      refreshing={refreshing}
+      onRefresh={handleRefresh}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={styles.reqListContent}
+      showsVerticalScrollIndicator={false}
+    />
+  );
+};
+
 // ─── RegisterEmergencyModal ────────────────────────────────────────────────────
 const RegisterEmergencyModal = ({ visible, onClose, onSubmit }) => {
+  const [activeTab, setActiveTab]     = useState('new');   // 'new' | 'list'
   const [form, setForm] = useState({
     phoneNumber: '',
     location: '',
@@ -265,9 +388,9 @@ const RegisterEmergencyModal = ({ visible, onClose, onSubmit }) => {
                 <Text style={styles.modalIconText}>🚨</Text>
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.modalTitle}>Register Emergency Call</Text>
+                <Text style={styles.modalTitle}>Emergency Location</Text>
                 <Text style={styles.modalSubtitle}>
-                  Fill in your details to log an emergency
+                  Register or track emergency locations
                 </Text>
               </View>
             </View>
@@ -276,9 +399,34 @@ const RegisterEmergencyModal = ({ visible, onClose, onSubmit }) => {
             </TouchableOpacity>
           </View>
 
+          {/* Tabs */}
+          <View style={styles.tabRow}>
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === 'new' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('new')}
+              activeOpacity={0.8}>
+              <Text style={[styles.tabBtnText, activeTab === 'new' && styles.tabBtnTextActive]}>
+                New Request
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === 'list' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('list')}
+              activeOpacity={0.8}>
+              <Text style={[styles.tabBtnText, activeTab === 'list' && styles.tabBtnTextActive]}>
+                My Requests
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Divider */}
           <View style={styles.divider} />
 
+          {activeTab === 'list' ? (
+            <View style={styles.modalBody}>
+              <RequestListTab />
+            </View>
+          ) : (
           <FlatList
             data={[{ id: 'modal-form' }]}
             keyExtractor={item => item.id}
@@ -428,6 +576,7 @@ const RegisterEmergencyModal = ({ visible, onClose, onSubmit }) => {
               )
             }
           />
+          )}
         </View>
       </View>
     </Modal>
@@ -1507,6 +1656,125 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: C.teal,
     letterSpacing: 0.2,
+  },
+
+  // ─── Tabs ─────────────────────────────────────────────────────────────────
+  tabRow: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 14,
+    marginBottom: 4,
+    backgroundColor: C.surface,
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 9,
+    alignItems: 'center',
+  },
+  tabBtnActive: {
+    backgroundColor: C.teal,
+  },
+  tabBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.sub,
+  },
+  tabBtnTextActive: {
+    color: '#000',
+  },
+
+  // ─── Request List ─────────────────────────────────────────────────────────
+  reqListContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 100,
+    flexGrow: 1,
+    
+  },
+  reqCard: {
+    backgroundColor: C.card,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  reqCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+    gap: 8,
+  },
+  reqCardName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.text,
+  },
+  reqCardAddress: {
+    fontSize: 12,
+    color: C.sub,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  reqCardFooter: {
+    flexDirection: 'row',
+    gap: 16,
+    flexWrap: 'wrap',
+  },
+  reqCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  reqCardIcon: {
+    fontSize: 12,
+  },
+  reqCardType: {
+    fontSize: 11,
+    color: C.teal,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  reqCardPhone: {
+    fontSize: 11,
+    color: C.sub,
+    fontWeight: '500',
+  },
+  reqLoadingFooter: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  reqLoadingText: {
+    fontSize: 13,
+    color: C.muted,
+  },
+  reqEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  reqEmptyIcon: {
+    fontSize: 40,
+    marginBottom: 14,
+  },
+  reqEmptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.text,
+    marginBottom: 8,
+  },
+  reqEmptySubtitle: {
+    fontSize: 13,
+    color: C.sub,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 
