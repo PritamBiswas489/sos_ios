@@ -27,9 +27,9 @@ import InCallManager from 'react-native-incall-manager';
 import { useSocket } from './SocketContext';
 import { useChatContacts } from '../hook/useChatContacts';
 import { useUserData } from '../hook/useUserData';
-import { TURN_SERVER_DOMAIN , TURN_SERVER_USER, TURN_SERVER_PASS} from '../../environment'; // adjust path as needed
+import { TURN_SERVER_DOMAIN, TURN_SERVER_USER, TURN_SERVER_PASS } from '../../environment'; // adjust path as needed
 import {
-  
+
   Platform,
 } from 'react-native';
 
@@ -55,33 +55,39 @@ export const ListenerMediaSoupProvider = ({ children }) => {
   const { socket, isConnected, emit } = useSocket();
 
   // mediasoup refs
-  const deviceRef        = useRef(null);
+  const deviceRef = useRef(null);
   const recvTransportRef = useRef(null);
-  const consumerRef      = useRef(null);
-  const remoteStreamRef  = useRef(null);
+  const consumerRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+
+
+  const statsIntervalRef = useRef(null); //23-2026
+  const transportCleanupRef = useRef(null); //23-2026
+  const isConsumingRef      = useRef(false); //23-2026
+  const leaveRoomRef        = useRef(null); //23-2026
 
   // Active room stored in a ref so socket handlers always see the latest value
   const activeRoomIdRef = useRef(null);
-   const disconnectTimerRef = useRef(null);
-   const creatorLeftTimerRef = useRef(null); 
+  const disconnectTimerRef = useRef(null);
+  const creatorLeftTimerRef = useRef(null);
 
   // Observable state
-  const [status, setStatus]         = useState('idle');
+  const [status, setStatus] = useState('idle');
   const [statusText, setStatusText] = useState('Idle — not connected');
-  const [roomId, setRoomId]         = useState(null);
-  const [iceState, setIceState]     = useState('—');
-  const [dtlsState, setDtlsState]   = useState('—');
-  const [logs, setLogs]             = useState([]);
+  const [roomId, setRoomId] = useState(null);
+  const [iceState, setIceState] = useState('—');
+  const [dtlsState, setDtlsState] = useState('—');
+  const [logs, setLogs] = useState([]);
   const [remoteStream, setRemoteStream] = useState(null);
   const [currentStreamingRoomIds, setCurrentStreamingRoomIds] = useState({});
   const { contactList } = useChatContacts();
-  const {userData} = useUserData();
+  const { userData } = useUserData();
   const currentUserId = userData?.id;
   // ── Logging ──────────────────────────────────────────────────────────────────
   const log = useCallback((msg, type = 'info') => {
-    const ts = new Date().toTimeString().slice(0, 8);
-    setLogs(prev => [...prev.slice(-199), { ts, msg, type }]);
-    console.log(`[Listener][${type.toUpperCase()}] ${msg}`);
+    // const ts = new Date().toTimeString().slice(0, 8);
+    // setLogs(prev => [...prev.slice(-199), { ts, msg, type }]);
+    // console.log(`[Listener][${type.toUpperCase()}] ${msg}`);
   }, []);
 
   const clearLogs = useCallback(() => setLogs([]), []);
@@ -90,9 +96,9 @@ export const ListenerMediaSoupProvider = ({ children }) => {
   const emitAsync = useCallback((event, data) => emit(event, data), [emit]);
 
   const setRemoteStreamTraced = useCallback((val) => {
-  //console.log('🔴 setRemoteStream called with:', val, new Error().stack);
-  setRemoteStream(val);
-}, []);
+    //console.log('🔴 setRemoteStream called with:', val, new Error().stack);
+    setRemoteStream(val);
+  }, []);
 
   // ── Transport stats / state watcher ─────────────────────────────────────────
   const watchTransport = useCallback(transport => {
@@ -109,19 +115,30 @@ export const ListenerMediaSoupProvider = ({ children }) => {
             setDtlsState(report.dtlsState || '—');
           }
         });
-      } catch (_) {}
+      } catch (_) { }
     }, 1500);
     return () => clearInterval(interval);
   }, [log]);
 
   // ── Cleanup ──────────────────────────────────────────────────────────────────
   const cleanup = useCallback(() => {
-    if (consumerRef.current)      { consumerRef.current.close();       consumerRef.current = null; }
-    if (recvTransportRef.current) { recvTransportRef.current.close();  recvTransportRef.current = null; }
+    //23-2026 start 
+    isConsumingRef.current = false;  
+    if (statsIntervalRef.current) {
+      clearInterval(statsIntervalRef.current);
+      statsIntervalRef.current = null;
+    }
+    if (transportCleanupRef.current) {       
+      transportCleanupRef.current();
+      transportCleanupRef.current = null;
+    }
+    //23-2026 end
+    if (consumerRef.current) { consumerRef.current.close(); consumerRef.current = null; }
+    if (recvTransportRef.current) { recvTransportRef.current.close(); recvTransportRef.current = null; }
     remoteStreamRef.current = null;
     setRemoteStreamTraced(null);
     InCallManager.setForceSpeakerphoneOn(false);
-    InCallManager.stop({ busytone: '' });
+    try { InCallManager.stop({ busytone: '' }); } catch (_) {}
     setIceState('—');
     setDtlsState('—');
     deviceRef.current = null;
@@ -129,6 +146,13 @@ export const ListenerMediaSoupProvider = ({ children }) => {
 
   // ── Start consuming ──────────────────────────────────────────────────────────
   const startConsuming = useCallback(async (currentRoomId) => {
+    //23-2026: 
+    if (isConsumingRef.current) {                          // ← ADD THESE 4 LINES
+      log('startConsuming already in progress — skipping duplicate call', 'warn');
+      return;
+    }
+    isConsumingRef.current = true;                         // ← LOCK
+    //23-2026 end
     try {
       if (!deviceRef.current) {
         throw new Error('mediasoup Device not initialised — please retry');
@@ -146,7 +170,7 @@ export const ListenerMediaSoupProvider = ({ children }) => {
       });
       recvTransportRef.current = recvTransport;
       log(`Recv transport created: ${recvTransport.id}`, 'ok');
-      watchTransport(recvTransport);
+      transportCleanupRef.current = watchTransport(recvTransport); //23-2026
 
       recvTransport.on('connect', async ({ dtlsParameters }, cb, eb) => {
         try {
@@ -172,30 +196,36 @@ export const ListenerMediaSoupProvider = ({ children }) => {
       await emitAsync('ms:resume-consumer', { roomId: currentRoomId });
       log('Consumer resumed — audio flowing', 'ok');
 
-            // 👇 Add here
-      setInterval(async () => {
-  const stats = await consumer.getStats();
+      // 23-2026 start
+      statsIntervalRef.current = setInterval(async () => {   // ← STORE THE ID
+        if (!consumerRef.current || consumerRef.current.closed) {  // ← GUARD: stop if closed
+          clearInterval(statsIntervalRef.current);
+          statsIntervalRef.current = null;
+          return;
+        }
+        try {                                                       // ← WRAP IN TRY/CATCH
+          const stats = await consumer.getStats();
+          stats.forEach(stat => {
+            if (stat.type === 'inbound-rtp') {
+              const total = stat.packetsReceived + stat.packetsLost;
+              const lossPct = total
+                ? ((stat.packetsLost / total) * 100).toFixed(2)
+                : 0;
+              console.log(
+                `[${Platform.OS}] received=${stat.packetsReceived} lost=${stat.packetsLost} loss=${lossPct}% jitter=${stat.jitter}`
+              );
+            }
+          });
+        } catch (_) { }                                             // ← SWALLOW errors on closed consumer
+      }, 5000);
+      // 23-2026 end
 
-  stats.forEach(stat => {
-    if (stat.type === 'inbound-rtp') {
-      const total = stat.packetsReceived + stat.packetsLost;
-      const lossPct = total
-        ? ((stat.packetsLost / total) * 100).toFixed(2)
-        : 0;
 
-      console.log(
-        `[${Platform.OS}] received=${stat.packetsReceived} lost=${stat.packetsLost} loss=${lossPct}% jitter=${stat.jitter}`
-      );
-    }
-  });
-}, 5000);
-
-     
 
       InCallManager.start({ media: 'audio', auto: false, ringback: '' });
       InCallManager.setSpeakerphoneOn(true);
       InCallManager.setForceSpeakerphoneOn(true);
-            
+
       setTimeout(() => {
         InCallManager.setForceSpeakerphoneOn(true);
       }, 100);
@@ -210,6 +240,8 @@ export const ListenerMediaSoupProvider = ({ children }) => {
       log(`startConsuming error: ${err.message}`, 'error');
       setStatus('error');
       setStatusText(`${err.message}`);
+    } finally { //23-2026: UNLOCK
+      isConsumingRef.current = false;                   
     }
   }, [emitAsync, log, watchTransport]);
 
@@ -267,48 +299,52 @@ export const ListenerMediaSoupProvider = ({ children }) => {
     log('Left room', 'warn');
   }, [cleanup, log]);
 
+  useEffect(() => {
+    leaveRoomRef.current = leaveRoom;
+  }, [leaveRoom]);
+
   // ── Socket events ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!socket) return;
 
-    const onNewProducer = async ({roomId}) => {
+    const onNewProducer = async ({ roomId }) => {
       log('Creator started streaming — consuming…', 'info');
       const currentRoom = activeRoomIdRef.current;
       // Guard: if device isn't loaded yet, joinRoom will call startConsuming
       // after loading the device (hasProducer will be true by then)
 
-        
-      if (currentRoom && deviceRef.current) {
+
+      if (currentRoom && deviceRef.current && !consumerRef.current) { 
         await startConsuming(currentRoom);
       }
       setCurrentStreamingRoomIds(prev => ({ ...prev, [roomId]: true })); // Mark this room as having an active stream
     };
 
     const onCreatorLeft = (payload) => {
-  // Ignore if we're not currently consuming
-  if (!consumerRef.current && !recvTransportRef.current) {
-    log('creator-left ignored — not consuming', 'warn');
-    return;
-  }
+      // Ignore if we're not currently consuming
+      if (!consumerRef.current && !recvTransportRef.current) {
+        log('creator-left ignored — not consuming', 'warn');
+        return;
+      }
 
-  // Debounce — ignore duplicate creator-left within 2 seconds
-  if (creatorLeftTimerRef.current) {
-    log('creator-left debounced — duplicate ignored', 'warn');
-    return;
-  }
-  creatorLeftTimerRef.current = setTimeout(() => {
-    creatorLeftTimerRef.current = null;
-  }, 2000);
+      // Debounce — ignore duplicate creator-left within 2 seconds
+      if (creatorLeftTimerRef.current) {
+        log('creator-left debounced — duplicate ignored', 'warn');
+        return;
+      }
+      creatorLeftTimerRef.current = setTimeout(() => {
+        creatorLeftTimerRef.current = null;
+      }, 2000);
 
-  log('Creator left the room', 'warn');
-  if (consumerRef.current)      { consumerRef.current.close();      consumerRef.current = null; }
-  if (recvTransportRef.current) { recvTransportRef.current.close(); recvTransportRef.current = null; }
-  setRemoteStreamTraced(null);
-  if (payload?.roomId) {
-    setCurrentStreamingRoomIds(prev => ({ ...prev, [payload.roomId]: false }));
-  }
-  leaveRoom();
-};
+      log('Creator left the room', 'warn');
+      if (consumerRef.current) { consumerRef.current.close(); consumerRef.current = null; }
+      if (recvTransportRef.current) { recvTransportRef.current.close(); recvTransportRef.current = null; }
+      setRemoteStreamTraced(null);
+      if (payload?.roomId) {
+        setCurrentStreamingRoomIds(prev => ({ ...prev, [payload.roomId]: false }));
+      }
+      leaveRoomRef.current?.(); 
+    };
 
     const onProducerClosed = () => {
       log('Producer closed by server', 'warn');
@@ -317,71 +353,83 @@ export const ListenerMediaSoupProvider = ({ children }) => {
       setRemoteStreamTraced(null);
     };
 
-    socket.on('ms:new-producer',    onNewProducer);
-    socket.on('creator-left',       onCreatorLeft);
+    socket.on('ms:new-producer', onNewProducer);
+    socket.on('creator-left', onCreatorLeft);
     socket.on('ms:producer-closed', onProducerClosed);
 
     return () => {
-      socket.off('ms:new-producer',    onNewProducer);
-      socket.off('creator-left',       onCreatorLeft);
+      socket.off('ms:new-producer', onNewProducer);
+      socket.off('creator-left', onCreatorLeft);
       socket.off('ms:producer-closed', onProducerClosed);
     };
-  }, [socket, startConsuming, leaveRoom, log]);
+  }, [socket, startConsuming,   log]);
 
   // ── Cleanup on socket disconnect ─────────────────────────────────────────────
   // ── Cleanup on socket disconnect (with grace period for remote reconnect) ────
-   
 
-    useEffect(() => {
-      if (!isConnected && status !== 'idle') {
-        // Wait 5s before cleanup — remote socket may briefly disconnect and reconnect
-        disconnectTimerRef.current = setTimeout(() => {
-          if (!isConnected) {
-            cleanup();
-            activeRoomIdRef.current = null;
-            setStatus('idle');
-            setStatusText('Disconnected');
-            setRoomId(null);
-          }
-        }, 5000);
-      } else if (isConnected) {
-        // Reconnected — cancel pending cleanup
-        if (disconnectTimerRef.current) {
-          clearTimeout(disconnectTimerRef.current);
-          disconnectTimerRef.current = null;
-        }
-      }
-    }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-      if (!isConnected || !currentUserId) return;
-  
-      const list = contactList;
-      if (!Array.isArray(list) || list.length === 0) return;
-  
-      const roomIds = [
-        ...new Set(
-          list
-            .map(contact => {
-              if (contact?.user_id === currentUserId)
-                return `sos-live-${contact?.trusted_user_id}`;
-              if (contact?.trusted_user_id === currentUserId)
-                return `sos-live-${contact?.user_id}`; 
-              return null;
-            })
-            .filter(Boolean),
-        ),
-      ];
-  
-      if (roomIds.length === 0) return;
-      console.log('Checking streaming status for rooms:', roomIds);
-      emit('ms:check-rooms-has-creator', { roomIds })
-        .then(statuses => { 
-            console.log('Received streaming status for rooms:', statuses?.rooms);
-           setCurrentStreamingRoomIds(statuses?.rooms || {});
-        })
-        .catch(() => {});
-    }, [isConnected, currentUserId, contactList, emit]);
+    if (!isConnected && status !== 'idle') {
+      // Wait 5s before cleanup — remote socket may briefly disconnect and reconnect
+      disconnectTimerRef.current = setTimeout(() => {
+        if (!isConnected) {
+          cleanup();
+          activeRoomIdRef.current = null;
+          setStatus('idle');
+          setStatusText('Disconnected');
+          setRoomId(null);
+        }
+      }, 5000);
+    } else if (isConnected) {
+      // Reconnected — cancel pending cleanup
+      if (disconnectTimerRef.current) {
+        clearTimeout(disconnectTimerRef.current);
+        disconnectTimerRef.current = null;
+      }
+    }
+  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isConnected || !currentUserId) return;
+
+    const list = contactList;
+    if (!Array.isArray(list) || list.length === 0) return;
+
+    const roomIds = [
+      ...new Set(
+        list
+          .map(contact => {
+            if (contact?.user_id === currentUserId)
+              return `sos-live-${contact?.trusted_user_id}`;
+            if (contact?.trusted_user_id === currentUserId)
+              return `sos-live-${contact?.user_id}`;
+            return null;
+          })
+          .filter(Boolean),
+      ),
+    ];
+
+    if (roomIds.length === 0) return;
+    console.log('Checking streaming status for rooms:', roomIds);
+    emit('ms:check-rooms-has-creator', { roomIds })
+      .then(statuses => {
+        console.log('Received streaming status for rooms:', statuses?.rooms);
+        setCurrentStreamingRoomIds(statuses?.rooms || {});
+      })
+      .catch(() => { });
+  }, [isConnected, currentUserId, contactList, emit]);
+
+  //23-2026: Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (disconnectTimerRef.current)   clearTimeout(disconnectTimerRef.current);
+      if (creatorLeftTimerRef.current)  clearTimeout(creatorLeftTimerRef.current);
+      // Also stop any lingering stats/transport intervals
+      if (statsIntervalRef.current)     clearInterval(statsIntervalRef.current);
+      if (transportCleanupRef.current)  transportCleanupRef.current();
+    };
+  }, []); 
+  //23-2026 end
 
   const value = {
     status,

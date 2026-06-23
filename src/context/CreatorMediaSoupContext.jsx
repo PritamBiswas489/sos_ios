@@ -54,6 +54,7 @@ export const CreatorMediaSoupProvider = ({ children }) => {
   const producerRef = useRef(null);
   const localStreamRef = useRef(null);
   const creatorDisconnectTimerRef = useRef(null);
+  const transportCleanupRef       = useRef(null); //23-2026
 
   // Observable state
   const [status, setStatus] = useState('idle');
@@ -67,9 +68,9 @@ export const CreatorMediaSoupProvider = ({ children }) => {
 
   // ── Logging ──────────────────────────────────────────────────────────────────
   const log = useCallback((msg, type = 'info') => {
-    const ts = new Date().toTimeString().slice(0, 8);
-    setLogs(prev => [...prev.slice(-199), { ts, msg, type }]);
-    console.log(`[Creator][${type.toUpperCase()}] ${msg}`);
+    // const ts = new Date().toTimeString().slice(0, 8);
+    // setLogs(prev => [...prev.slice(-199), { ts, msg, type }]);
+    // console.log(`[Creator][${type.toUpperCase()}] ${msg}`);
   }, []);
 
   const clearLogs = useCallback(() => setLogs([]), []);
@@ -99,13 +100,17 @@ export const CreatorMediaSoupProvider = ({ children }) => {
 
   // ── Cleanup ──────────────────────────────────────────────────────────────────
   const cleanup = useCallback(() => {
+    if (transportCleanupRef.current) {        // ← ADD THESE 3 LINES
+      transportCleanupRef.current();
+      transportCleanupRef.current = null;
+    }
     if (producerRef.current) { producerRef.current.close(); producerRef.current = null; }
     if (sendTransportRef.current) { sendTransportRef.current.close(); sendTransportRef.current = null; }
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
     }
-    InCallManager.stop({ busytone: '' });
+    try { InCallManager.stop({ busytone: '' }); } catch (_) {}
     setConnectedListeners({});
     setIceState('—');
     setDtlsState('—');
@@ -159,7 +164,7 @@ export const CreatorMediaSoupProvider = ({ children }) => {
       });
       sendTransportRef.current = sendTransport;
       log(`Send transport created: ${sendTransport.id}`, 'ok');
-      watchTransport(sendTransport);
+      transportCleanupRef.current = watchTransport(sendTransport); //23-2026
 
       sendTransport.on('connect', async ({ dtlsParameters }, cb, eb) => {
         try {
@@ -309,6 +314,17 @@ export const CreatorMediaSoupProvider = ({ children }) => {
       }
     }
   }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  
+  //23-2026: Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (creatorDisconnectTimerRef.current) clearTimeout(creatorDisconnectTimerRef.current);
+      // Also stop any lingering transport interval
+      if (transportCleanupRef.current) transportCleanupRef.current();
+    };
+  }, []);
+  //23-2026 end
 
   const value = {
     status,

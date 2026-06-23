@@ -45,7 +45,7 @@ export const SocketProvider = ({children}) => {
             }
           }
 
-        }, [chatContactList, isConnected, isAuthenticated, socketRef.current]);
+        }, [chatContactList, isConnected, isAuthenticated]);
 
         useEffect(() => {
             let isMounted = true;
@@ -180,7 +180,17 @@ export const SocketProvider = ({children}) => {
             if (!socketRef.current?.connected) {
                 return reject(new Error('Socket not connected'));
             }
+            let settled = false;
+            const timer = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                reject(new Error('Socket emit timeout'));
+            }, 10000);
+
             socketRef.current.emit(event, data, response => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
                 if (response?.success === false) {
                     reject(new Error(response.error || 'Socket event failed'));
                 } else {

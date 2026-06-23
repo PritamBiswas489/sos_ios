@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Linking,
   ScrollView,
+  Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -31,8 +32,15 @@ const NoPermissionsScreen = ({ missingPermissions = [], onRetry }) => {
   const notificationMissing = missingPermissions.includes('notification');
   const microphoneMissing = missingPermissions.includes('microphone');
 
-  const openSettings = () => {
-    Linking.openSettings();
+  const openSettings = async () => {
+    try {
+      await Linking.openSettings();
+    } catch (error) {
+      Alert.alert(
+        'Unable to Open Settings',
+        'Please go to Settings manually and grant the required permissions.',
+      );
+    }
   };
 
   return (
@@ -48,7 +56,7 @@ const NoPermissionsScreen = ({ missingPermissions = [], onRetry }) => {
         <Text style={styles.title}>Permissions Required</Text>
         <Text style={styles.subtitle}>
           SOS App needs the following permissions to keep you and your contacts
-          safe. Without them, core features won't work. 
+          safe. Without them, core features won't work.
         </Text>
 
         {/* Permission items */}
