@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -11,7 +10,6 @@ import {
   Easing,
   StyleSheet,
   KeyboardAvoidingView,
-  StatusBar,
   Platform,
   Modal,
   TouchableOpacity,
@@ -27,6 +25,9 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { uploadMedia } from '../../config/apiClient';
 import DeviceInfo from 'react-native-device-info';
+import appFonts from '../../theme/appFonts';
+import appColors from '../../theme/appColors';
+import { SW, SH, SF } from '../../theme/dimensions';
 
 // ─── NOTE ────────────────────────────────────────────────────────────────────
 // This component requires the following peer package:
@@ -44,21 +45,21 @@ import DeviceInfo from 'react-native-device-info';
 // import { launchImageLibrary } from 'react-native-image-picker';
 
 const COLORS = {
-  bg: '#0B0D12',
-  surface: '#14171F',
-  surfaceRaised: '#1B1F2A',
-  border: '#262B38',
-  borderFocus: '#5B8CFF',
-  text: '#F2F4F8',
-  textDim: '#9AA3B5',
-  textFaint: '#5C6377',
-  accent: '#5B8CFF',
-  accentSoft: 'rgba(91, 140, 255, 0.12)',
+  bg: appColors.DarkPrimary,
+  surface: appColors.primaryAA,
+  surfaceRaised: appColors.primaryAA,
+  border: appColors.primary,
+  borderFocus: appColors.primary,
+  text: appColors.white,
+  textDim: appColors.bodyColor,
+  textFaint: appColors.bodyColor,
+  accent: appColors.primary,
+  accentSoft: appColors.primaryAA,
   star: '#FFC857',
   success: '#3DDC97',
   danger: '#FF6B6B',
-  attachBg: '#1B1F2A',
-  attachBorder: '#2E3545',
+  attachBg: appColors.primaryAA,
+  attachBorder: appColors.primary,
 };
 
 const FEEDBACK_TYPES = [
@@ -168,17 +169,17 @@ function AttachmentSlot({ index, attachment, onPick, onRemove }) {
 
 const slotStyles = StyleSheet.create({
   wrapper: {
-    marginBottom: 12,
+    marginBottom: SW(12),
   },
   // ── Empty slot ──
   empty: {
-    borderWidth: 1,
-    borderColor: COLORS.attachBorder,
+    borderWidth: 0.7,
+    borderColor: appColors.primary,
     borderStyle: 'dashed',
-    borderRadius: 12,
-    backgroundColor: COLORS.attachBg,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    borderRadius: SW(14),
+    backgroundColor: appColors.primaryAA,
+    paddingVertical: SW(18),
+    paddingHorizontal: SW(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -186,28 +187,28 @@ const slotStyles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyLabel: {
-    color: COLORS.textDim,
-    fontSize: 13,
-    fontWeight: '600',
+    color: appColors.bodyColor,
+    fontSize: SF(13),
+    fontFamily: appFonts.NunitoSemiBold,
     marginTop: 8,
   },
   emptyHint: {
-    color: COLORS.textFaint,
-    fontSize: 11,
+    color: appColors.bodyColor,
+    fontSize: SF(11),
     marginTop: 3,
   },
   // ── Filled card ──
   card: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
+    backgroundColor: appColors.primaryAA,
+    borderWidth: 0.7,
+    borderColor: appColors.primary,
+    borderRadius: SW(14),
     overflow: 'hidden',
   },
   thumbWrap: {
     width: '100%',
     height: 180,
-    backgroundColor: COLORS.surfaceRaised,
+    backgroundColor: appColors.primaryAA,
   },
   thumb: {
     width: '100%',
@@ -218,7 +219,7 @@ const slotStyles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surfaceRaised,
+    backgroundColor: appColors.primaryAA,
   },
   mockThumbIcon: {
     fontSize: 48,
@@ -243,16 +244,16 @@ const slotStyles = StyleSheet.create({
     paddingVertical: 3,
   },
   typeBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
+    color: appColors.white,
+    fontSize: SF(10),
+    fontFamily: appFonts.NunitoBold,
     letterSpacing: 0.5,
   },
   cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: SW(14),
+    paddingVertical: SW(12),
     justifyContent: 'space-between',
   },
   cardMetaText: {
@@ -260,13 +261,13 @@ const slotStyles = StyleSheet.create({
     marginRight: 10,
   },
   fileName: {
-    color: COLORS.text,
-    fontSize: 13,
-    fontWeight: '600',
+    color: appColors.white,
+    fontSize: SF(13),
+    fontFamily: appFonts.NunitoSemiBold,
   },
   fileMime: {
-    color: COLORS.textFaint,
-    fontSize: 11,
+    color: appColors.bodyColor,
+    fontSize: SF(11),
     marginTop: 2,
   },
   removeBtn: {
@@ -513,322 +514,293 @@ export default function AppFeedback() {
   }, 1);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg} />
-      <KeyboardAvoidingView
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.headerWrap}>
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Icon name="arrow-back" size={24} color="#fff" />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Send feedback</Text>
-            </View>
-            <Text style={styles.headerSubtitle}>
-              Tell us what's working and what isn't. It helps us improve the app for everyone.
-            </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8}>
+            <Icon name="arrow-back" size={24} color={appColors.white} />
+          </TouchableOpacity>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.headerTitle}>Send Feedback</Text>
           </View>
         </View>
 
-        <ScrollView
-          style={styles.flex}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Rating */}
-          <View style={styles.section}>
-            <Text style={styles.label}>How would you rate your experience?</Text>
-            <View style={styles.starRow}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable
-                  key={n}
-                  onPress={() => {
-                    setRating(n);
-                    setErrors((p) => ({ ...p, rating: undefined }));
-                  }}
-                  hitSlop={8}
-                  style={styles.starButton}
-                >
-                  <Text style={[styles.star, n <= rating && styles.starFilled]}>
-                    {n <= rating ? '★' : '☆'}
-                  </Text>
-                </Pressable>
-              ))}
-              {rating > 0 && (
-                <Text style={styles.ratingLabel}>{RATING_LABELS[rating - 1]}</Text>
-              )}
-            </View>
-            {errors.rating && <Text style={styles.errorText}>{errors.rating}</Text>}
-          </View>
-
-          {/* Feedback type */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Feedback type</Text>
-            <Pressable
-              style={[
-                styles.selectInput,
-                errors.feedbackType && styles.inputError,
-              ]}
-              onPress={() => setTypeMenuOpen(true)}
-            >
-              <Text
-                style={[
-                  styles.selectInputText,
-                  !selectedTypeLabel && styles.placeholderText,
-                ]}
+        {/* Rating */}
+        <View style={styles.section}>
+          <Text style={styles.label}>How would you rate your experience?</Text>
+          <View style={styles.starRow}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Pressable
+                key={n}
+                onPress={() => {
+                  setRating(n);
+                  setErrors((p) => ({ ...p, rating: undefined }));
+                }}
+                hitSlop={8}
+                style={styles.starButton}
               >
-                {selectedTypeLabel || 'Select a category'}
-              </Text>
-              <Text style={styles.chevron}>⌄</Text>
-            </Pressable>
-            {errors.feedbackType && (
-              <Text style={styles.errorText}>{errors.feedbackType}</Text>
+                <Text style={[styles.star, n <= rating && styles.starFilled]}>
+                  {n <= rating ? '★' : '☆'}
+                </Text>
+              </Pressable>
+            ))}
+            {rating > 0 && (
+              <Text style={styles.ratingLabel}>{RATING_LABELS[rating - 1]}</Text>
             )}
           </View>
-
-          {/* Message */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Your message</Text>
-            <TextInput
-              style={[styles.textArea, errors.message && styles.inputError]}
-              placeholder="Describe the issue, idea, or comment in detail..."
-              placeholderTextColor={COLORS.textFaint}
-              multiline
-              numberOfLines={5}
-              value={message}
-              onChangeText={(v) => {
-                setMessage(v);
-                if (v.trim()) setErrors((p) => ({ ...p, message: undefined }));
-              }}
-              textAlignVertical="top"
-            />
-            {errors.message && <Text style={styles.errorText}>{errors.message}</Text>}
-          </View>
-
-          {/* Attachments – up to 3 optional slots */}
-          <View style={styles.section}>
-            <View style={styles.attachmentHeader}>
-              <Text style={styles.label}>Attachments</Text>
-              <Text style={styles.attachmentOptional}>Optional · up to 3</Text>
-            </View>
-            <Text style={styles.attachmentHint}>
-              Add screenshots or screen recordings from your gallery.
-            </Text>
-            <View style={styles.attachmentList}>
-              {attachments.slice(0, visibleSlotCount).map((attachment, i) => (
-                <AttachmentSlot
-                  key={i}
-                  index={i}
-                  attachment={attachment}
-                  onPick={handlePickAttachment}
-                  onRemove={removeAttachment}
-                />
-              ))}
-            </View>
-          </View>
-
-          {/* Allow contact */}
-          <View style={[styles.section, styles.switchRow]}>
-            <View style={styles.switchTextWrap}>
-              <Text style={styles.label}>Allow us to contact you</Text>
-              <Text style={styles.helperText}>
-                We may follow up about this feedback by email.
-              </Text>
-            </View>
-            <Switch
-              value={allowContact}
-              onValueChange={setAllowContact}
-              trackColor={{ false: COLORS.border, true: COLORS.accent }}
-              thumbColor={Platform.OS === 'android' ? COLORS.text : undefined}
-              ios_backgroundColor={COLORS.border}
-            />
-          </View>
-
-          <View style={styles.footerSpacer} />
-        </ScrollView>
-
-        <View style={styles.footerWrap}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.submitButton,
-              pressed && styles.submitButtonPressed,
-              submitting && styles.submitButtonDisabled,
-            ]}
-            onPress={handleSubmit}
-            disabled={submitting}
-          >
-            <Text style={styles.submitButtonText}>
-              {submitting ? 'Sending…' : 'Submit feedback'}
-            </Text>
-          </Pressable>
+          {errors.rating && <Text style={styles.errorText}>{errors.rating}</Text>}
         </View>
 
-        {/* Feedback type modal */}
-        <Modal
-          visible={typeMenuOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setTypeMenuOpen(false)}
-        >
+        {/* Feedback type */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Feedback type</Text>
           <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setTypeMenuOpen(false)}
+            style={[
+              styles.selectInput,
+              errors.feedbackType && styles.inputError,
+            ]}
+            onPress={() => setTypeMenuOpen(true)}
           >
-            <View style={styles.menuCard}>
-              <Text style={styles.menuTitle}>Select feedback type</Text>
-              {FEEDBACK_TYPES.map((t) => (
-                <Pressable
-                  key={t.key}
-                  style={[
-                    styles.menuItem,
-                    feedbackType === t.key && styles.menuItemActive,
-                  ]}
-                  onPress={() => {
-                    setFeedbackType(t.key);
-                    setErrors((p) => ({ ...p, feedbackType: undefined }));
-                    setTypeMenuOpen(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.menuItemText,
-                      feedbackType === t.key && styles.menuItemTextActive,
-                    ]}
-                  >
-                    {t.label}
-                  </Text>
-                  {feedbackType === t.key && (
-                    <Text style={styles.menuItemCheck}>✓</Text>
-                  )}
-                </Pressable>
-              ))}
-            </View>
-          </Pressable>
-        </Modal>
-
-        {/* Success overlay */}
-        {showSuccess && (
-          <Modal visible transparent animationType="none">
-            <Animated.View
-              style={[styles.successOverlay, { opacity: overlayOpacity }]}
+            <Text
+              style={[
+                styles.selectInputText,
+                !selectedTypeLabel && styles.placeholderText,
+              ]}
             >
-              <Animated.View
+              {selectedTypeLabel || 'Select a category'}
+            </Text>
+            <Text style={styles.chevron}>⌄</Text>
+          </Pressable>
+          {errors.feedbackType && (
+            <Text style={styles.errorText}>{errors.feedbackType}</Text>
+          )}
+        </View>
+
+        {/* Message */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Your message</Text>
+          <TextInput
+            style={[styles.textArea, errors.message && styles.inputError]}
+            placeholder="Describe the issue, idea, or comment in detail..."
+            placeholderTextColor={COLORS.textFaint}
+            multiline
+            numberOfLines={5}
+            value={message}
+            onChangeText={(v) => {
+              setMessage(v);
+              if (v.trim()) setErrors((p) => ({ ...p, message: undefined }));
+            }}
+            textAlignVertical="top"
+          />
+          {errors.message && <Text style={styles.errorText}>{errors.message}</Text>}
+        </View>
+
+        {/* Attachments – up to 3 optional slots */}
+        <View style={styles.section}>
+          <View style={styles.attachmentHeader}>
+            <Text style={styles.label}>Attachments</Text>
+            <Text style={styles.attachmentOptional}>Optional · up to 3</Text>
+          </View>
+          <Text style={styles.attachmentHint}>
+            Add screenshots or screen recordings from your gallery.
+          </Text>
+          <View style={styles.attachmentList}>
+            {attachments.slice(0, visibleSlotCount).map((attachment, i) => (
+              <AttachmentSlot
+                key={i}
+                index={i}
+                attachment={attachment}
+                onPick={handlePickAttachment}
+                onRemove={removeAttachment}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Allow contact */}
+        <View style={[styles.section, styles.switchRow]}>
+          <View style={styles.switchTextWrap}>
+            <Text style={styles.label}>Allow us to contact you</Text>
+            <Text style={styles.helperText}>
+              We may follow up about this feedback by email.
+            </Text>
+          </View>
+          <Switch
+            value={allowContact}
+            onValueChange={setAllowContact}
+            trackColor={{ false: COLORS.border, true: COLORS.accent }}
+            thumbColor={Platform.OS === 'android' ? COLORS.text : undefined}
+            ios_backgroundColor={COLORS.border}
+          />
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.submitButton,
+            pressed && styles.submitButtonPressed,
+            submitting && styles.submitButtonDisabled,
+          ]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          <Text style={styles.submitButtonText}>
+            {submitting ? 'Sending…' : 'Submit feedback'}
+          </Text>
+        </Pressable>
+
+        <View style={{ height: 24 }} />
+      </ScrollView>
+
+      {/* Feedback type modal */}
+      <Modal
+        visible={typeMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTypeMenuOpen(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setTypeMenuOpen(false)}
+        >
+          <View style={styles.menuCard}>
+            <Text style={styles.menuTitle}>Select feedback type</Text>
+            {FEEDBACK_TYPES.map((t) => (
+              <Pressable
+                key={t.key}
                 style={[
-                  styles.successCard,
-                  {
-                    opacity: cardOpacity,
-                    transform: [{ translateY: cardTranslate }],
-                  },
+                  styles.menuItem,
+                  feedbackType === t.key && styles.menuItemActive,
                 ]}
+                onPress={() => {
+                  setFeedbackType(t.key);
+                  setErrors((p) => ({ ...p, feedbackType: undefined }));
+                  setTypeMenuOpen(false);
+                }}
               >
-                <View style={styles.checkWrap}>
-                  <Animated.View
-                    style={[
-                      styles.successRing,
-                      {
-                        transform: [{ scale: ringScale }],
-                        opacity: ringScale.interpolate({
-                          inputRange: [0.4, 1],
-                          outputRange: [0.5, 0],
-                        }),
-                      },
-                    ]}
-                  />
-                  <Animated.View
-                    style={[
-                      styles.checkCircle,
-                      {
-                        opacity: checkOpacity,
-                        transform: [{ scale: checkScale }],
-                      },
-                    ]}
-                  >
-                    <Text style={styles.checkMark}>✓</Text>
-                  </Animated.View>
-                </View>
-                <Text style={styles.successTitle}>Feedback sent</Text>
-                <Text style={styles.successSubtitle}>
-                  Thanks for helping us improve the app.
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    feedbackType === t.key && styles.menuItemTextActive,
+                  ]}
+                >
+                  {t.label}
                 </Text>
-                <Pressable style={styles.successButton} onPress={dismissSuccess}>
-                  <Text style={styles.successButtonText}>Done</Text>
-                </Pressable>
-              </Animated.View>
+                {feedbackType === t.key && (
+                  <Text style={styles.menuItemCheck}>✓</Text>
+                )}
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Success overlay */}
+      {showSuccess && (
+        <Modal visible transparent animationType="none">
+          <Animated.View
+            style={[styles.successOverlay, { opacity: overlayOpacity }]}
+          >
+            <Animated.View
+              style={[
+                styles.successCard,
+                {
+                  opacity: cardOpacity,
+                  transform: [{ translateY: cardTranslate }],
+                },
+              ]}
+            >
+              <View style={styles.checkWrap}>
+                <Animated.View
+                  style={[
+                    styles.successRing,
+                    {
+                      transform: [{ scale: ringScale }],
+                      opacity: ringScale.interpolate({
+                        inputRange: [0.4, 1],
+                        outputRange: [0.5, 0],
+                      }),
+                    },
+                  ]}
+                />
+                <Animated.View
+                  style={[
+                    styles.checkCircle,
+                    {
+                      opacity: checkOpacity,
+                      transform: [{ scale: checkScale }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.checkMark}>✓</Text>
+                </Animated.View>
+              </View>
+              <Text style={styles.successTitle}>Feedback sent</Text>
+              <Text style={styles.successSubtitle}>
+                Thanks for helping us improve the app.
+              </Text>
+              <Pressable style={styles.successButton} onPress={dismissSuccess}>
+                <Text style={styles.successButtonText}>Done</Text>
+              </Pressable>
             </Animated.View>
-          </Modal>
-        )}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </Animated.View>
+        </Modal>
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  flex: { flex: 1 },
+  flex: { flex: 1, backgroundColor: appColors.DarkPrimary },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: SW(18),
+    paddingBottom: 24,
   },
-  headerWrap: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
+  // ── Header — mirrors AddContactsScreen ──
   header: {
-    marginBottom: 16,
-  },
-  headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingTop: SW(48),
+    marginBottom: SW(20),
   },
-  backButton: {
-    marginRight: 12,
+  headerTextWrap: {
+    flex: 1,
+    marginLeft: SW(10),
   },
   headerTitle: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    color: appColors.white,
+    fontSize: SF(17),
+    fontFamily: appFonts.NunitoBold,
   },
   headerSubtitle: {
-    color: COLORS.textDim,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 8,
+    color: appColors.bodyColor,
+    fontSize: SF(10),
+    fontFamily: appFonts.NunitoSemiBold,
   },
-  footerWrap: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 14 : 12,
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  footerSpacer: {
-    height: 96,
-  },
+  // ── Sections & labels ──
   section: {
-    marginBottom: 22,
+    marginBottom: SW(20),
   },
   label: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 10,
+    color: appColors.bodyColor,
+    fontSize: SF(11),
+    marginTop: SW(20),
+    marginBottom: SW(8),
   },
   helperText: {
-    color: COLORS.textFaint,
-    fontSize: 12,
+    color: appColors.bodyColor,
+    fontSize: SF(11),
     marginTop: 4,
-    maxWidth: 240,
   },
+  // ── Stars ──
   starRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -838,105 +810,103 @@ const styles = StyleSheet.create({
   },
   star: {
     fontSize: 34,
-    color: COLORS.textFaint,
+    color: appColors.bodyColor,
   },
   starFilled: {
-    color: COLORS.star,
+    color: '#FFC857',
   },
   ratingLabel: {
-    color: COLORS.textDim,
-    fontSize: 13,
+    color: appColors.bodyColor,
+    fontSize: SF(13),
     marginLeft: 10,
-    fontWeight: '500',
+    fontFamily: appFonts.NunitoSemiBold,
   },
+  // ── Select / inputs — mirror inputBox ──
   selectInput: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderWidth: 0.7,
+    borderColor: appColors.primary,
+    backgroundColor: appColors.primaryAA,
+    borderRadius: SW(14),
+    paddingHorizontal: SW(14),
+    height: SW(48),
   },
   selectInputText: {
-    color: COLORS.text,
-    fontSize: 15,
+    color: appColors.white,
+    fontSize: SF(14),
   },
   placeholderText: {
-    color: COLORS.textFaint,
+    color: appColors.bodyColor,
   },
   chevron: {
-    color: COLORS.textDim,
-    fontSize: 16,
+    color: appColors.bodyColor,
+    fontSize: SF(16),
   },
   textArea: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: COLORS.text,
-    fontSize: 15,
+    borderWidth: 0.7,
+    borderColor: appColors.primary,
+    backgroundColor: appColors.primaryAA,
+    borderRadius: SW(14),
+    paddingHorizontal: SW(14),
+    paddingVertical: SW(12),
+    color: appColors.white,
+    fontSize: SF(14),
     minHeight: 120,
   },
   inputError: {
-    borderColor: COLORS.danger,
+    borderColor: '#FF6B6B',
   },
   errorText: {
-    color: COLORS.danger,
-    fontSize: 12,
+    color: '#FF6B6B',
+    fontSize: SF(12),
     marginTop: 6,
   },
-  // Attachments
+  // ── Attachments ──
   attachmentHeader: {
     flexDirection: 'row',
     alignItems: 'baseline',
+    marginTop: SW(20),
     marginBottom: 4,
   },
   attachmentOptional: {
-    color: COLORS.textFaint,
-    fontSize: 11,
+    color: appColors.bodyColor,
+    fontSize: SF(11),
     marginLeft: 8,
-    fontWeight: '500',
   },
   attachmentHint: {
-    color: COLORS.textFaint,
-    fontSize: 12,
-    marginBottom: 12,
-    lineHeight: 17,
+    color: appColors.bodyColor,
+    fontSize: SF(11),
+    marginBottom: SW(12),
   },
   attachmentList: {
     gap: 0,
   },
-  // Switch row
+  // ── Switch row — mirrors toggleCard ──
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.surface,
+    backgroundColor: appColors.whiteTransparent,
+    borderColor: appColors.whiteBdrTransparent,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: SW(14),
+    paddingHorizontal: SW(14),
+    paddingVertical: SW(14),
+    marginTop: SW(4),
   },
   switchTextWrap: {
     flex: 1,
     paddingRight: 12,
   },
+  // ── Submit button — mirrors saveBtn ──
   submitButton: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 14,
-    paddingVertical: 15,
+    backgroundColor: appColors.primary,
+    borderRadius: SW(16),
+    paddingVertical: SW(15),
     alignItems: 'center',
-    shadowColor: COLORS.accent,
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
+    marginTop: SW(18),
   },
   submitButtonPressed: {
     opacity: 0.85,
@@ -945,60 +915,63 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#0B0D12',
-    fontSize: 16,
-    fontWeight: '700',
+    color: appColors.white,
+    fontFamily: appFonts.NunitoBold,
+    fontSize: SF(13),
   },
-  // Type modal
+  // ── Type bottom-sheet modal ──
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   menuCard: {
-    backgroundColor: COLORS.surfaceRaised,
+    backgroundColor: appColors.primaryAA,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-    borderColor: COLORS.border,
+    paddingHorizontal: SW(20),
+    paddingTop: SW(18),
+    paddingBottom: SW(32),
+    borderTopWidth: 0.7,
+    borderColor: appColors.primary,
   },
   menuTitle: {
-    color: COLORS.textDim,
-    fontSize: 13,
-    fontWeight: '600',
+    color: appColors.bodyColor,
+    fontSize: SF(11),
+    fontFamily: appFonts.NunitoSemiBold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: SW(12),
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: SW(14),
+    paddingHorizontal: SW(14),
+    borderRadius: SW(10),
     marginBottom: 4,
   },
   menuItemActive: {
-    backgroundColor: COLORS.accentSoft,
+    backgroundColor: appColors.primaryAA,
+    borderWidth: 1,
+    borderColor: appColors.primary,
+    borderRadius: SW(10),
   },
   menuItemText: {
-    color: COLORS.text,
-    fontSize: 15,
+    color: appColors.white,
+    fontSize: SF(14),
   },
   menuItemTextActive: {
-    color: COLORS.accent,
-    fontWeight: '600',
+    color: appColors.white,
+    fontFamily: appFonts.NunitoBold,
   },
   menuItemCheck: {
-    color: COLORS.accent,
-    fontSize: 15,
-    fontWeight: '700',
+    color: appColors.primary,
+    fontSize: SF(15),
+    fontFamily: appFonts.NunitoBold,
   },
-  // Success overlay
+  // ── Success overlay ──
   successOverlay: {
     flex: 1,
     backgroundColor: 'rgba(4,5,8,0.78)',
@@ -1007,15 +980,15 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   successCard: {
-    backgroundColor: COLORS.surfaceRaised,
-    borderRadius: 24,
-    paddingVertical: 36,
-    paddingHorizontal: 28,
+    backgroundColor: appColors.primaryAA,
+    borderRadius: SW(24),
+    paddingVertical: SW(36),
+    paddingHorizontal: SW(28),
     alignItems: 'center',
     width: '100%',
     maxWidth: 340,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderWidth: 0.7,
+    borderColor: appColors.primary,
   },
   checkWrap: {
     width: 88,
@@ -1030,7 +1003,7 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 44,
     borderWidth: 2,
-    borderColor: COLORS.success,
+    borderColor: '#3DDC97',
   },
   checkCircle: {
     width: 72,
@@ -1038,36 +1011,36 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     backgroundColor: 'rgba(61, 220, 151, 0.14)',
     borderWidth: 1.5,
-    borderColor: COLORS.success,
+    borderColor: '#3DDC97',
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkMark: {
-    color: COLORS.success,
+    color: '#3DDC97',
     fontSize: 34,
-    fontWeight: '700',
+    fontFamily: appFonts.NunitoBold,
   },
   successTitle: {
-    color: COLORS.text,
-    fontSize: 19,
-    fontWeight: '700',
+    color: appColors.white,
+    fontSize: SF(19),
+    fontFamily: appFonts.NunitoBold,
     marginBottom: 6,
   },
   successSubtitle: {
-    color: COLORS.textDim,
-    fontSize: 13,
+    color: appColors.bodyColor,
+    fontSize: SF(13),
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: SW(24),
   },
   successButton: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+    backgroundColor: appColors.primary,
+    borderRadius: SW(12),
+    paddingVertical: SW(12),
+    paddingHorizontal: SW(32),
   },
   successButtonText: {
-    color: '#0B0D12',
-    fontSize: 14,
-    fontWeight: '700',
+    color: appColors.white,
+    fontFamily: appFonts.NunitoBold,
+    fontSize: SF(14),
   },
 });

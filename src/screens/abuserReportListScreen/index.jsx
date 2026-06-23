@@ -4,6 +4,7 @@ import {
   StyleSheet, SafeAreaView, StatusBar, TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Colors, Typography, Spacing, Radius } from '../../components/abuserReport/theme';
 import AbuserReportCard from '../../components/abuserReport/AbuserReportCard.jsx';
 import AbuserDetailsModal from '../../components/abuserReport/AbuserDetailsModal.jsx';
@@ -234,21 +235,19 @@ export default function ReportListScreen() {
       {/* ── Page Header ── */}
       <View style={styles.pageHeader}>
         <TouchableOpacity
-          style={styles.backBtn}
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.7}
         >
-          <Text style={styles.backArrow}>‹</Text>
+          <Icon name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
 
-        <View style={styles.headerCenter}>
+        <View style={styles.headerTextWrap}>
           <Text style={styles.headerTitle}>Abuser Reports</Text>
-          <Text style={styles.headerSubtitle}>Incident & threat records</Text>
+          
         </View>
 
-        {/* Right spacer keeps title truly centred */}
-        <View style={styles.backBtn} />
+         
       </View>
 
       <FlatList
@@ -284,33 +283,20 @@ const styles = StyleSheet.create({
   // ── Page header ──
   pageHeader: {
     flexDirection: 'row',
-    alignItems: 'left',
+    alignItems: 'center',
     paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.md,
+    paddingTop: 48,
     paddingBottom: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
     backgroundColor: Colors.bg,
   },
-  backBtn: {
-    width: 40, height: 40,
-    borderRadius: 20,
-
-    alignItems: 'center', justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 26, color: Colors.textPrimary,
-    lineHeight: 30, marginTop: -2,
-    fontWeight: '300',
-  },
-  headerCenter: { flex: 1, alignItems: 'left' ,marginLeft: 20 },
+  headerTextWrap: { flex: 1, marginLeft: 10 },
   headerTitle: {
-    fontSize: 18, fontWeight: '700',
-    color: Colors.textPrimary, letterSpacing: 0.2,
+    fontSize: 17, fontWeight: '700',
+    color: '#fff',
   },
   headerSubtitle: {
-    fontSize: 11, color: Colors.textMuted,
-    marginTop: 1, letterSpacing: 0.3,
+    fontSize: 10, color: Colors.textMuted,
+    letterSpacing: 0.3,
   },
   list: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxl },
 

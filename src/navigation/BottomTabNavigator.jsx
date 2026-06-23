@@ -1,7 +1,9 @@
-import React from 'react';
-import { TouchableOpacity } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { TouchableOpacity, View, Text, Animated, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
+ 
+import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useListenerMediaSoup } from '../context/ListenerMediaSoupContext';
 
@@ -11,7 +13,6 @@ import HealthScreen from '../screens/healthScreen';
 import AudioStreamScreen from '../screens/audioStream';
 import ChatScreen from '../screens/chatScreen';
 import StressMonitorScreen from '../screens/stressMonitor';
- 
 
 const Tab = createBottomTabNavigator();
 
@@ -23,6 +24,41 @@ const tabConfig = {
   Chat: { icon: 'chat', label: 'Chat' },
 };
 
+// ── Animated KobyTech Header Title ────────────────────────────────────────────
+const KobyTechHeader = () => {
+  const colorAnim = useRef(new Animated.Value(0)).current;
+  const dotAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(colorAnim, {
+        toValue: 1,
+        duration: 2500,
+        useNativeDriver: false,
+      })
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotAnim, { toValue: 0.2, duration: 700, useNativeDriver: true }),
+        Animated.timing(dotAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  const animatedColor = colorAnim.interpolate({
+    inputRange: [0, 0.33, 0.66, 1],
+    outputRange: ['#7c6ff7', '#ef4444', '#f59e0b', '#7c6ff7'],
+  });
+
+  return (
+    <View style={headerStyles.logoRow}>
+      <Animated.Text style={[headerStyles.brandText, { color: animatedColor }]}>
+        KobyTech
+      </Animated.Text>
+    </View>
+  );
+};
 const BottomTabNavigator = () => {
   const navigation = useNavigation();
   const { currentStreamingRoomIds } = useListenerMediaSoup();
@@ -36,11 +72,11 @@ const BottomTabNavigator = () => {
           backgroundColor: '#1A1A2E',
           elevation: 0,
           shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: '#2a2d3a',
         },
-        headerTitleStyle: {
-          color: '#FFFFFF',
-          fontWeight: '600',
-        },
+        headerTitle: () => <KobyTechHeader />,
+        headerTitleAlign: 'center',
         headerTintColor: '#FFFFFF',
         headerLeft: () => (
           <TouchableOpacity
@@ -73,15 +109,15 @@ const BottomTabNavigator = () => {
           fontSize: 11,
           fontWeight: '600',
         },
-        tabBarLabel: tabConfig[route.name].label,
+        tabBarLabel: tabConfig[route.name]?.label,
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Map" component={MapScreen} />
-      <Tab.Screen name="Health" component={StressMonitorScreen}
-       options={{
-          title: 'Stress Monitor',
-       }}
+      <Tab.Screen
+        name="Health"
+        component={StressMonitorScreen}
+        options={{ title: 'Stress Monitor' }}
       />
       <Tab.Screen
         name="AudioStream"
@@ -89,7 +125,11 @@ const BottomTabNavigator = () => {
         options={{
           title: 'Audio Stream',
           tabBarBadge: streamingCount > 0 ? streamingCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: '#FFD700', fontSize: 10, color: '#000' },
+          tabBarBadgeStyle: {
+            backgroundColor: '#FFD700',
+            fontSize: 10,
+            color: '#000',
+          },
         }}
       />
       <Tab.Screen name="Chat" component={ChatScreen} />
@@ -98,3 +138,60 @@ const BottomTabNavigator = () => {
 };
 
 export default BottomTabNavigator;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const headerStyles = StyleSheet.create({
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: '#7c6ff7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  iconLineTop: {
+    width: 14,
+    height: 2,
+    backgroundColor: '#fff',
+    borderRadius: 2,
+    opacity: 0.9,
+  },
+  iconLineMid: {
+    width: 10,
+    height: 2,
+    backgroundColor: '#fff',
+    borderRadius: 2,
+    opacity: 0.65,
+  },
+  iconLineBot: {
+    width: 14,
+    height: 2,
+    backgroundColor: '#fff',
+    borderRadius: 2,
+    opacity: 0.9,
+  },
+  brandText: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 3,
+    color: '#000',
+    textTransform: 'uppercase',
+  },
+  gradientFill: {
+    height: 30,
+    width: 155,
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+    marginLeft: 2,
+  },
+});

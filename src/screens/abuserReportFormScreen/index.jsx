@@ -14,6 +14,9 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { AbuseReportService } from '../../services/abuseRport.service.js';
 import { useNavigation } from '@react-navigation/native';
+import appColors from '../../theme/appColors';
+import appFonts from '../../theme/appFonts';
+import { SW, SF } from '../../theme/dimensions';
 
 const MAX_ABUSER_IMAGE_SIZE = 5 * 1024 * 1024;
 const ABUSE_TYPES = ['Physical', 'Psychological', 'Sexual', 'Financial', 'Stalking', 'Other'];
@@ -327,24 +330,19 @@ export default function ReportFormScreen({ onNavigateBack }) {
 
     return (
         <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+            <StatusBar barStyle="light-content" backgroundColor={appColors.DarkPrimary} />
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
                 <View style={styles.headerWrap}>
                     <View style={styles.header}>
-                        <View style={styles.headerTitleRow}>
-                            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.75}>
-                                <Icon name="arrow-back" size={24} color={Colors.textPrimary} />
-                            </TouchableOpacity>
-                            <Text style={styles.headerTitle}>Abuse report</Text>
-                            <TouchableOpacity onPress={()=>navigation.navigate('ReportList')} style={styles.resetButton} activeOpacity={0.85}>
-                                <Icon name="list" size={18} color={Colors.accent} />
-                                <Text style={styles.resetButtonText}>List reports</Text>
-                            </TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75}>
+                            <Icon name="arrow-back" size={24} color={appColors.white} />
+                        </TouchableOpacity>
+                        <View style={styles.headerTextWrap}>
+                            <Text style={styles.headerTitle}>Abuse Report</Text>
                         </View>
-                        <Text style={styles.headerSubtitle}>
-                            All information will handled with strict confidentiality.
-                            Provide incident details so the report can be reviewed and acted on quickly.
-                        </Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('ReportList')} activeOpacity={0.85}>
+                            <Icon name="list" size={24} color="#6B7C99" />
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -495,7 +493,7 @@ export default function ReportFormScreen({ onNavigateBack }) {
                                     <View style={styles.evidenceTop}>
                                         <View style={styles.evidenceHeaderRow}>
                                             <View style={styles.evidenceIconWrap}>
-                                                <Icon name={item.iconName} size={18} color={Colors.accent} />
+                                                <Icon name={item.iconName} size={18} color={appColors.primary} />
                                             </View>
                                             <View style={styles.evidenceTitleWrap}>
                                                 <Text style={styles.evidenceLabel}>{item.label}</Text>
@@ -508,7 +506,7 @@ export default function ReportFormScreen({ onNavigateBack }) {
                                         <>
                                             <View style={styles.evidenceFileCard}>
                                                 <View style={styles.evidenceFileTopRow}>
-                                                    <Icon name="insert-drive-file" size={18} color={Colors.textSecondary} />
+                                                    <Icon name="insert-drive-file" size={18} color={appColors.bodyColor} />
                                                     <Text style={styles.evidenceFileName} numberOfLines={2}>{selected.name}</Text>
                                                 </View>
                                                 <View style={styles.evidenceMetaRow}>
@@ -524,7 +522,7 @@ export default function ReportFormScreen({ onNavigateBack }) {
                                         </>
                                     ) : (
                                         <TouchableOpacity style={styles.evidenceUploadBtn} onPress={() => handlePickEvidence(item.key)} activeOpacity={0.75}>
-                                            <Icon name="upload-file" size={18} color={Colors.accent} />
+                                            <Icon name="upload-file" size={18} color={appColors.primary} />
                                             <Text style={styles.evidenceUploadText}>Attach Document</Text>
                                         </TouchableOpacity>
                                     )}
@@ -571,7 +569,7 @@ export default function ReportFormScreen({ onNavigateBack }) {
                         <Text style={styles.modalTitle}>Select Existing Abuser</Text>
                         {abuserListLoading ? (
                             <View style={styles.modalLoaderWrap}>
-                                <ActivityIndicator size="small" color={Colors.accent} />
+                                <ActivityIndicator size="small" color={appColors.primary} />
                                 <Text style={styles.modalLoaderText}>Loading abuser list...</Text>
                             </View>
                         ) : (
@@ -653,19 +651,19 @@ export default function ReportFormScreen({ onNavigateBack }) {
                         {/* Report details summary */}
                         <View style={styles.successDetailsCard}>
                             <View style={styles.successDetailRow}>
-                                <Icon name="badge" size={15} color={Colors.textSecondary} />
+                                <Icon name="badge" size={15} color={appColors.bodyColor} />
                                 <Text style={styles.successDetailLabel}>Report ID</Text>
                                 <Text style={styles.successDetailValue}>#{successModal.reportId}</Text>
                             </View>
                             <View style={styles.successDetailDivider} />
                             <View style={styles.successDetailRow}>
-                                <Icon name="person" size={15} color={Colors.textSecondary} />
+                                <Icon name="person" size={15} color={appColors.bodyColor} />
                                 <Text style={styles.successDetailLabel}>Abuser</Text>
                                 <Text style={styles.successDetailValue} numberOfLines={1}>{successModal.abuserName}</Text>
                             </View>
                             <View style={styles.successDetailDivider} />
                             <View style={styles.successDetailRow}>
-                                <Icon name="schedule" size={15} color={Colors.textSecondary} />
+                                <Icon name="schedule" size={15} color={appColors.bodyColor} />
                                 <Text style={styles.successDetailLabel}>Filed on</Text>
                                 <Text style={styles.successDetailValue}>{new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
                             </View>
@@ -693,7 +691,7 @@ export default function ReportFormScreen({ onNavigateBack }) {
                                     resetForm();
                                 }}
                             >
-                                <Icon name="add-circle-outline" size={18} color={Colors.accent} style={{ marginRight: 8 }} />
+                                <Icon name="add-circle-outline" size={18} color={appColors.primary} style={{ marginRight: 8 }} />
                                 <Text style={styles.successBtnOutlineText}>File Another Report</Text>
                             </TouchableOpacity>
                         </View>
@@ -703,7 +701,7 @@ export default function ReportFormScreen({ onNavigateBack }) {
 
             {saving && (
                 <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator animating={saving} size="large" color={Colors.accent} />
+                    <ActivityIndicator animating={saving} size="large" color={appColors.primary} />
                 </View>
             )}
         </SafeAreaView>
@@ -711,251 +709,324 @@ export default function ReportFormScreen({ onNavigateBack }) {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: Colors.bg },
+    safe: { flex: 1, backgroundColor: appColors.DarkPrimary },
     scroll: { flex: 1 },
-    content: { paddingHorizontal: Spacing.base, paddingTop: 0, paddingBottom: Spacing.xl },
+    content: { paddingHorizontal: SW(18), paddingTop: SW(8), paddingBottom: SW(32) },
 
-    headerWrap: { paddingHorizontal: Spacing.base, paddingTop: Spacing.base },
-    header: { marginBottom: Spacing.base },
-    headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    backButton: { marginRight: 12 },
-    headerTitle: { color: Colors.textPrimary, fontSize: 20, fontWeight: '700', letterSpacing: 0.2, flex: 1 },
-    resetButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 12,
-        paddingVertical: 9,
-        borderRadius: Radius.pill,
-        backgroundColor: Colors.accentMuted,
-        borderWidth: 1,
-        borderColor: Colors.accentGlow,
-    },
-    resetButtonText: {
-        ...Typography.captionBold,
-        color: Colors.accent,
-        letterSpacing: 0.2,
-    },
-    headerSubtitle: { ...Typography.caption, color: Colors.textSecondary, lineHeight: 20, marginTop: 8 },
+    // ── Header — mirrors AddContactsScreen ──
+    headerWrap: { paddingHorizontal: SW(18), paddingTop: SW(48) },
+    header: { flexDirection: 'row', alignItems: 'center', marginBottom: SW(16) },
+    headerTextWrap: { flex: 1, marginLeft: SW(10) },
+    headerTitle: { color: appColors.white, fontSize: SF(17), fontFamily: appFonts.NunitoBold },
+    headerSubtitle: { color: appColors.bodyColor, fontSize: SF(10), fontFamily: appFonts.NunitoSemiBold },
 
-    // Test data toggle
-    testDataToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider, borderStyle: 'dashed', paddingHorizontal: Spacing.base, paddingVertical: Spacing.md, marginBottom: Spacing.lg },
-    testDataToggleActive: { borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.06)', borderStyle: 'solid' },
-    testDataToggleLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1 },
-    testDataDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.divider },
-    testDataDotActive: { backgroundColor: '#F59E0B' },
-    testDataToggleLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-    testDataToggleLabelActive: { color: '#F59E0B' },
-    testDataToggleHint: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
-    testDataPill: { borderWidth: 1, borderColor: Colors.divider, borderRadius: Radius.sm, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: Colors.inputBg },
-    testDataPillActive: { borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.12)' },
-    testDataPillText: { fontSize: 10, fontWeight: '700', color: Colors.textSecondary, letterSpacing: 0.5 },
-    testDataPillTextActive: { color: '#F59E0B' },
-
-    row: { flexDirection: 'row', gap: Spacing.md },
+    // ── Sections ──
+    row: { flexDirection: 'row', gap: SW(12) },
     halfField: { flex: 1 },
 
-    selectionCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider, padding: Spacing.base, marginBottom: Spacing.lg },
-    selectionCardTitle: { ...Typography.bodyBold, marginBottom: 6 },
-    selectionCardBody: { ...Typography.caption, color: Colors.textSecondary, marginBottom: 12 },
-    selectionActionRow: { flexDirection: 'row', gap: Spacing.md },
+    // ── Selection card — mirrors inputBox style ──
+    selectionCard: {
+        backgroundColor: appColors.primaryAA,
+        borderRadius: SW(14),
+        borderWidth: 0.7,
+        borderColor: appColors.primary,
+        padding: SW(14),
+        marginBottom: SW(14),
+    },
+    selectionCardTitle: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold, marginBottom: 6 },
+    selectionCardBody: { color: appColors.bodyColor, fontSize: SF(11), marginBottom: SW(12) },
+    selectionActionRow: { flexDirection: 'row', gap: SW(12) },
     selectionPrimaryBtn: { flex: 2 },
     selectionSecondaryBtn: { flex: 1 },
 
-    selectedAbuserCard: { flexDirection: 'row', gap: Spacing.md, backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.accentGlow, padding: Spacing.base, marginBottom: Spacing.xl },
-    selectedAbuserAvatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 1, borderColor: Colors.accent },
+    // ── Selected abuser card ──
+    selectedAbuserCard: {
+        flexDirection: 'row',
+        gap: SW(12),
+        backgroundColor: appColors.primaryAA,
+        borderRadius: SW(14),
+        borderWidth: 0.7,
+        borderColor: appColors.primary,
+        padding: SW(14),
+        marginBottom: SW(20),
+    },
+    selectedAbuserAvatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 1, borderColor: appColors.primary },
     selectedAbuserTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-    selectedAbuserName: { ...Typography.bodyBold, flexShrink: 1, paddingRight: 8 },
-    selectedAbuserTag: { ...Typography.captionBold, color: Colors.accent, backgroundColor: Colors.accentMuted, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
-    selectedAbuserMeta: { ...Typography.caption, color: Colors.textSecondary, lineHeight: 18 },
+    selectedAbuserName: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold, flexShrink: 1, paddingRight: 8 },
+    selectedAbuserTag: { color: appColors.white, fontSize: SF(10), fontFamily: appFonts.NunitoBold, backgroundColor: appColors.primary, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
+    selectedAbuserMeta: { color: appColors.bodyColor, fontSize: SF(11), lineHeight: 18 },
 
-    profilePhotoCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider, padding: Spacing.base, marginBottom: Spacing.lg },
-    profilePhotoTitle: { ...Typography.bodyBold, marginBottom: 10 },
-    profilePhotoRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+    // ── Profile photo card ──
+    profilePhotoCard: {
+        backgroundColor: appColors.primaryAA,
+        borderRadius: SW(14),
+        borderWidth: 0.7,
+        borderColor: appColors.primary,
+        padding: SW(14),
+        marginBottom: SW(14),
+    },
+    profilePhotoTitle: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold, marginBottom: SW(10) },
+    profilePhotoRow: { flexDirection: 'row', gap: SW(12), alignItems: 'center' },
     profileAvatarOuter: { width: 72, height: 72 },
-    profileAvatarEmpty: { width: 72, height: 72, borderRadius: 36, borderWidth: 1, borderColor: Colors.divider, backgroundColor: Colors.inputBg, alignItems: 'center', justifyContent: 'center' },
-    profileAvatarImage: { width: 72, height: 72, borderRadius: 36, borderWidth: 1, borderColor: Colors.accent },
+    profileAvatarEmpty: {
+        width: 72, height: 72, borderRadius: 36,
+        borderWidth: 0.7, borderColor: appColors.primary,
+        backgroundColor: appColors.primaryAA,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    profileAvatarImage: { width: 72, height: 72, borderRadius: 36, borderWidth: 1, borderColor: appColors.primary },
     profileAvatarIcon: { fontSize: 22 },
-    profilePhotoHint: { ...Typography.caption, color: Colors.textSecondary, marginBottom: 10 },
-    profilePhotoActions: { flexDirection: 'row', gap: Spacing.md },
+    profilePhotoHint: { color: appColors.bodyColor, fontSize: SF(11), marginBottom: SW(10) },
+    profilePhotoActions: { flexDirection: 'row', gap: SW(12) },
     photoUploadBtn: { flex: 2 },
     photoRemoveBtn: { flex: 1 },
 
-    typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-    typeChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.divider, backgroundColor: Colors.inputBg },
-    typeChipActive: { backgroundColor: Colors.accentMuted, borderColor: Colors.accent },
-    typeChipText: { fontSize: 13, fontWeight: '500', color: Colors.textSecondary },
-    typeChipTextActive: { color: Colors.accent, fontWeight: '700' },
+    // ── Abuse type chips — mirrors relationTab ──
+    typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SW(8) },
+    typeChip: {
+        paddingHorizontal: SW(14), paddingVertical: SW(8),
+        borderRadius: SW(20), borderWidth: 1,
+        borderColor: '#1A2438', backgroundColor: appColors.primaryAA,
+    },
+    typeChipActive: { backgroundColor: '#4A1018', borderColor: appColors.primary },
+    typeChipText: { color: appColors.bodyColor, fontSize: SF(12) },
+    typeChipTextActive: { color: appColors.white, fontFamily: appFonts.NunitoBold },
 
-    toggleCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider, paddingHorizontal: Spacing.base, marginBottom: Spacing.lg },
-    toggleDivider: { height: 1, backgroundColor: Colors.divider },
+    // ── Toggle card — mirrors toggleCard ──
+    toggleCard: {
+        backgroundColor: appColors.whiteTransparent,
+        borderRadius: SW(14),
+        borderWidth: 1,
+        borderColor: appColors.whiteBdrTransparent,
+        paddingHorizontal: SW(14),
+        marginBottom: SW(14),
+    },
+    toggleDivider: { height: 1, backgroundColor: appColors.whiteBdrTransparent },
 
-    evidenceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.xl },
-    evidenceCard: { flexGrow: 1, flexBasis: '30%', minWidth: 160, backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider, padding: Spacing.md, minHeight: 200 },
-    evidenceTop: { marginBottom: 12 },
+    // ── Evidence cards ──
+    evidenceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SW(12), marginBottom: SW(20) },
+    evidenceCard: {
+        flexGrow: 1, flexBasis: '30%', minWidth: 160,
+        backgroundColor: appColors.primaryAA,
+        borderRadius: SW(14), borderWidth: 0.7,
+        borderColor: appColors.primary,
+        padding: SW(12), minHeight: 200,
+    },
+    evidenceTop: { marginBottom: SW(12) },
     evidenceHeaderRow: { flexDirection: 'row', alignItems: 'center' },
     evidenceTitleWrap: { flex: 1 },
-    evidenceIconWrap: { backgroundColor: Colors.accentMuted, borderRadius: 999, width: 34, height: 34, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-    evidenceLabel: { ...Typography.bodyBold },
-    evidenceHint: { ...Typography.caption, color: Colors.textSecondary, marginTop: 2, lineHeight: 16 },
-    evidenceStatusBadge: { alignSelf: 'flex-start', marginTop: 10, backgroundColor: Colors.accentMuted, borderWidth: 1, borderColor: Colors.accentGlow, borderRadius: Radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
-    evidenceStatusText: { ...Typography.captionBold, color: Colors.accent },
-    evidenceFileCard: { borderWidth: 1, borderColor: Colors.divider, borderRadius: Radius.md, backgroundColor: Colors.inputBg, padding: 11, marginBottom: 10 },
+    evidenceIconWrap: {
+        backgroundColor: appColors.primaryAA,
+        borderRadius: 999, width: 34, height: 34,
+        alignItems: 'center', justifyContent: 'center',
+        marginRight: SW(10), borderWidth: 0.7, borderColor: appColors.primary,
+    },
+    evidenceLabel: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold },
+    evidenceHint: { color: appColors.bodyColor, fontSize: SF(10), marginTop: 2, lineHeight: 16 },
+    evidenceStatusBadge: {
+        alignSelf: 'flex-start', marginTop: SW(10),
+        backgroundColor: appColors.primaryAA,
+        borderWidth: 0.7, borderColor: appColors.primary,
+        borderRadius: SW(6), paddingHorizontal: 8, paddingVertical: 3,
+    },
+    evidenceStatusText: { color: appColors.white, fontSize: SF(10), fontFamily: appFonts.NunitoBold },
+    evidenceFileCard: {
+        borderWidth: 0.7, borderColor: appColors.primary,
+        borderRadius: SW(10), backgroundColor: appColors.primaryAA,
+        padding: SW(11), marginBottom: SW(10),
+    },
     evidenceFileTopRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-    evidenceFileName: { ...Typography.captionBold, color: Colors.textSecondary, lineHeight: 18, flex: 1 },
+    evidenceFileName: { color: appColors.bodyColor, fontSize: SF(11), fontFamily: appFonts.NunitoBold, lineHeight: 18, flex: 1 },
     evidenceMetaRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-    evidenceMetaPill: { borderWidth: 1, borderColor: Colors.divider, borderRadius: Radius.sm, paddingHorizontal: 7, paddingVertical: 3, backgroundColor: Colors.surface },
-    evidenceMetaPillText: { ...Typography.captionBold, color: Colors.textSecondary, fontSize: 10 },
-    evidenceFileHelper: { ...Typography.caption, color: Colors.textSecondary, lineHeight: 15 },
-    evidenceUploadBtn: { flexDirection: 'row', gap: 6, marginTop: 'auto', borderWidth: 1, borderColor: Colors.accentGlow, backgroundColor: Colors.accentMuted, borderRadius: Radius.md, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
-    evidenceUploadText: { ...Typography.captionBold, color: Colors.accent },
+    evidenceMetaPill: {
+        borderWidth: 0.7, borderColor: appColors.primary,
+        borderRadius: SW(6), paddingHorizontal: 7, paddingVertical: 3,
+        backgroundColor: appColors.primaryAA,
+    },
+    evidenceMetaPillText: { color: appColors.bodyColor, fontSize: SF(10), fontFamily: appFonts.NunitoBold },
+    evidenceFileHelper: { color: appColors.bodyColor, fontSize: SF(10), lineHeight: 15 },
+    evidenceUploadBtn: {
+        flexDirection: 'row', gap: 6, marginTop: 'auto',
+        borderWidth: 0.7, borderColor: appColors.primary,
+        backgroundColor: appColors.primaryAA,
+        borderRadius: SW(10), paddingVertical: SW(11),
+        alignItems: 'center', justifyContent: 'center',
+    },
+    evidenceUploadText: { color: appColors.white, fontSize: SF(11), fontFamily: appFonts.NunitoBold },
     evidenceActionRow: { flexDirection: 'row', gap: 8, marginTop: 2 },
-    evidenceSmallBtn: { flex: 1, backgroundColor: Colors.accentMuted, borderRadius: Radius.md, alignItems: 'center', paddingVertical: 8 },
-    evidenceSmallBtnText: { ...Typography.captionBold, color: Colors.accent },
-    evidenceSmallBtnOutline: { flex: 1, borderWidth: 1, borderColor: Colors.divider, borderRadius: Radius.md, alignItems: 'center', paddingVertical: 8 },
-    evidenceSmallBtnOutlineText: { ...Typography.captionBold, color: Colors.textSecondary },
+    evidenceSmallBtn: {
+        flex: 1, backgroundColor: appColors.primary,
+        borderRadius: SW(10), alignItems: 'center', paddingVertical: SW(8),
+    },
+    evidenceSmallBtnText: { color: appColors.white, fontSize: SF(11), fontFamily: appFonts.NunitoBold },
+    evidenceSmallBtnOutline: {
+        flex: 1, borderWidth: 0.7, borderColor: appColors.primary,
+        borderRadius: SW(10), alignItems: 'center', paddingVertical: SW(8),
+    },
+    evidenceSmallBtnOutlineText: { color: appColors.bodyColor, fontSize: SF(11), fontFamily: appFonts.NunitoBold },
 
-    submitFloatingWrap: { marginTop: Spacing.lg, marginBottom: Spacing.sm, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.divider, borderRadius: Radius.lg, padding: Spacing.md },
-    submitRow: { flexDirection: 'row', gap: Spacing.md },
+    // ── Submit row ──
+    submitFloatingWrap: {
+        marginTop: SW(14), marginBottom: SW(8),
+        backgroundColor: appColors.whiteTransparent,
+        borderWidth: 1, borderColor: appColors.whiteBdrTransparent,
+        borderRadius: SW(14), padding: SW(14),
+    },
+    submitRow: { flexDirection: 'row', gap: SW(12) },
     clearFormBtn: { flex: 1 },
     submitBtn: { flex: 2 },
 
-    // Abuser picker modal
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', padding: Spacing.base, justifyContent: 'center' },
-    modalCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider, maxHeight: '82%', padding: Spacing.base },
-    modalTitle: { ...Typography.h4, marginBottom: Spacing.base },
+    // ── Abuser picker modal ──
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', padding: SW(18), justifyContent: 'center' },
+    modalCard: {
+        backgroundColor: appColors.DarkPrimary,
+        borderRadius: SW(14), borderWidth: 0.7,
+        borderColor: appColors.primary,
+        maxHeight: '82%', padding: SW(14),
+    },
+    modalTitle: { color: appColors.white, fontSize: SF(15), fontFamily: appFonts.NunitoBold, marginBottom: SW(14) },
     modalList: { maxHeight: 420 },
-    modalLoaderWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xl },
-    modalLoaderText: { ...Typography.caption, color: Colors.textSecondary, marginTop: 8 },
-    modalEmptyWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xl },
-    modalEmptyText: { ...Typography.bodyBold, color: Colors.textPrimary },
-    modalEmptySubText: { ...Typography.caption, color: Colors.textSecondary, marginTop: 4 },
-    modalRow: { flexDirection: 'row', gap: Spacing.md, borderWidth: 1, borderColor: Colors.divider, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.sm, backgroundColor: Colors.inputBg },
+    modalLoaderWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: SW(24) },
+    modalLoaderText: { color: appColors.bodyColor, fontSize: SF(11), marginTop: 8 },
+    modalEmptyWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: SW(24) },
+    modalEmptyText: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold },
+    modalEmptySubText: { color: appColors.bodyColor, fontSize: SF(11), marginTop: 4 },
+    modalRow: {
+        flexDirection: 'row', gap: SW(12),
+        borderWidth: 0.7, borderColor: appColors.primary,
+        borderRadius: SW(14), padding: SW(12),
+        marginBottom: SW(8), backgroundColor: appColors.primaryAA,
+    },
     modalAvatar: { width: 54, height: 54, borderRadius: 27 },
-    modalAvatarEmpty: { width: 54, height: 54, borderRadius: 27, borderWidth: 1, borderColor: Colors.divider, backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center' },
+    modalAvatarEmpty: {
+        width: 54, height: 54, borderRadius: 27,
+        borderWidth: 0.7, borderColor: appColors.primary,
+        backgroundColor: appColors.primaryAA,
+        alignItems: 'center', justifyContent: 'center',
+    },
     modalAvatarIcon: { fontSize: 20 },
     modalNameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
-    modalName: { ...Typography.bodyBold, flexShrink: 1, paddingRight: 8 },
-    modalRisk: { ...Typography.captionBold, color: Colors.accent },
-    modalMeta: { ...Typography.caption, color: Colors.textSecondary, lineHeight: 17 },
-    modalActionRow: { flexDirection: 'row', gap: 8, marginTop: Spacing.sm },
-    modalSelectBtn: { flex: 1, backgroundColor: Colors.accentMuted, borderWidth: 1, borderColor: Colors.accentGlow, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
-    modalSelectBtnText: { ...Typography.captionBold, color: Colors.accent },
-    modalDeleteBtn: { flex: 1, backgroundColor: '#DC2626', borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
+    modalName: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold, flexShrink: 1, paddingRight: 8 },
+    modalRisk: { color: appColors.primary, fontSize: SF(11), fontFamily: appFonts.NunitoBold },
+    modalMeta: { color: appColors.bodyColor, fontSize: SF(11), lineHeight: 17 },
+    modalActionRow: { flexDirection: 'row', gap: 8, marginTop: SW(8) },
+    modalSelectBtn: {
+        flex: 1, backgroundColor: appColors.primary,
+        borderRadius: SW(10), alignItems: 'center',
+        justifyContent: 'center', paddingVertical: SW(8),
+    },
+    modalSelectBtnText: { color: appColors.white, fontSize: SF(11), fontFamily: appFonts.NunitoBold },
+    modalDeleteBtn: {
+        flex: 1, backgroundColor: '#DC2626',
+        borderRadius: SW(10), alignItems: 'center',
+        justifyContent: 'center', paddingVertical: SW(8),
+    },
     modalDeleteBtnDisabled: { opacity: 0.7 },
-    modalDeleteBtnText: { ...Typography.captionBold, color: '#fff' },
-    modalCloseBtn: { marginTop: Spacing.md, backgroundColor: Colors.accent, borderRadius: Radius.md, alignItems: 'center', paddingVertical: 11 },
-    modalCloseText: { ...Typography.captionBold, color: '#fff' },
+    modalDeleteBtnText: { color: appColors.white, fontSize: SF(11), fontFamily: appFonts.NunitoBold },
+    modalCloseBtn: {
+        marginTop: SW(12), backgroundColor: appColors.primary,
+        borderRadius: SW(14), alignItems: 'center', paddingVertical: SW(11),
+    },
+    modalCloseText: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold },
 
-    // ── Success modal ──────────────────────────────────────────────────────────
+    // ── Success modal ──
     successOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.65)',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: Spacing.base,
+        paddingHorizontal: SW(18),
     },
     successCard: {
         width: '100%',
-        backgroundColor: Colors.surface,
-        borderRadius: Radius.lg,
-        borderWidth: 1,
-        borderColor: Colors.divider,
-        padding: Spacing.xl,
+        backgroundColor: appColors.primaryAA,
+        borderRadius: SW(20),
+        borderWidth: 0.7,
+        borderColor: appColors.primary,
+        padding: SW(24),
         alignItems: 'center',
     },
     successIconOuter: {
-        width: 88,
-        height: 88,
-        borderRadius: 44,
+        width: 88, height: 88, borderRadius: 44,
         backgroundColor: 'rgba(34,197,94,0.12)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: Spacing.lg,
-        borderWidth: 1,
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: SW(16), borderWidth: 1,
         borderColor: 'rgba(34,197,94,0.3)',
     },
     successIconInner: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+        width: 64, height: 64, borderRadius: 32,
         backgroundColor: '#22C55E',
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: 'center', justifyContent: 'center',
     },
     successTitle: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: Colors.textPrimary,
-        marginBottom: 8,
-        textAlign: 'center',
+        fontSize: SF(19), fontFamily: appFonts.NunitoBold,
+        color: appColors.white, marginBottom: 8, textAlign: 'center',
     },
     successSubtitle: {
-        ...Typography.caption,
-        color: Colors.textSecondary,
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: Spacing.xl,
-        paddingHorizontal: Spacing.sm,
+        color: appColors.bodyColor, fontSize: SF(12),
+        textAlign: 'center', lineHeight: 20,
+        marginBottom: SW(20), paddingHorizontal: SW(8),
     },
     successDetailsCard: {
-        width: '100%',
-        backgroundColor: Colors.inputBg,
-        borderRadius: Radius.md,
-        borderWidth: 1,
-        borderColor: Colors.divider,
-        paddingHorizontal: Spacing.base,
-        marginBottom: Spacing.xl,
+        width: '100%', backgroundColor: appColors.DarkPrimary,
+        borderRadius: SW(14), borderWidth: 0.7,
+        borderColor: appColors.primary,
+        paddingHorizontal: SW(14), marginBottom: SW(20),
     },
     successDetailRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        gap: 8,
+        flexDirection: 'row', alignItems: 'center',
+        paddingVertical: SW(12), gap: 8,
     },
-    successDetailDivider: {
-        height: 1,
-        backgroundColor: Colors.divider,
-    },
-    successDetailLabel: {
-        ...Typography.caption,
-        color: Colors.textSecondary,
-        flex: 1,
-    },
+    successDetailDivider: { height: 1, backgroundColor: appColors.primary, opacity: 0.3 },
+    successDetailLabel: { color: appColors.bodyColor, fontSize: SF(11), flex: 1 },
     successDetailValue: {
-        ...Typography.captionBold,
-        color: Colors.textPrimary,
-        maxWidth: '55%',
-        textAlign: 'right',
+        color: appColors.white, fontSize: SF(11),
+        fontFamily: appFonts.NunitoBold, maxWidth: '55%', textAlign: 'right',
     },
-    successActionCol: {
-        width: '100%',
-        gap: Spacing.md,
-    },
+    successActionCol: { width: '100%', gap: SW(12) },
     successBtnPrimary: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: Colors.accent,
-        borderRadius: Radius.md,
-        paddingVertical: 14,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: appColors.primary, borderRadius: SW(14), paddingVertical: SW(14),
     },
-    successBtnPrimaryText: {
-        ...Typography.bodyBold,
-        color: '#fff',
-    },
+    successBtnPrimaryText: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold },
     successBtnOutline: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: Colors.accentGlow,
-        backgroundColor: Colors.accentMuted,
-        borderRadius: Radius.md,
-        paddingVertical: 14,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        borderWidth: 0.7, borderColor: appColors.primary,
+        backgroundColor: appColors.primaryAA,
+        borderRadius: SW(14), paddingVertical: SW(14),
     },
-    successBtnOutlineText: {
-        ...Typography.bodyBold,
-        color: Colors.accent,
+    successBtnOutlineText: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold },
+
+    // ── Test data toggle (dev only) ──
+    testDataToggle: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: appColors.primaryAA, borderRadius: SW(14),
+        borderWidth: 0.7, borderColor: appColors.primary,
+        borderStyle: 'dashed', paddingHorizontal: SW(14),
+        paddingVertical: SW(10), marginBottom: SW(14),
     },
+    testDataToggleActive: { borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.06)', borderStyle: 'solid' },
+    testDataToggleLeft: { flexDirection: 'row', alignItems: 'center', gap: SW(12), flex: 1 },
+    testDataDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: appColors.bodyColor },
+    testDataDotActive: { backgroundColor: '#F59E0B' },
+    testDataToggleLabel: { fontSize: SF(13), fontFamily: appFonts.NunitoBold, color: appColors.bodyColor },
+    testDataToggleLabelActive: { color: '#F59E0B' },
+    testDataToggleHint: { fontSize: SF(11), color: appColors.bodyColor, marginTop: 2 },
+    testDataPill: {
+        borderWidth: 0.7, borderColor: appColors.primary,
+        borderRadius: SW(6), paddingHorizontal: 8, paddingVertical: 3,
+        backgroundColor: appColors.primaryAA,
+    },
+    testDataPillActive: { borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.12)' },
+    testDataPillText: { fontSize: SF(10), fontFamily: appFonts.NunitoBold, color: appColors.bodyColor, letterSpacing: 0.5 },
+    testDataPillTextActive: { color: '#F59E0B' },
+
+    // ── Reset button (unused now, kept for safety) ──
+    resetButton: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        paddingHorizontal: SW(12), paddingVertical: SW(9),
+        borderRadius: SW(999), backgroundColor: appColors.primaryAA,
+        borderWidth: 0.7, borderColor: appColors.primary,
+    },
+    resetButtonText: { color: appColors.white, fontSize: SF(11), fontFamily: appFonts.NunitoBold },
 });

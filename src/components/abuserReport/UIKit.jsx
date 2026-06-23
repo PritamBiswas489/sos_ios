@@ -3,7 +3,10 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Animated, ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, Shadow, ThreatConfig } from '../../components/abuserReport/theme.jsx';
+import { Colors, Typography, Spacing, Radius, ThreatConfig } from '../../components/abuserReport/theme.jsx';
+import appColors from '../../theme/appColors';
+import appFonts from '../../theme/appFonts';
+import { SW, SF } from '../../theme/dimensions';
 
 // ─── FormField ───────────────────────────────────────────────────────────────
 export function FormField({ label, required, error, children, style }) {
@@ -30,8 +33,8 @@ export function StyledInput({ error, multiline, style, ...props }) {
         error && styles.inputError,
         style,
       ]}
-      placeholderTextColor={Colors.textMuted}
-      selectionColor={Colors.accent}
+      placeholderTextColor={appColors.bodyColor}
+      selectionColor={appColors.primary}
       {...props}
     />
   );
@@ -50,12 +53,16 @@ export function SegmentControl({ options, value, onChange }) {
             onPress={() => onChange(opt)}
             style={[
               styles.segmentBtn,
-              active && { backgroundColor: cfg?.bg || Colors.accentMuted, borderColor: cfg?.color || Colors.accent },
+              active && { backgroundColor: cfg?.bg || appColors.primaryAA, borderColor: cfg?.color || appColors.primary },
             ]}
             activeOpacity={0.7}
           >
-            {cfg && <Text style={{ color: active ? cfg.color : Colors.textMuted, fontSize: 10, marginRight: 4 }}>{cfg.icon}</Text>}
-            <Text style={[styles.segmentText, active && { color: cfg?.color || Colors.accent, fontWeight: '700' }]}>
+            {cfg && (
+              <Text style={{ color: active ? cfg.color : appColors.bodyColor, fontSize: SF(10), marginRight: 4 }}>
+                {cfg.icon}
+              </Text>
+            )}
+            <Text style={[styles.segmentText, active && { color: cfg?.color || appColors.white, fontFamily: appFonts.NunitoBold }]}>
               {opt}
             </Text>
           </TouchableOpacity>
@@ -72,7 +79,7 @@ export function ToggleRow({ label, value, onToggle }) {
     Animated.spring(anim, { toValue: value ? 1 : 0, useNativeDriver: false, tension: 80, friction: 8 }).start();
   }, [value]);
   const translateX = anim.interpolate({ inputRange: [0, 1], outputRange: [2, 18] });
-  const trackColor = anim.interpolate({ inputRange: [0, 1], outputRange: [Colors.surfaceBorder, Colors.accent] });
+  const trackColor = anim.interpolate({ inputRange: [0, 1], outputRange: ['#1A2438', appColors.primary] });
 
   return (
     <TouchableOpacity style={styles.toggleRow} onPress={onToggle} activeOpacity={0.8}>
@@ -99,8 +106,8 @@ export function PrimaryButton({ title, onPress, loading, disabled, style, varian
       ]}
     >
       {loading
-        ? <ActivityIndicator size="small" color={variant === 'solid' ? Colors.textPrimary : Colors.accent} />
-        : <Text style={[styles.btnText, variant === 'outline' && { color: Colors.accent }]}>{title}</Text>
+        ? <ActivityIndicator size="small" color={appColors.white} />
+        : <Text style={[styles.btnText, variant === 'outline' && styles.btnTextOutline]}>{title}</Text>
       }
     </TouchableOpacity>
   );
@@ -133,7 +140,7 @@ export function ThreatBadge({ level, large }) {
         level === 'High' && { transform: [{ scale: pulse }] },
       ]}
     >
-      <Text style={[styles.badgeIcon, large && { fontSize: 11 }, { color: cfg.color }]}>{cfg.icon}</Text>
+      <Text style={[styles.badgeIcon, large && { fontSize: SF(11) }, { color: cfg.color }]}>{cfg.icon}</Text>
       <Text style={[styles.badgeText, large && styles.badgeTextLarge, { color: cfg.color }]}>{level}</Text>
     </Animated.View>
   );
@@ -155,7 +162,7 @@ export function DetailRow({ label, value, accent }) {
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={[styles.detailValue, accent && { color: Colors.accent }]}>
+      <Text style={[styles.detailValue, accent && { color: appColors.primary }]}>
         {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
       </Text>
     </View>
@@ -165,9 +172,9 @@ export function DetailRow({ label, value, accent }) {
 // ─── BoolChip ────────────────────────────────────────────────────────────────
 export function BoolChip({ label, value }) {
   return (
-    <View style={[styles.boolChip, { borderColor: value ? Colors.threatHigh : Colors.divider }]}>
-      <Text style={{ fontSize: 10, marginRight: 4 }}>{value ? '⚠️' : '✓'}</Text>
-      <Text style={[styles.boolChipText, { color: value ? Colors.threatHigh : Colors.textMuted }]}>
+    <View style={[styles.boolChip, { borderColor: value ? '#EF4444' : appColors.primary }]}>
+      <Text style={{ fontSize: SF(10), marginRight: 4 }}>{value ? '⚠️' : '✓'}</Text>
+      <Text style={[styles.boolChipText, { color: value ? '#EF4444' : appColors.bodyColor }]}>
         {label}
       </Text>
     </View>
@@ -186,77 +193,89 @@ export function Avatar({ name, size = 48 }) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // FormField
-  fieldWrap:   { marginBottom: Spacing.lg },
-  fieldLabel:  { ...Typography.label, marginBottom: Spacing.sm },
-  required:    { color: Colors.accent },
-  fieldError:  { fontSize: 12, color: Colors.error, marginTop: 4 },
-
-  // StyledInput
-  input: {
-    backgroundColor: Colors.inputBg,
-    borderWidth: 1,
-    borderColor: Colors.divider,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    color: Colors.textPrimary,
-    fontSize: 15,
-    minHeight: 48,
+  // FormField — label matches AddContactsScreen label style
+  fieldWrap:  { marginBottom: SW(16) },
+  fieldLabel: {
+    color: appColors.bodyColor,
+    fontSize: SF(11),
+    fontFamily: appFonts.NunitoSemiBold,
+    marginBottom: SW(8),
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  inputMulti:  { minHeight: 100, textAlignVertical: 'top', paddingTop: Spacing.md },
-  inputError:  { borderColor: Colors.error },
+  required:   { color: appColors.primary },
+  fieldError: { fontSize: SF(12), color: '#EF4444', marginTop: SW(4) },
 
-  // Segment
-  segmentWrap: { flexDirection: 'row', gap: Spacing.sm },
+  // StyledInput — matches inputBox from AddContactsScreen
+  input: {
+    backgroundColor: appColors.primaryAA,
+    borderWidth: 0.7,
+    borderColor: appColors.primary,
+    borderRadius: SW(14),
+    paddingHorizontal: SW(14),
+    paddingVertical: SW(12),
+    color: appColors.white,
+    fontSize: SF(14),
+    fontFamily: appFonts.NunitoRegular,
+    minHeight: SW(48),
+  },
+  inputMulti: { minHeight: SW(100), textAlignVertical: 'top', paddingTop: SW(12) },
+  inputError: { borderColor: '#EF4444' },
+
+  // SegmentControl — mirrors relationTab chips
+  segmentWrap: { flexDirection: 'row', gap: SW(8) },
   segmentBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 10, borderRadius: Radius.md,
-    borderWidth: 1, borderColor: Colors.divider,
-    backgroundColor: Colors.inputBg,
+    paddingVertical: SW(10), borderRadius: SW(20),
+    borderWidth: 1, borderColor: '#1A2438',
+    backgroundColor: appColors.primaryAA,
   },
-  segmentText: { fontSize: 13, fontWeight: '500', color: Colors.textSecondary },
+  segmentText: { fontSize: SF(13), fontFamily: appFonts.NunitoSemiBold, color: appColors.bodyColor },
 
-  // Toggle
-  toggleRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing.sm },
-  toggleLabel: { ...Typography.body, color: Colors.textPrimary, flex: 1, marginRight: Spacing.base },
-  track:       { width: 42, height: 24, borderRadius: 12, justifyContent: 'center' },
-  thumb:       { width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.textPrimary },
+  // ToggleRow — fits inside toggleCard
+  toggleRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SW(14) },
+  toggleLabel: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoSemiBold, flex: 1, marginRight: SW(16) },
+  track:       { width: SW(42), height: SW(24), borderRadius: SW(12), justifyContent: 'center' },
+  thumb:       { width: SW(20), height: SW(20), borderRadius: SW(10), backgroundColor: appColors.white },
 
-  // Button
-  btnBase:     { height: 52, borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },
-  btnSolid:    { backgroundColor: Colors.accent },
-  btnOutline:  { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.accent },
-  btnDisabled: { opacity: 0.45 },
-  btnText:     { ...Typography.heading3, color: Colors.textPrimary, fontSize: 15 },
+  // PrimaryButton — matches saveBtn from AddContactsScreen
+  btnBase:        { height: SW(48), borderRadius: SW(14), alignItems: 'center', justifyContent: 'center', paddingHorizontal: SW(16) },
+  btnSolid:       { backgroundColor: appColors.primary },
+  btnOutline:     { backgroundColor: 'transparent', borderWidth: 0.7, borderColor: appColors.primary },
+  btnDisabled:    { opacity: 0.45 },
+  btnText:        { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold },
+  btnTextOutline: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold },
 
   // Badge
-  badge: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.sm, paddingVertical: 4,
-    borderRadius: Radius.pill, borderWidth: 1,
-    gap: 4,
-  },
-  badgeLarge:     { paddingHorizontal: Spacing.md, paddingVertical: 6 },
-  badgeIcon:      { fontSize: 8 },
-  badgeText:      { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
-  badgeTextLarge: { fontSize: 13 },
+  badge:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SW(8), paddingVertical: SW(4), borderRadius: 999, borderWidth: 1, gap: 4 },
+  badgeLarge:     { paddingHorizontal: SW(12), paddingVertical: SW(6) },
+  badgeIcon:      { fontSize: SF(8) },
+  badgeText:      { fontSize: SF(11), fontFamily: appFonts.NunitoBold, letterSpacing: 0.5 },
+  badgeTextLarge: { fontSize: SF(13) },
 
-  // Divider
-  dividerRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md, marginTop: Spacing.base },
-  dividerTitle: { ...Typography.label, marginRight: Spacing.sm, flexShrink: 0 },
-  dividerLine:  { flex: 1, height: 1, backgroundColor: Colors.divider },
+  // SectionDivider — label style matches AddContactsScreen label
+  dividerRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: SW(12), marginTop: SW(16) },
+  dividerTitle: {
+    color: appColors.bodyColor,
+    fontSize: SF(11),
+    fontFamily: appFonts.NunitoSemiBold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginRight: SW(8),
+    flexShrink: 0,
+  },
+  dividerLine:  { flex: 1, height: 0.7, backgroundColor: appColors.primary, opacity: 0.5 },
 
   // DetailRow
-  detailRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: Colors.divider },
-  detailLabel: { ...Typography.caption, color: Colors.textMuted, flex: 1 },
-  detailValue: { ...Typography.bodyBold, flex: 1.5, textAlign: 'right' },
+  detailRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: SW(9), borderBottomWidth: 0.7, borderBottomColor: appColors.primary },
+  detailLabel: { color: appColors.bodyColor, fontSize: SF(12), fontFamily: appFonts.NunitoSemiBold, flex: 1 },
+  detailValue: { color: appColors.white, fontSize: SF(13), fontFamily: appFonts.NunitoBold, flex: 1.5, textAlign: 'right' },
 
   // BoolChip
-  boolChip:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: 10, paddingVertical: 5 },
-  boolChipText: { fontSize: 12, fontWeight: '600' },
+  boolChip:     { flexDirection: 'row', alignItems: 'center', borderWidth: 0.7, borderRadius: SW(10), paddingHorizontal: SW(10), paddingVertical: SW(5) },
+  boolChipText: { fontSize: SF(12), fontFamily: appFonts.NunitoBold },
 
   // Avatar
-  avatar:     { backgroundColor: Colors.accentMuted, borderWidth: 1.5, borderColor: Colors.accentGlow, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: Colors.accent, fontWeight: '800' },
+  avatar:     { backgroundColor: appColors.primaryAA, borderWidth: 1, borderColor: appColors.primary, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: appColors.white, fontFamily: appFonts.NunitoBold },
 });

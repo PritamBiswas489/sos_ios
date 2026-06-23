@@ -62,6 +62,8 @@ const HomeScreen = () => {
   const holdAnim = useRef(new Animated.Value(0)).current;
   const panelAnim = useRef(new Animated.Value(0)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
+
+  
   const holdTimerRef = useRef(null);
   const { fetchMySosSessions } = useMySosSessions();
   const { contactList } = useChatContacts();

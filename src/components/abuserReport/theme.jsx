@@ -1,24 +1,24 @@
 import { Platform } from 'react-native';
+import appColors from '../../theme/appColors';
+import appFonts from '../../theme/appFonts';
+import { SW, SF } from '../../theme/dimensions';
+
 export const Colors = {
-  // Base surfaces
-  bg:          '#0A0E1A',
-  surface:     '#111827',
-  surfaceHigh: '#1A2235',
-  surfaceBorder:'#1E2D45',
-  overlay:     'rgba(10,14,26,0.92)',
+  bg:            appColors.DarkPrimary,
+  surface:       appColors.primaryAA,
+  surfaceHigh:   appColors.primaryAA,
+  surfaceBorder: appColors.primary,
+  overlay:       'rgba(0,0,0,0.6)',
 
-  // Accent
-  accent:      '#E53E6D',
-  accentMuted: 'rgba(229,62,109,0.15)',
-  accentGlow:  'rgba(229,62,109,0.35)',
+  accent:        appColors.primary,
+  accentMuted:   appColors.primaryAA,
+  accentGlow:    appColors.primary,
 
-  // Text
-  textPrimary:   '#F0F4FF',
-  textSecondary: '#8A9BB5',
-  textMuted:     '#4A5568',
-  textInverse:   '#0A0E1A',
+  textPrimary:   appColors.white,
+  textSecondary: appColors.bodyColor,
+  textMuted:     appColors.bodyColor,
+  textInverse:   appColors.white,
 
-  // Status
   threatLow:    '#10B981',
   threatMedium: '#F59E0B',
   threatHigh:   '#EF4444',
@@ -26,53 +26,40 @@ export const Colors = {
   threatMedBg:  'rgba(245,158,11,0.12)',
   threatHighBg: 'rgba(239,68,68,0.12)',
 
-  // Utility
-  divider:  '#1E2D45',
+  divider:  appColors.primary,
   success:  '#10B981',
   warning:  '#F59E0B',
   error:    '#EF4444',
-  inputBg:  '#0F1928',
+  inputBg:  appColors.primaryAA,
   shadow:   '#000',
 };
 
 export const Typography = {
-  heading1: { fontSize: 26, fontWeight: '700', letterSpacing: -0.5, color: Colors.textPrimary },
-  heading2: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, color: Colors.textPrimary },
-  heading3: { fontSize: 16, fontWeight: '600', letterSpacing: -0.2, color: Colors.textPrimary },
-  body:     { fontSize: 14, fontWeight: '400', lineHeight: 22, color: Colors.textSecondary },
-  bodyBold: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  caption:  { fontSize: 12, fontWeight: '500', letterSpacing: 0.3, color: Colors.textMuted },
-  label:    { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', color: Colors.textMuted },
-  mono:     { fontSize: 12, fontFamily: Platform?.OS === 'ios' ? 'Menlo' : 'monospace', color: Colors.textSecondary },
+  heading1: { fontSize: SF(26), fontFamily: appFonts.NunitoBold, color: appColors.white },
+  heading2: { fontSize: SF(20), fontFamily: appFonts.NunitoBold, color: appColors.white },
+  heading3: { fontSize: SF(16), fontFamily: appFonts.NunitoBold, color: appColors.white },
+  body:     { fontSize: SF(14), fontFamily: appFonts.NunitoRegular, lineHeight: 22, color: appColors.bodyColor },
+  bodyBold: { fontSize: SF(14), fontFamily: appFonts.NunitoBold, color: appColors.white },
+  caption:  { fontSize: SF(12), fontFamily: appFonts.NunitoSemiBold, color: appColors.bodyColor },
+  label:    { fontSize: SF(11), fontFamily: appFonts.NunitoSemiBold, color: appColors.bodyColor },
+  mono:     { fontSize: SF(12), fontFamily: Platform?.OS === 'ios' ? 'Menlo' : 'monospace', color: appColors.bodyColor },
 };
 
 export const Spacing = {
-  xs: 4, sm: 8, md: 12, base: 16, lg: 20, xl: 24, xxl: 32,
+  xs: SW(4), sm: SW(8), md: SW(12), base: SW(16), lg: SW(20), xl: SW(24), xxl: SW(32),
 };
 
 export const Radius = {
-  sm: 6, md: 10, lg: 14, xl: 20, pill: 999,
+  sm: SW(6), md: SW(10), lg: SW(14), xl: SW(20), pill: 999,
 };
 
 export const Shadow = {
-  card: {
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  modal: {
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.7,
-    shadowRadius: 40,
-    elevation: 20,
-  },
+  card:  { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  modal: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12 },
 };
 
 export const ThreatConfig = {
-  Low:    { color: Colors.threatLow,    bg: Colors.threatLowBg,  icon: '●' },
-  Medium: { color: Colors.threatMedium, bg: Colors.threatMedBg,  icon: '▲' },
-  High:   { color: Colors.threatHigh,   bg: Colors.threatHighBg, icon: '⬟' },
+  Low:    { color: '#10B981', bg: 'rgba(16,185,129,0.12)',  icon: '●' },
+  Medium: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  icon: '▲' },
+  High:   { color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   icon: '⬟' },
 };

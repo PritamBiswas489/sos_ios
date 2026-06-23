@@ -18,8 +18,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { SW, SH } from '../../theme/dimensions';
+import { SW, SH, SF } from '../../theme/dimensions';
 import appColors from '../../theme/appColors';
+import appFonts from '../../theme/appFonts';
 import { GOOGLE_MAPS_API_KEY } from '../../../environment';
 import { EmergencyService } from '../../services/emergency.service';
 import { getLocationName } from '../../services/addressFetch.service';
@@ -30,6 +31,7 @@ import { useFocusEffect } from '@react-navigation/native';
 // In a real project swap these with react-native-vector-icons or similar.
 const Icon = ({ name, size = 18, color = '#fff' }) => {
   const map = {
+    arrowBack: '←',
     back: '‹',
     search: '🔍',
     locate: '◎',
@@ -208,6 +210,7 @@ const RequestListTab = () => {
   };
 
   const handleEndReached = () => {
+    console.log('handleEndReached called.');
     if (!hasMore || loadingRef.current) return;
     const nextPage = page + 1;
     setPage(nextPage);
@@ -806,10 +809,12 @@ const EmergencyServicesScreen = () => {
       {/* Header */}
       <View>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-            <Text style={styles.backArrow}>‹</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8}>
+            <Icon name="arrowBack" size={24} color={appColors.white} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Emergency Services</Text>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.headerTitle}>Emergency Services</Text>
+          </View>
         </View>
 
         {/* Search */}
@@ -999,39 +1004,28 @@ const styles = StyleSheet.create({
     backgroundColor: C.bg,
   },
 
-  // Header
+  // Header — mirrors AddContactsScreen exactly
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 12 : 4,
-    paddingBottom: 12,
-    backgroundColor: C.bg,
+    paddingHorizontal: SW(18),
+    paddingTop: SW(48),
+    marginBottom: SW(20),
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: C.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  backArrow: { fontSize: 26, color: C.text, lineHeight: 34 },
-  headerTitle: {
+  headerTextWrap: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: C.text,
-    letterSpacing: 0.2,
+    marginLeft: SW(10),
   },
-  registerBtn: {
-    backgroundColor: C.teal,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+  headerTitle: {
+    color: appColors.white,
+    fontSize: SF(17),
+    fontFamily: appFonts.NunitoBold,
   },
-  registerBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
+  headerSubtitle: {
+    color: appColors.bodyColor,
+    fontSize: SF(10),
+    fontFamily: appFonts.NunitoSemiBold,
+  },
 
   // Search
   searchRow: {
@@ -1692,7 +1686,7 @@ const styles = StyleSheet.create({
   reqListContent: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 100,
+    paddingBottom: 150,
     flexGrow: 1,
     
   },
@@ -1779,6 +1773,3 @@ const styles = StyleSheet.create({
 });
 
 export default EmergencyServicesScreen;
-
-
-

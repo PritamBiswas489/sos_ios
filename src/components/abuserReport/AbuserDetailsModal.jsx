@@ -37,11 +37,16 @@ const fileLabel = (url = '') => {
   return name.length > 32 ? name.slice(0, 14) + '…' + name.slice(-10) : name;
 };
 
+// ─── Threat level color map ───────────────────────────────────────────────────
+const THREAT_COLORS = {
+  High:   { bg: 'rgba(255,59,48,0.12)',  border: '#FF3B30', text: '#FF3B30' },
+  Medium: { bg: 'rgba(255,159,10,0.12)', border: '#FF9F0A', text: '#FF9F0A' },
+  Low:    { bg: 'rgba(52,199,89,0.12)',  border: '#34C759', text: '#34C759' },
+};
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function ModalAvatar({ name, photo, size = 64 }) {
   const initials = getInitials(name || '?');
-  const fontSize  = size * 0.36;
-
   if (photo) {
     return (
       <Image
@@ -51,56 +56,73 @@ function ModalAvatar({ name, photo, size = 64 }) {
     );
   }
   return (
-    <View style={styles.modalAvatarEmpty}>
-      <Text style={styles.modalAvatarIcon}>👤</Text>
+    <View style={[styles.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials || '?'}</Text>
     </View>
   );
 }
 
-// ─── Blob-util download helper ───────────────────────────────────────────────
+// ─── Stat pill ────────────────────────────────────────────────────────────────
+function StatPill({ label, value, accent }) {
+  return (
+    <View style={[styles.statPill, accent && styles.statPillAccent]}>
+      <Text style={[styles.statPillValue, accent && styles.statPillValueAccent]}>{value}</Text>
+      <Text style={[styles.statPillLabel, accent && styles.statPillLabelAccent]}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── Section header ───────────────────────────────────────────────────────────
+function SectionHeader({ icon, title }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionHeaderIcon}>{icon}</Text>
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+      <View style={styles.sectionHeaderLine} />
+    </View>
+  );
+}
+
+// ─── Info row ─────────────────────────────────────────────────────────────────
+function InfoRow({ label, value, highlight }) {
+  if (!value) return null;
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={[styles.infoValue, highlight && styles.infoValueHighlight]}>{value}</Text>
+    </View>
+  );
+}
+
+// ─── Blob-util download helper ────────────────────────────────────────────────
 const downloadFile = async ({ url, onProgress }) => {
   const rawName  = decodeURIComponent(url.split('/').pop().split('?')[0] || `evidence_${Date.now()}`);
   const filename = rawName.replace(/[\\/:*?"<>|]/g, '_');
   const ext      = filename.split('.').pop()?.toLowerCase() || 'bin';
 
-  // Save destination
-  // iOS: save directly to DocumentDir root — iOS Files app only exposes
-  // the root of DocumentDir, NOT subfolders, even with UIFileSharingEnabled.
   const destDir = Platform.OS === 'ios'
     ? RNBlobUtil.fs.dirs.DocumentDir
     : RNBlobUtil.fs.dirs.DownloadDir;
 
   const destPath = `${destDir}/${filename}`;
 
-  // MIME for Android download manager
   const mimeMap = {
-    pdf:  'application/pdf',
-    png:  'image/png',
-    jpg:  'image/jpeg',
-    jpeg: 'image/jpeg',
-    gif:  'image/gif',
-    webp: 'image/webp',
-    doc:  'application/msword',
+    pdf: 'application/pdf', png: 'image/png',
+    jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    gif: 'image/gif', webp: 'image/webp',
+    doc: 'application/msword',
     docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   };
   const mime = mimeMap[ext] || 'application/octet-stream';
 
-  // ✅ FIX: fileCache: false so RNBlobUtil writes directly to destPath
   const config = Platform.OS === 'ios'
-    ? {
-        path: destPath,
-        fileCache: false,
-      }
+    ? { path: destPath, fileCache: false }
     : {
-        path: destPath,
-        fileCache: false,
+        path: destPath, fileCache: false,
         addAndroidDownloads: {
-          useDownloadManager: true,
-          notification: true,
-          title: filename,
-          description: 'Evidence file download',
-          mime,
-          mediaScannable: true,
+          useDownloadManager: true, notification: true,
+          title: filename, description: 'Evidence file download',
+          mime, mediaScannable: true,
         },
       };
 
@@ -111,18 +133,16 @@ const downloadFile = async ({ url, onProgress }) => {
       if (total > 0) onProgress?.(Math.round((received / total) * 100));
     });
 
-  // ✅ FIX: file is already at destPath — no cp() needed
   if (Platform.OS === 'ios') {
     await RNBlobUtil.ios.openDocument(destPath);
   }
-  console.log(`Downloaded file saved to: ${destPath}`);
 
   return { destPath, filename };
 };
 
 // ─── Evidence File Row ────────────────────────────────────────────────────────
-function EvidenceFileRow({ file, index }) {
-  const [progress, setProgress] = useState(null); // null = idle, 0-100 = downloading
+function EvidenceFileRow({ file, index, isLast }) {
+  const [progress, setProgress] = useState(null);
   const isImage  = file.file_type === 'image';
   const icon     = isImage ? '🖼️' : '📄';
   const label    = fileLabel(file.file_url);
@@ -150,19 +170,19 @@ function EvidenceFileRow({ file, index }) {
   };
 
   return (
-    <View style={styles.evidenceRow}>
-      <Text style={styles.evidenceIcon}>{icon}</Text>
+    <View style={[styles.evidenceRow, !isLast && styles.evidenceRowBorder]}>
+      <View style={styles.evidenceIconWrap}>
+        <Text style={styles.evidenceIcon}>{icon}</Text>
+      </View>
 
       <View style={styles.evidenceMeta}>
-        <Text style={styles.evidenceIndex}>
+        <Text style={styles.evidenceType}>
           {isImage ? 'Image' : 'Document'} {index + 1}
         </Text>
         <Text style={styles.evidenceLabel} numberOfLines={1}>{label}</Text>
-
-        {/* Progress bar — shown only while downloading */}
         {isActive ? (
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            <Animated.View style={[styles.progressFill, { width: `${progress}%` }]} />
           </View>
         ) : null}
       </View>
@@ -176,12 +196,10 @@ function EvidenceFileRow({ file, index }) {
         {isActive ? (
           <View style={styles.downloadBtnInner}>
             <ActivityIndicator size="small" color={Colors.accent} />
-            {progress > 0 && (
-              <Text style={styles.progressPct}>{progress}%</Text>
-            )}
+            {progress > 0 && <Text style={styles.progressPct}>{progress}%</Text>}
           </View>
         ) : (
-          <Text style={styles.downloadBtnText}>⬇  Download</Text>
+          <Text style={styles.downloadBtnText}>⬇  Save</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -190,10 +208,9 @@ function EvidenceFileRow({ file, index }) {
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 export default function AbuserDetailsModal({ visible, report, onClose }) {
-  // ── ALL hooks must come before any conditional return ──────────────────────
   const slideAnim   = useRef(new Animated.Value(SHEET_H)).current;
   const fadeAnim    = useRef(new Animated.Value(0)).current;
-  const [bulkProgress, setBulkProgress] = useState(null); // null | { done, total }
+  const [bulkProgress, setBulkProgress] = useState(null);
 
   useEffect(() => {
     if (visible) {
@@ -209,27 +226,19 @@ export default function AbuserDetailsModal({ visible, report, onClose }) {
     }
   }, [visible]);
 
-  // Safe to return early now — all hooks are already declared above
   if (!report) return null;
 
   const {
-    abuser,
-    abuseType,
-    incidentDate,
-    incidentLocation,
-    description,
-    witnessInformation,
-    threatLevel,
-    historyOfViolence,
-    weaponAccess,
-    restrainingOrder,
-    notes,
-    evidenceFiles = [],
-    createdAt,
+    abuser, abuseType, incidentDate, incidentLocation,
+    description, witnessInformation, threatLevel,
+    historyOfViolence, weaponAccess, restrainingOrder,
+    notes, evidenceFiles = [], createdAt,
   } = report;
 
-  const documents = evidenceFiles.filter(f => f.file_type === 'document');
-  const images    = evidenceFiles.filter(f => f.file_type === 'image');
+  const documents     = evidenceFiles.filter(f => f.file_type === 'document');
+  const images        = evidenceFiles.filter(f => f.file_type === 'image');
+  const threatColors  = THREAT_COLORS[threatLevel] || THREAT_COLORS.Low;
+  const riskCount     = [historyOfViolence, weaponAccess, restrainingOrder].filter(Boolean).length;
 
   const handleDownloadAll = async () => {
     if (bulkProgress !== null) return;
@@ -250,7 +259,7 @@ export default function AbuserDetailsModal({ visible, report, onClose }) {
       Platform.OS === 'ios'
         ? (failed === 0
           ? `All ${success} file${success > 1 ? 's' : ''} saved in Files → On My iPhone → KobyTech.`
-          : `${success} downloaded, ${failed} failed. Check Files → On My iPhone → KobyTech.`)
+          : `${success} downloaded, ${failed} failed.`)
         : (failed === 0
           ? `All ${success} file${success > 1 ? 's' : ''} downloaded successfully.`
           : `${success} downloaded, ${failed} failed.`),
@@ -273,64 +282,77 @@ export default function AbuserDetailsModal({ visible, report, onClose }) {
       {/* Bottom Sheet */}
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
 
-        {/* ── Top bar: drag handle + close button ── */}
-        <View style={styles.topBar}>
-          <View style={styles.handleWrap}>
-            <View style={styles.handle} />
+        {/* ── Drag handle ── */}
+        <View style={styles.handleBar}>
+          <View style={styles.handle} />
+        </View>
+
+        {/* ── Hero header ── */}
+        <View style={[styles.heroHeader, { borderBottomColor: threatColors.border + '33' }]}>
+          {/* Left: avatar + name */}
+          <View style={styles.heroLeft}>
+            <ModalAvatar name={abuser?.fullName} photo={abuser?.photo} size={58} />
+            <View style={styles.heroMeta}>
+              <Text style={styles.heroName} numberOfLines={1}>
+                {abuser?.fullName || 'Unknown'}
+              </Text>
+              {abuser?.aliasName ? (
+                <Text style={styles.heroAlias}>aka "{abuser.aliasName}"</Text>
+              ) : null}
+              <View style={styles.heroTags}>
+                {abuser?.gender ? (
+                  <View style={styles.heroTag}>
+                    <Text style={styles.heroTagText}>{capitalise(abuser.gender)}</Text>
+                  </View>
+                ) : null}
+                {abuseType ? (
+                  <View style={[styles.heroTag, styles.heroTagAccent]}>
+                    <Text style={[styles.heroTagText, styles.heroTagTextAccent]}>{abuseType}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
           </View>
+
+          {/* Right: threat badge */}
+          <View style={[styles.threatBadge, { backgroundColor: threatColors.bg, borderColor: threatColors.border }]}>
+            <Text style={[styles.threatBadgeText, { color: threatColors.text }]}>
+              {threatLevel?.toUpperCase()}
+            </Text>
+            <Text style={[styles.threatBadgeLabel, { color: threatColors.text }]}>THREAT</Text>
+          </View>
+
+          {/* Close */}
           <TouchableOpacity
-            style={styles.closeIconBtn}
+            style={styles.closeBtn}
             onPress={onClose}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeIconText}>✕</Text>
+            <Text style={styles.closeBtnText}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── Header: photo + name + threat badge ── */}
-        <View style={styles.header}>
-          <ModalAvatar name={abuser?.fullName} photo={abuser?.photo} size={62} />
-
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerName} numberOfLines={1}>
-              {abuser?.fullName || 'Unknown'}
-            </Text>
-            {abuser?.aliasName ? (
-              <Text style={styles.headerAlias}>aka "{abuser.aliasName}"</Text>
-            ) : null}
-            <View style={styles.headerChips}>
-              {abuser?.gender ? (
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaChipText}>{capitalise(abuser.gender)}</Text>
-                </View>
-              ) : null}
-              {abuser?.dob ? (
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaChipText}>{formatDob(abuser.dob)}</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-
-          {threatLevel ? (
-            <View style={styles.badgeWrap}>
-              <ThreatBadge level={threatLevel} large />
-            </View>
-          ) : null}
-        </View>
-
-        {/* ── Bool chips ── */}
+        {/* ── Risk flags row ── */}
         {(historyOfViolence || weaponAccess || restrainingOrder) ? (
-          <View style={styles.boolChipsRow}>
-            {historyOfViolence !== undefined && (
-              <BoolChip label="History of Violence" value={historyOfViolence} />
+          <View style={styles.riskRow}>
+            {historyOfViolence && (
+              <View style={styles.riskFlag}>
+                <Text style={styles.riskFlagIcon}>⚠️</Text>
+                <Text style={styles.riskFlagText}>Violence History</Text>
+              </View>
             )}
-            {weaponAccess !== undefined && (
-              <BoolChip label="Weapon Access" value={weaponAccess} />
+            {weaponAccess && (
+              <View style={styles.riskFlag}>
+                <Text style={styles.riskFlagIcon}>🔫</Text>
+                <Text style={styles.riskFlagText}>Weapon Access</Text>
+              </View>
             )}
-            {restrainingOrder !== undefined && (
-              <BoolChip label="Restraining Order" value={restrainingOrder} />
+            {restrainingOrder && (
+              <View style={styles.riskFlag}>
+                <Text style={styles.riskFlagIcon}>🚫</Text>
+                <Text style={styles.riskFlagText}>Restraining Order</Text>
+              </View>
             )}
           </View>
         ) : null}
@@ -341,47 +363,48 @@ export default function AbuserDetailsModal({ visible, report, onClose }) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Incident Details */}
-          <SectionDivider title="Incident Details" />
+
+          {/* Incident section */}
+          <SectionHeader icon="📋" title="Incident Details" />
           <View style={styles.card}>
-            <DetailRow label="Type of Abuse" value={abuseType}               accent />
-            <DetailRow label="Incident Date" value={formatDate(incidentDate)} />
-            <DetailRow label="Location"      value={incidentLocation} />
-            <DetailRow label="Report Filed"  value={formatDate(createdAt)} />
+            <InfoRow label="Date"      value={formatDate(incidentDate)} highlight />
+            <InfoRow label="Location"  value={incidentLocation} />
+            <InfoRow label="Reported"  value={formatDate(createdAt)} />
           </View>
 
           {/* Description */}
           {description ? (
             <>
-              <SectionDivider title="Description" />
-              <View style={styles.textBlock}>
-                <Text style={styles.textContent}>{description}</Text>
+              <SectionHeader icon="📝" title="Description" />
+              <View style={styles.textCard}>
+                <Text style={styles.textCardContent}>{description}</Text>
               </View>
             </>
           ) : null}
 
-          {/* Witness Information */}
+          {/* Witness */}
           {witnessInformation ? (
             <>
-              <SectionDivider title="Witness Information" />
-              <View style={styles.textBlock}>
-                <Text style={styles.textContent}>{witnessInformation}</Text>
+              <SectionHeader icon="👁" title="Witness Information" />
+              <View style={styles.textCard}>
+                <Text style={styles.textCardContent}>{witnessInformation}</Text>
               </View>
             </>
           ) : null}
 
-          {/* Abuser Profile */}
-          <SectionDivider title="Abuser Profile" />
+          {/* Abuser profile */}
+          <SectionHeader icon="👤" title="Abuser Profile" />
           <View style={styles.card}>
-            <DetailRow label="Phone"   value={abuser?.phone} />
-            <DetailRow label="Email"   value={abuser?.email} />
-            <DetailRow label="Address" value={abuser?.address} />
+            {abuser?.dob     && <InfoRow label="Date of Birth" value={formatDob(abuser.dob)} />}
+            {abuser?.phone   && <InfoRow label="Phone"   value={abuser.phone} />}
+            {abuser?.email   && <InfoRow label="Email"   value={abuser.email} />}
+            {abuser?.address && <InfoRow label="Address" value={abuser.address} />}
           </View>
 
-          {/* Evidence Files */}
+          {/* Evidence */}
           {evidenceFiles.length > 0 ? (
             <>
-              <SectionDivider title={`Evidence Files (${evidenceFiles.length})`} />
+              <SectionHeader icon="🗂" title={`Evidence  ·  ${evidenceFiles.length} file${evidenceFiles.length !== 1 ? 's' : ''}`} />
 
               {evidenceFiles.length > 1 ? (
                 <TouchableOpacity
@@ -394,23 +417,26 @@ export default function AbuserDetailsModal({ visible, report, onClose }) {
                     <View style={styles.downloadAllInner}>
                       <ActivityIndicator size="small" color={Colors.accent} />
                       <Text style={styles.downloadAllText}>
-                        Downloading {bulkProgress.done}/{bulkProgress.total}…
+                        Downloading {bulkProgress.done} of {bulkProgress.total}…
                       </Text>
                     </View>
                   ) : (
-                    <Text style={styles.downloadAllText}>
-                      ⬇  Download All ({evidenceFiles.length} files)
-                    </Text>
+                    <Text style={styles.downloadAllText}>⬇  Download all {evidenceFiles.length} files</Text>
                   )}
                 </TouchableOpacity>
               ) : null}
 
               {documents.length > 0 ? (
                 <View style={styles.evidenceGroup}>
-                  <Text style={styles.evidenceGroupLabel}>📄 Documents</Text>
+                  <Text style={styles.evidenceGroupLabel}>Documents</Text>
                   <View style={styles.evidenceList}>
                     {documents.map((file, i) => (
-                      <EvidenceFileRow key={file.id ?? i} file={file} index={i} />
+                      <EvidenceFileRow
+                        key={file.id ?? i}
+                        file={file}
+                        index={i}
+                        isLast={i === documents.length - 1}
+                      />
                     ))}
                   </View>
                 </View>
@@ -418,10 +444,15 @@ export default function AbuserDetailsModal({ visible, report, onClose }) {
 
               {images.length > 0 ? (
                 <View style={styles.evidenceGroup}>
-                  <Text style={styles.evidenceGroupLabel}>🖼️ Images</Text>
+                  <Text style={styles.evidenceGroupLabel}>Images</Text>
                   <View style={styles.evidenceList}>
                     {images.map((file, i) => (
-                      <EvidenceFileRow key={file.id ?? i} file={file} index={i} />
+                      <EvidenceFileRow
+                        key={file.id ?? i}
+                        file={file}
+                        index={i}
+                        isLast={i === images.length - 1}
+                      />
                     ))}
                   </View>
                 </View>
@@ -429,18 +460,17 @@ export default function AbuserDetailsModal({ visible, report, onClose }) {
             </>
           ) : null}
 
-          {/* Internal Notes */}
+          {/* Notes */}
           {notes ? (
             <>
-              <SectionDivider title="Internal Notes" />
-              <View style={[styles.textBlock, styles.noteBlock]}>
-                <Text style={styles.noteIcon}>📝</Text>
-                <Text style={[styles.textContent, { flex: 1 }]}>{notes}</Text>
+              <SectionHeader icon="🔒" title="Internal Notes" />
+              <View style={styles.noteCard}>
+                <Text style={styles.noteCardContent}>{notes}</Text>
               </View>
             </>
           ) : null}
 
-          <View style={{ height: Spacing.xxl }} />
+          <View style={{ height: 48 }} />
         </ScrollView>
 
       </Animated.View>
@@ -452,159 +482,363 @@ export default function AbuserDetailsModal({ visible, report, onClose }) {
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(0,0,0,0.82)',
   },
   sheet: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
     height: SHEET_H,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    ...Shadow.modal,
+    backgroundColor: '#0F1621',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+
+  // ── Handle ──
+  handleBar: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  handle: {
+    width: 36, height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+
+  // ── Hero header ──
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    gap: 14,
+  },
+  heroLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatarImg: {
+    resizeMode: 'cover',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  avatarFallback: {
+    backgroundColor: '#1E2D45',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  avatarInitials: {
+    color: '#8BA7CC',
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  heroMeta:  { flex: 1 },
+  heroName: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  heroAlias: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  heroTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 7,
+  },
+  heroTag: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  heroTagAccent: {
+    backgroundColor: 'rgba(229,62,109,0.12)',
+    borderColor: 'rgba(229,62,109,0.3)',
+  },
+  heroTagText: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  heroTagTextAccent: {
+    color: '#E53E6D',
+  },
+
+  // ── Threat badge ──
+  threatBadge: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    minWidth: 62,
+  },
+  threatBadgeText: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  threatBadgeLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginTop: 1,
+    opacity: 0.7,
+  },
+
+  // ── Close button ──
+  closeBtn: {
+    width: 30, height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeBtnText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+
+  // ── Risk flags ──
+  riskRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255,59,48,0.05)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,59,48,0.12)',
+  },
+  riskFlag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,59,48,0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255,59,48,0.2)',
+  },
+  riskFlagIcon: { fontSize: 12 },
+  riskFlagText: {
+    color: '#FF6B6B',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  // ── Scroll ──
+  scroll:        { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 6 },
+
+  // ── Section header ──
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 22,
+    marginBottom: 10,
+  },
+  sectionHeaderIcon: { fontSize: 14 },
+  sectionHeaderText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  sectionHeaderLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    marginLeft: 4,
+  },
+
+  // ── Card ──
+  card: {
+    backgroundColor: '#161F2E',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
     overflow: 'hidden',
   },
 
-  // ── Top bar (handle + ✕) ──
-  topBar: {
-    position: 'relative',
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 4,
+  // ── Info row ──
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+    gap: 12,
   },
-  handleWrap: { alignItems: 'center' },
-  handle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.divider },
-  closeIconBtn: {
-    position: 'absolute',
-    right: Spacing.base,
-    top: 8,
-    width: 32, height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.surfaceHigh,
-    borderWidth: 1, borderColor: Colors.divider,
-    alignItems: 'center', justifyContent: 'center',
+  infoLabel: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    flexShrink: 0,
   },
-  closeIconText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '700', lineHeight: 16 },
-
-  // ── Header ──
-  header: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
-    borderBottomWidth: 1, borderBottomColor: Colors.divider,
-    gap: Spacing.base,
+  infoValue: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
   },
-  avatarImg: { resizeMode: 'cover', borderWidth: 2, borderColor: Colors.divider },
-  avatarFallback: {
-    backgroundColor: Colors.accentMuted,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: Colors.accent,
-  },
-  avatarInitials: { color: Colors.accent, fontWeight: '700' },
-
-  headerInfo:  { flex: 1 },
-  headerName:  { ...Typography.heading2, fontSize: 20 },
-  headerAlias: { ...Typography.caption, color: Colors.textSecondary, marginTop: 2 },
-  headerChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.sm },
-  metaChip: {
-    backgroundColor: Colors.surfaceHigh, borderRadius: Radius.sm,
-    paddingHorizontal: 8, paddingVertical: 3,
-    borderWidth: 1, borderColor: Colors.divider,
-  },
-  metaChipText: { ...Typography.caption, color: Colors.textSecondary },
-  badgeWrap:    { alignSelf: 'flex-start', marginTop: 4 },
-
-  // ── Bool chips ──
-  boolChipsRow: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
-    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
-    backgroundColor: Colors.surfaceHigh,
-    borderBottomWidth: 1, borderBottomColor: Colors.divider,
+  infoValueHighlight: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 
-  scroll:        { flex: 1 },
-  scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.base },
+  // ── Text card ──
+  textCard: {
+    backgroundColor: '#161F2E',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    padding: 16,
+  },
+  textCardContent: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    lineHeight: 22,
+  },
 
-  card: {
-    backgroundColor: Colors.surfaceHigh,
-    borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider,
-    paddingHorizontal: Spacing.base, marginBottom: Spacing.base,
+  // ── Note card ──
+  noteCard: {
+    backgroundColor: 'rgba(229,62,109,0.05)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(229,62,109,0.2)',
+    padding: 16,
   },
-  textBlock: {
-    backgroundColor: Colors.surfaceHigh,
-    borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider,
-    padding: Spacing.base, marginBottom: Spacing.base,
+  noteCardContent: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 14,
+    lineHeight: 22,
   },
-  noteBlock: {
-    flexDirection: 'row', gap: Spacing.sm,
-    borderColor: Colors.accentMuted,
-    backgroundColor: 'rgba(229,62,109,0.04)',
-  },
-  noteIcon:    { fontSize: 16, marginTop: 2 },
-  textContent: { ...Typography.body, lineHeight: 22 },
 
   // ── Evidence ──
   downloadAllBtn: {
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.accentMuted,
-    borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.accent,
-    paddingVertical: Spacing.md, marginBottom: Spacing.base,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(229,62,109,0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(229,62,109,0.3)',
+    paddingVertical: 12,
+    marginBottom: 12,
+    gap: 8,
   },
-  downloadAllText: { color: Colors.accent, fontWeight: '700', fontSize: 14 },
+  downloadAllBtnBusy: { opacity: 0.6 },
+  downloadAllInner:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  downloadAllText: {
+    color: '#E53E6D',
+    fontWeight: '700',
+    fontSize: 13,
+  },
 
-  evidenceGroup:      { marginBottom: Spacing.base },
+  evidenceGroup:      { marginBottom: 12 },
   evidenceGroupLabel: {
-    ...Typography.caption, color: Colors.textSecondary,
-    fontWeight: '700', marginBottom: Spacing.sm,
-    textTransform: 'uppercase', letterSpacing: 0.5,
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+    marginLeft: 2,
   },
   evidenceList: {
-    backgroundColor: Colors.surfaceHigh,
-    borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.divider,
+    backgroundColor: '#161F2E',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
     overflow: 'hidden',
   },
   evidenceRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.base, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.divider,
-    gap: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 12,
   },
-  evidenceIcon:  { fontSize: 20 },
+  evidenceRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  evidenceIconWrap: {
+    width: 36, height: 36,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  evidenceIcon:  { fontSize: 18 },
   evidenceMeta:  { flex: 1 },
-  evidenceIndex: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, textTransform: 'uppercase' },
-  evidenceLabel: { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+  evidenceType: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  evidenceLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '500',
+  },
   downloadBtn: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: Radius.pill,
-    borderWidth: 1.5, borderColor: Colors.accent,
-    backgroundColor: Colors.accentMuted,
-    minWidth: 100, alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(229,62,109,0.4)',
+    backgroundColor: 'rgba(229,62,109,0.1)',
+    minWidth: 80,
+    alignItems: 'center',
   },
   downloadBtnBusy:  { opacity: 0.6 },
   downloadBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  downloadBtnText:  { color: Colors.accent, fontWeight: '700', fontSize: 12 },
-  progressPct:      { color: Colors.accent, fontSize: 11, fontWeight: '700' },
+  downloadBtnText:  { color: '#E53E6D', fontWeight: '700', fontSize: 12 },
+  progressPct:      { color: '#E53E6D', fontSize: 11, fontWeight: '700' },
 
-  // Progress bar inside evidence row
   progressTrack: {
-    height: 3, borderRadius: 2,
-    backgroundColor: Colors.divider,
-    marginTop: 5, overflow: 'hidden',
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginTop: 5,
+    overflow: 'hidden',
   },
   progressFill: {
-    height: 3, borderRadius: 2,
-    backgroundColor: Colors.accent,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#E53E6D',
   },
-
-  // Download All busy state
-  downloadAllBtnBusy: { opacity: 0.75 },
-  downloadAllInner:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-
-  // ── Avatar fallback ──
-  modalAvatarEmpty: {
-    width: 54, height: 54, borderRadius: 27,
-    borderWidth: 1, borderColor: Colors.divider,
-    backgroundColor: Colors.surface,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  modalAvatarIcon: { fontSize: 20 },
 });
