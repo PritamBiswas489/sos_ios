@@ -131,7 +131,7 @@ const AnalysisScreen = () => {
   const [latestStress, setLatestStress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { contactList } = useChatContacts();
+  const { lengthCalculation } = useChatContacts();
 
   const loadData = useCallback(async () => {
     const statuses = ['active', 'resolved', 'cancelled', 'expired'];
@@ -265,7 +265,7 @@ const AnalysisScreen = () => {
               </View>
               <View style={styles.profileStatDivider} />
               <View style={styles.profileStatItem}>
-                <Text style={styles.profileStatNum}>{contactList.length}</Text>
+                <Text style={styles.profileStatNum}>{lengthCalculation()}</Text>
                 <Text style={styles.profileStatLbl}>Contacts</Text>
               </View>
             </View>

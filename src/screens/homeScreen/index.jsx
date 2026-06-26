@@ -1,4 +1,4 @@
-import React, { use, useCallback, useEffect, useRef, useState } from 'react';
+import React, {   useCallback, useEffect, useRef, useState } from 'react';
 import appColors from '../../theme/appColors';
 import {
   View,

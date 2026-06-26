@@ -38,10 +38,16 @@ function parseHRCharacteristic(base64Value) {
 // ─────────────────────────────────────────────
 // Wait for BLE to be powered on
 // ─────────────────────────────────────────────
-function waitForPoweredOn(mgr) {
-  return new Promise(resolve => {
+function waitForPoweredOn(mgr, timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      sub.remove();
+      reject(new Error('BLE adapter timeout — Bluetooth may be off'));
+    }, timeoutMs);
+
     const sub = mgr.onStateChange(state => {
       if (state === 'PoweredOn') {
+        clearTimeout(timer);
         sub.remove();
         resolve();
       }
@@ -91,7 +97,12 @@ export function BleProvider({ children }) {
         if (__DEV__) console.log('[BLE] Auto-reconnecting to:', name, id);
 
         // Wait for BLE adapter ready before connecting
-        await waitForPoweredOn(manager.current);
+       try {
+          await waitForPoweredOn(manager.current);
+        } catch (e) {
+          console.warn('[BLE] BLE not ready:', e.message);
+          return; // ✅ bail out instead of hanging
+        }
         if (destroyed.current || !manager.current) return;
 
         const device = await manager.current.connectToDevice(id, { autoConnect: false });
@@ -271,7 +282,14 @@ export function BleProvider({ children }) {
     if (!ok) return;
 
     // Wait for BLE adapter ready
-    await waitForPoweredOn(currentManager);
+    try {
+        await waitForPoweredOn(currentManager);
+      } catch (e) {
+        console.warn('[BLE] BLE not ready:', e.message);
+        setPartial({ scanning: false, error: 'Bluetooth is not available. Please enable it.' });
+        return;
+      }
+
     if (manager.current !== currentManager || destroyed.current) return;
 
     setPartial({ scanning: true, error: null });
@@ -281,7 +299,7 @@ export function BleProvider({ children }) {
         [HR_SERVICE_UUID],
         { allowDuplicates: false },
         async (error, device) => {
-          console.log('Device found:', device.name ?? device.id);
+          if (!device && !error) return;
           if (manager.current !== currentManager || destroyed.current) return;
 
           try {

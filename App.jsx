@@ -30,7 +30,7 @@ import NoPermissionsScreen from './src/components/noPermissionsScreen/index.jsx'
 import {
   checkRequiredPermissions,
   requestLocationPermissions,
-  requestMicrophonePermission,  
+  requestMicrophonePermission,
 } from './src/services/permissions.service';
 import CompleteProfileScreen from './src/screens/completeProfileScreen/index.jsx';
 import AuthLoadingScreen from './src/screens/authLoadingScreen/index.jsx';
@@ -57,6 +57,7 @@ import SOSAlertModal, {
 import SosFab from './src/components/sosFab/index.jsx';
 import { useIncomingSosNotifications } from './src/hook/useIncomingSosNotifications.jsx';
 import { useMySosSessions } from './src/hook/useMySosSessions.jsx';
+import { useUserData } from './src/hook/useUserData.jsx';
 import {
   initCrashLogger,
   logError,
@@ -184,6 +185,7 @@ const App = () => {
   const { fetchMySosSessions } = useMySosSessions();
   const { isAuthenticated } = useUserAuth();
   const [emittedSOS, setEmittedSOS] = useState(null);
+  const { hasLicense } = useUserData();
 
   const openSosModalFromNotification = useCallback(() => {
     if (AppState.currentState === 'active') {
@@ -209,14 +211,14 @@ const App = () => {
   const handleCheckPermissions = useCallback(async () => {
     console.log('Checking permissions...');
     // Request permissions one by one for iOS
-     await requestLocationPermissions();
-      await waitUntilLocationSettled();
+    await requestLocationPermissions();
+    await waitUntilLocationSettled();
 
-      await requestNotificationPermissions();
-      await waitUntilNotificationSettled();
+    await requestNotificationPermissions();
+    await waitUntilNotificationSettled();
 
-      await requestMicrophonePermission();
-      await waitUntilMicrophoneSettled();
+    await requestMicrophonePermission();
+    await waitUntilMicrophoneSettled();
     const missing = await checkRequiredPermissions();
     console.log('Missing permissions:', missing);
     setMissingPermissions(missing);
@@ -336,15 +338,15 @@ const App = () => {
       console.log('Already on Health screen, skipping stress redirect');
       return;
     }
-     
+
     if (!navigationRef.isReady()) {
       pendingNavigationRef.current = () => {
-        navigationRef.navigate('Process',{action: 'redirectToStressScreen', userId: victimId });
+        navigationRef.navigate('Process', { action: 'redirectToStressScreen', userId: victimId });
       };
       return;
     }
 
-    navigationRef.navigate('Process',{action: 'redirectToStressScreen', userId: victimId });
+    navigationRef.navigate('Process', { action: 'redirectToStressScreen', userId: victimId });
   }, []);
 
   const redirectToAudioScreen = useCallback(victimId => {
@@ -353,14 +355,14 @@ const App = () => {
       console.log('Already on Health screen, skipping stress redirect');
       return;
     }
-     if (!navigationRef.isReady()) {
+    if (!navigationRef.isReady()) {
       pendingNavigationRef.current = () => {
-        navigationRef.navigate('Process',{action: 'redirectToAudioScreen', userId: victimId });
+        navigationRef.navigate('Process', { action: 'redirectToAudioScreen', userId: victimId });
       };
       return;
     }
-     
-    navigationRef.navigate('Process',{action: 'redirectToAudioScreen', userId: victimId });
+
+    navigationRef.navigate('Process', { action: 'redirectToAudioScreen', userId: victimId });
 
 
   }, []);
@@ -599,125 +601,107 @@ const App = () => {
     });
   };
 
-  const renderContent = () => {
-    if (!isConnected) {
-      return (
-        <>
-          <StatusBar barStyle="light-content" backgroundColor="#020B1B" />
-          <NoInternetScreen onRetry={handleRetryConnection} />
-        </>
-      );
-    }
 
-    // Still checking permissions on first load
-    
-
-    if (missingPermissions.length > 0) {
-      return (
-        <>
-          <StatusBar barStyle="light-content" backgroundColor="#020B1B" />
-          <NoPermissionsScreen
-            missingPermissions={missingPermissions}
-            onRetry={handleCheckPermissions}
-          />
-        </>
-      );
-    }
-
-    return (
-      <>
-        <StatusBar barStyle="light-content" backgroundColor="#1A1A2E" />
-        <InAppNotificationBanner
-          visible={banner.visible}
-          title={banner.title}
-          body={banner.body}
-          onClose={closeBanner}
-        />
-        <NavigationContainer
-          ref={navigationRef}
-          onReady={() => {
-            if (pendingNavigationRef.current) {
-              pendingNavigationRef.current();
-              pendingNavigationRef.current = null;
-            }
-            syncCurrentScreen();
-          }}
-          onStateChange={syncCurrentScreen}
-        >
-          <Stack.Navigator
-            initialRouteName="Splash"
-            screenOptions={{ headerShown: false }}
-          >
-            <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
-            <Stack.Screen name="Splash" component={SplashScreen} />
-            <Stack.Screen name="Process" component={ProcessScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen
-              name="CompleteProfile"
-              component={CompleteProfileScreen}
-            />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-            <Stack.Screen name="AddContact" component={AddContactsScreen} />
-            <Stack.Screen name="Main" component={DrawerNavigator} />
-            <Stack.Screen
-              name="EmergencyServices"
-              component={EmergencyServicesScreen}
-            />
-            <Stack.Screen name="ReportList" component={ReportListScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-        <Toast config={toastConfig} />
-      </>
-    );
-  };
 
   return (
-    <SocketProvider>
-      <CreatorMediaSoupProvider>
-        <ListenerMediaSoupProvider>
-          <TrustedContactsProvider>
-            <ChatProvider>
-              <LocationProvider>
-                <HealthProvider
-                  userAge={28} // user's age → used for max HR calculation
-                  criticalThreshold={76} // stress score that triggers SOS alert
-                // called when user confirms SOS
-                >
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <SafeAreaProvider>
-                      {renderContent()}
-                      {/* Floating SOS alert button + modal — isolated component so open/close never re-renders App */}
-                      <SOSController
-                        fabVisible={
-                          isConnected &&
-                          Array.isArray(missingPermissions) &&
-                          missingPermissions.length === 0 &&
-                          activeScreen !== null &&
-                          ![
-                            'Splash',
-                            'Process',
-                            'Login',
-                            'CompleteProfile',
-                            'AuthLoading',
-                          ].includes(activeScreen) &&
-                          !(
-                            Platform.OS === 'ios' && activeScreen === 'Analysis'
-                          )
-                        }
-                        navigationRef={navigationRef}
-                        sosModalVisible={sosModalVisible}
-                        setSosModalVisible={setSosModalVisible}
+  <SocketProvider>
+    <CreatorMediaSoupProvider>
+      <ListenerMediaSoupProvider>
+        <TrustedContactsProvider>
+          <ChatProvider>
+            <LocationProvider>
+              <HealthProvider
+                userAge={28}
+                criticalThreshold={76}
+                gfRefreshMs={10_000}
+              >
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <SafeAreaProvider>
+                    <StatusBar
+                      barStyle="light-content"
+                      backgroundColor={
+                        !isConnected || missingPermissions.length > 0
+                          ? '#020B1B'
+                          : '#1A1A2E'
+                      }
+                    />
+
+                    {!isConnected ? (
+                      <NoInternetScreen onRetry={handleRetryConnection} />
+                    ) : missingPermissions.length > 0 ? (
+                      <NoPermissionsScreen
+                        missingPermissions={missingPermissions}
+                        onRetry={handleCheckPermissions}
                       />
-                    </SafeAreaProvider>
-                  </GestureHandlerRootView>
-                </HealthProvider>
-              </LocationProvider>
-            </ChatProvider>
-          </TrustedContactsProvider>
-        </ListenerMediaSoupProvider>
-      </CreatorMediaSoupProvider>
-    </SocketProvider>
-  );
+                    ) : (
+                      <>
+                        <InAppNotificationBanner
+                          visible={banner.visible}
+                          title={banner.title}
+                          body={banner.body}
+                          onClose={closeBanner}
+                        />
+                        <NavigationContainer
+                          ref={navigationRef}
+                          onReady={() => {
+                            if (pendingNavigationRef.current) {
+                              pendingNavigationRef.current();
+                              pendingNavigationRef.current = null;
+                            }
+                            syncCurrentScreen();
+                          }}
+                          onStateChange={syncCurrentScreen}
+                        >
+                          <Stack.Navigator
+                            initialRouteName="Splash"
+                            screenOptions={{ headerShown: false }}
+                          >
+                            <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+                            <Stack.Screen name="Splash" component={SplashScreen} />
+                            <Stack.Screen name="Process" component={ProcessScreen} />
+                            <Stack.Screen name="Login" component={LoginScreen} />
+                            <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
+                            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+                            <Stack.Screen name="AddContact" component={AddContactsScreen} />
+                            <Stack.Screen name="Main" component={DrawerNavigator} />
+                            <Stack.Screen name="EmergencyServices" component={EmergencyServicesScreen} />
+                            <Stack.Screen name="ReportList" component={ReportListScreen} />
+                          </Stack.Navigator>
+                        </NavigationContainer>
+                        <Toast config={toastConfig} />
+                      </>
+                    )}
+                    <SOSController
+                      fabVisible={
+                        isConnected &&
+                        Array.isArray(missingPermissions) &&
+                        missingPermissions.length === 0 &&
+                        activeScreen !== null &&
+                        ![
+                          'Splash',
+                          'Process',
+                          'Login',
+                          'CompleteProfile',
+                          'AuthLoading',
+                        ].includes(activeScreen) &&
+                        !(Platform.OS === 'ios' && activeScreen === 'Analysis')
+                      }
+                      navigationRef={navigationRef}
+                      sosModalVisible={sosModalVisible}
+                      setSosModalVisible={setSosModalVisible}
+                    />
+                  </SafeAreaProvider>
+
+                  
+                </GestureHandlerRootView>
+              </HealthProvider>
+            </LocationProvider>
+          </ChatProvider>
+        </TrustedContactsProvider>
+      </ListenerMediaSoupProvider>
+    </CreatorMediaSoupProvider>
+  </SocketProvider>
+);
 };
 
 export default Sentry.wrap(App);

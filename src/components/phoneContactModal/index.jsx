@@ -55,7 +55,13 @@ const loadContacts = async () => {
 };
 
   const handleOpenSettings = () => {
-    Linking.openURL('app-settings:');
+    try{
+      Linking.openURL('app-settings:');
+
+    }catch (error) {
+      console.error('Error opening settings:', error);
+    }
+    
   };
 
   const handleClose = () => {

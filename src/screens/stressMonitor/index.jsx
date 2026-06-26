@@ -1,4 +1,4 @@
-import React,{useState, useEffect, useRef, useMemo, use} from 'react';
+import React,{useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StatusBar, StyleSheet, Platform } from 'react-native';
 import IconMC from 'react-native-vector-icons/MaterialCommunityIcons';
 import MyStressMonitor from '../../components/myStressMonitor';

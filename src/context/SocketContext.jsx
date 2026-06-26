@@ -160,17 +160,13 @@ export const SocketProvider = ({children}) => {
         }
     };
 
-    const pingInterval = setInterval(() => {
-        if (socketRef.current?.connected) {
-            socketRef.current.emit('ping');
-        }
-    }, 25000);
+     
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
         subscription.remove();
-        clearInterval(pingInterval);
+         
     };
 
 }, [isAuthenticated, token]);
@@ -185,7 +181,7 @@ export const SocketProvider = ({children}) => {
                 if (settled) return;
                 settled = true;
                 reject(new Error('Socket emit timeout'));
-            }, 10000);
+            }, 5000);
 
             socketRef.current.emit(event, data, response => {
                 if (settled) return;

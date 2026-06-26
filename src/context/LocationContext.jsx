@@ -88,7 +88,7 @@ export const LocationProvider = ({ children }) => {
       onLocationUpdateRef.current = onUpdate;
 
       const granted = await requestPermissions();
-      if (!granted || granted === 'denied') {
+      if (granted === 'denied') {
         isTrackingRef.current = false;
         return;
       }
@@ -264,15 +264,17 @@ export const LocationProvider = ({ children }) => {
   const getContactsLastLocations = useCallback(async () => {
     console.log('📍 Fetching contacts last locations...');
     try {
-      const response = await new Promise((resolve, reject) => {
+      const response = await Promise.race([
+      new Promise((resolve, reject) => {
         LocationsService.getContactsLastLocations(result => {
-          if (result.success) {
-            resolve(result.data);
-          } else {
-            reject(new Error(result.error || 'Unknown error fetching locations'));
-          }
+          if (result.success) resolve(result.data);
+          else reject(new Error(result.error || 'Unknown error'));
         });
-      });
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('getContactsLastLocations timeout')), 10000)
+      ), // ✅ 10s max wait
+    ]);
 
       if (response?.data) {
         const initialLocations = {};

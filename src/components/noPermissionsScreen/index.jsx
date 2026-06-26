@@ -34,7 +34,8 @@ const NoPermissionsScreen = ({ missingPermissions = [], onRetry }) => {
 
   const openSettings = async () => {
     try {
-      await Linking.openSettings();
+      // await Linking.openSettings();
+      await Linking.openURL('app-settings:')
     } catch (error) {
       Alert.alert(
         'Unable to Open Settings',

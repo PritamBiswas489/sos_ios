@@ -169,20 +169,7 @@ const ProcessScreen = payload => {
          
 
 
-       console.log('=====================================================');
-       console.log('Fetching user profile data after login');
-       console.log('=====================================================');
-        const data =  await fetchUserData();
-        console.log('=====================================================');
-        console.log('User profile data fetched successfullyyyyyy:', data);
-        console.log('=====================================================');
-        console.log("Trusted Contacts for Join Socket Room need to be fetched here");
-        console.log('=====================================================');
-        await fetchChatContacts();
-        console.log('=====================================================');
-        console.log('Data retrieval successful, navigating to Main screen');
-        console.log('=====================================================');
-
+       const [data] = await Promise.all([fetchUserData(), fetchChatContacts()]);
         if(!data?.id){
             console.log('❌ User data is missing id after login. Navigating back to Login screen.');
             navigation.replace('Login');
