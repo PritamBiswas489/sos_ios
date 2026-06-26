@@ -13,6 +13,11 @@ import { useUserData } from '../hook/useUserData';
 import { useContactLocations } from '../hook/useContactLocations';
 import { LocationsService } from '../services/locations.service';
 import useUserAuth from '../hook/useUserAuth';
+import { AppState } from 'react-native';
+ 
+
+
+
 
 const LocationContext = createContext(null);
 
@@ -43,23 +48,35 @@ export const LocationProvider = ({ children }) => {
   const { userData } = useUserData();
   const { isAuthenticated } = useUserAuth();
 
+
+  const appStateRef = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', nextState => {
+      console.log('📱 [AppState] changed to:', nextState); // ✅ tells you foreground/background
+      appStateRef.current = nextState;
+    });
+    return () => sub.remove();
+  }, []);
+
+ 
+
   // ── Global callback for location updates ──────────────────────────────────
   useEffect(() => {
     global.__locationUpdateCallback = (location, bg) => {
-      const coords = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        altitude: location.coords.altitude,
+      console.log('📍 [LocationCallback] fired | bg:', bg, '| coords:', {
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
         accuracy: location.coords.accuracy,
-        heading: location.coords.heading,
-        speed: location.coords.speed,
-        isBackground: bg,
-        timestamp: location.timestamp,
-      };
+      });
+      const coords = { ...location.coords, isBackground: bg, timestamp: location.timestamp };
+      // Use unstable_batchedUpdates or combine into single state object
       setCurrentLocation(coords);
       currentLocationRef.current = coords;
-      setIsBackground(bg);
-      isBackgroundRef.current = bg;
+      if (bg !== isBackgroundRef.current) {  // ✅ only update if changed
+        setIsBackground(bg);
+        isBackgroundRef.current = bg;
+      }
       onLocationUpdateRef.current?.(coords);
     };
 
@@ -82,52 +99,58 @@ export const LocationProvider = ({ children }) => {
 
   // ── Start tracking (iOS only) ──────────────────────────────────────────────
   const startTracking = useCallback(
-    async onUpdate => {
-      if (isTrackingRef.current) return;
-      isTrackingRef.current = true;
-      onLocationUpdateRef.current = onUpdate;
+  async onUpdate => {
+    console.log('🔵 [startTracking] called | isTracking:', isTrackingRef.current);
+    if (isTrackingRef.current) {
+      console.log('⛔ [startTracking] already tracking — skipped');
+      return;
+    }
+    isTrackingRef.current = true;
+    onLocationUpdateRef.current = onUpdate;
 
-      const granted = await requestPermissions();
-      if (granted === 'denied') {
-        isTrackingRef.current = false;
-        return;
-      }
+    console.log('🔑 [startTracking] requesting permissions...');
+    const granted = await requestPermissions();
+    console.log('🔑 [startTracking] permission result:', granted);
+    
+    if (granted === 'denied') {
+      console.log('❌ [startTracking] permission denied — stopped');
+      isTrackingRef.current = false;
+      return;
+    }
 
-      try {
-        // iOS foreground + background watch
-        watchIdRef.current = Geolocation.watchPosition(
-          location => {
-            global.__locationUpdateCallback?.(location, false);
-          },
-          error => {
-            console.error('Location error:', error.message);
-            setLocationError(error.message);
-          },
-          {
-            accuracy: {
-              ios: 'best',
-            },
-            distanceFilter: 5,           // update every 5 metres
-            timeout: 15000,
-            maximumAge: 1000,
-            forceRequestLocation: true,
-            showsBackgroundLocationIndicator: true,  // iOS blue bar
-            pausesLocationUpdatesAutomatically: false, // prevent iOS pausing
-            activityType: 'other',                    // iOS activity type
-          },
-        );
-
-        setIsTracking(true);
-        setLocationError(null);
-        console.log('✅ iOS location tracking started');
-      } catch (err) {
-        console.error('startTracking error:', err);
-        isTrackingRef.current = false;
-        setLocationError(err.message);
-      }
-    },
-    [requestPermissions],
-  );
+    try {
+      console.log('📡 [startTracking] calling watchPosition...');
+      watchIdRef.current = Geolocation.watchPosition(
+        location => {
+          const isBackground = appStateRef.current !== 'active';
+          console.log('🛰️ [watchPosition] fired | bg:', isBackground, '| accuracy:', location.coords.accuracy);
+          global.__locationUpdateCallback?.(location, isBackground);
+        },
+        error => {
+          console.error('❌ [watchPosition] error:', error.code, error.message);
+          setLocationError(error.message);
+        },
+        {
+          accuracy: { ios: 'nearestTenMeters' },
+          distanceFilter: 10,
+          timeout: 10000,
+          maximumAge: 5000,
+          forceRequestLocation: false,
+          pausesLocationUpdatesAutomatically: false,
+          allowsBackgroundLocationUpdates: true,
+          showsBackgroundLocationIndicator: true,
+          activityType: 'other',
+        },
+      );
+      console.log('✅ [startTracking] watchPosition started | watchId:', watchIdRef.current);
+      setIsTracking(true);
+    } catch (err) {
+      console.error('❌ [startTracking] exception:', err.message);
+      isTrackingRef.current = false;
+    }
+  },
+  [requestPermissions],
+);
   startTrackingRef.current = startTracking;
 
   // ── Stop tracking ──────────────────────────────────────────────────────────
@@ -165,10 +188,10 @@ export const LocationProvider = ({ children }) => {
           resolve(null);
         },
         {
-          accuracy: { ios: 'best' },
-          timeout: 15000,
-          maximumAge: 10000,
-          forceRequestLocation: true,
+          accuracy: { ios: 'hundredMeters' }, // ✅ uses cell/wifi, instant
+          timeout: 5000,                       // ✅ fail fast
+          maximumAge: 30000,                   // ✅ accept 30s old cache
+          forceRequestLocation: false,         // ✅ use cached if available
         },
       );
     });
@@ -224,7 +247,7 @@ export const LocationProvider = ({ children }) => {
     }
 
     const onPersonalRoomJoined = () => {
-      console.log('✅ Joined personal room, starting location tracking...');
+      console.log('🏠 [Socket] personal:room:joined fired — starting tracking');
       startTrackingRef.current(location => {
         console.log('📍 Emitting location update:', location);
         emitNoAck('location:update', JSON.stringify({ loc: location }));
@@ -265,16 +288,16 @@ export const LocationProvider = ({ children }) => {
     console.log('📍 Fetching contacts last locations...');
     try {
       const response = await Promise.race([
-      new Promise((resolve, reject) => {
-        LocationsService.getContactsLastLocations(result => {
-          if (result.success) resolve(result.data);
-          else reject(new Error(result.error || 'Unknown error'));
-        });
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('getContactsLastLocations timeout')), 10000)
-      ), // ✅ 10s max wait
-    ]);
+        new Promise((resolve, reject) => {
+          LocationsService.getContactsLastLocations(result => {
+            if (result.success) resolve(result.data);
+            else reject(new Error(result.error || 'Unknown error'));
+          });
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('getContactsLastLocations timeout')), 10000)
+        ), // ✅ 10s max wait
+      ]);
 
       if (response?.data) {
         const initialLocations = {};
@@ -297,10 +320,14 @@ export const LocationProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) return;
+    console.log('⏳ [LocationContext] scheduling getContactsLastLocations in 2s'); // ✅ ADD
+    const timer = setTimeout(() => {
+      console.log('🚀 [LocationContext] calling getContactsLastLocations now'); // ✅ ADD
       getContactsLastLocations();
-    }
-  }, [getContactsLastLocations, isAuthenticated]);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated]);
 
   // ── Context value ──────────────────────────────────────────────────────────
   const value = {

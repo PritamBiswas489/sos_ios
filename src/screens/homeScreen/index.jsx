@@ -132,7 +132,7 @@ const HomeScreen = () => {
     Animated.timing(panelAnim, {
       toValue: showPanel ? 1 : 0,
       duration: 350,
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   }, [showPanel]);
 
@@ -204,10 +204,10 @@ const HomeScreen = () => {
     inputRange: [0, 1],
     outputRange: [0, 1],
   });
-  const panelMaxH = panelAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 400],
-  });
+  const panelTranslateY = panelAnim.interpolate({
+  inputRange: [0, 1],
+  outputRange: [-10, 0],
+});
 
   const spinRotate = spinAnim.interpolate({
     inputRange: [0, 1],
@@ -304,11 +304,15 @@ const HomeScreen = () => {
 
       {/* ── Streaming Panel ── */}
       <Animated.View
-        style={[
-          localStyles.streamPanel,
-          { opacity: panelOpacity, maxHeight: panelMaxH },
-        ]}
-      >
+  style={[
+    localStyles.streamPanel,
+    {
+      opacity: panelOpacity,
+      transform: [{ translateY: panelTranslateY }],
+      display: showPanel ? 'flex' : 'none',  // hide completely when not shown
+    },
+  ]}
+>
         {/* Header */}
         <View style={localStyles.headerRow}>
           <View style={localStyles.headerLeft}>

@@ -13,7 +13,25 @@ import styles from './style';
 import { useSelector, useDispatch } from 'react-redux';
 import { audioSelectedContactActions } from '../../store/redux/audioSelectedContact.redux';
 import appColors from '../../theme/appColors';
-
+import { SH, SW, SF } from '../../theme/dimensions';
+ const avatarColors = [
+      '#2F6BFF',
+      '#FF3B5C',
+      '#2ED573',
+      '#FFA726',
+      '#6A4CFF',
+      '#00BCD4',
+      '#8BC34A',
+      '#E91E63',
+];
+const getAvatarColor = item => {
+  const key = `${item?.id ?? ''}-${item?.name ?? ''}`;
+  let hash = 0;
+  for (let i = 0; i < key.length; i += 1) {
+    hash = key.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return avatarColors[Math.abs(hash) % avatarColors.length];
+};
 
 const AudioAvatarList = ({ chatContacts, fetchChatContacts }) => {
     const ONLINE_COLOR = '#2ED573';
@@ -33,25 +51,9 @@ const AudioAvatarList = ({ chatContacts, fetchChatContacts }) => {
     }, [dispatch]);
  
 
-    const avatarColors = [
-      '#2F6BFF',
-      '#FF3B5C',
-      '#2ED573',
-      '#FFA726',
-      '#6A4CFF',
-      '#00BCD4',
-      '#8BC34A',
-      '#E91E63',
-];
+   
 
-const getAvatarColor = item => {
-  const key = `${item?.id ?? ''}-${item?.name ?? ''}`;
-  let hash = 0;
-  for (let i = 0; i < key.length; i += 1) {
-    hash = key.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return avatarColors[Math.abs(hash) % avatarColors.length];
-};
+
 
     const renderContactItem = useCallback(({ item }) => {
       const isSelected = audioSelectedContact?.id === item.id;
@@ -66,13 +68,9 @@ const getAvatarColor = item => {
         >
           <View style={styles.avatarCircleWrap}>
             <View
-              style={[
-                styles.avatarCircle,
-                {
-                  borderColor: isSelected ? appColors.primary : 'rgba(255,255,255,0.35)',
-                  backgroundColor: avatarColor,
-                },
-              ]} 
+            style={[styles.avatarCircle, { borderColor: isSelected ? appColors.primary : 'rgba(255,255,255,0.35)', backgroundColor: avatarColor }]}
+              shouldRasterizeIOS={true} 
+              renderToHardwareTextureAndroid={true}
             >
               {item.profile_image ? (
                 <Image
@@ -107,7 +105,7 @@ const getAvatarColor = item => {
           </View>
         </TouchableOpacity>
       );
-    }, [audioSelectedContact?.id, selectContact]);
+    }, [audioSelectedContact?.id, selectContact, getAvatarColor]);
     const handleRefresh = useCallback(async () => {
       if (refreshing) return;
       console.log('Refreshing contact list...');
@@ -170,6 +168,7 @@ const getAvatarColor = item => {
         });
       }, 100);
     }, []);
+    const AVATAR_ITEM_WIDTH = SW(142) + SW(6);
 
   return (
     <View style={styles.avatarRowContainer}>
@@ -186,18 +185,11 @@ const getAvatarColor = item => {
         onScroll={handleHorizontalScroll}
         onScrollToIndexFailed={handleScrollToIndexFailed}
         scrollEventThrottle={16}
-        refreshControl={
-           <RefreshControl
-                      refreshing={refreshing}
-                      
-                      tintColor="#2ED573"
-                      colors={['#2ED573']}
-                    />
-        }
-       
-        
-        
-       
+        getItemLayout={(data, index) => ({
+          length: AVATAR_ITEM_WIDTH,
+          offset: AVATAR_ITEM_WIDTH * index,
+          index,
+        })}
       />
       <TouchableOpacity
         onPress={handleRefresh}

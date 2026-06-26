@@ -55,6 +55,8 @@
 	<string>We use your location in the background to support Bluetooth scanning and SOS alerts.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We use your location so you can share your current position in SOS chat.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+    <string>We use your location in the background to support SOS alerts.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We use your microphone so you can record and send voice messages.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

@@ -12,17 +12,26 @@ const getMsg = () => getMessaging(getApp());
  * Returns: 'full' | 'foreground-only' | 'denied'
  */
 export const requestLocationPermissions = async () => {
-  const status = await new Promise(resolve => {
-    Geolocation.requestAuthorization(
-      s => resolve(s),
-      () => resolve('denied'),
-    );
-  });
+  console.log('🔑 [permissions] requesting location permission...');
+  
+  try {
+    // Step 1 — MUST request WhenInUse first
+    const whenInUse = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+    console.log('🔑 [permissions] whenInUse:', whenInUse);
 
-  // iOS returns 'always' for background, 'whenInUse' for foreground-only
-  if (status === 'always') return 'full';
-  if (status === 'whenInUse') return 'foreground-only';
-  return 'denied';
+    if (whenInUse !== RESULTS.GRANTED) return 'denied';
+
+    // Step 2 — Then request Always
+    const always = await request(PERMISSIONS.IOS.LOCATION_ALWAYS);
+    console.log('🔑 [permissions] always:', always);
+
+    if (always === RESULTS.GRANTED) return 'full';
+    return 'foreground-only'; // WhenInUse granted but not Always
+    
+  } catch (err) {
+    console.error('❌ [permissions] error:', err.message);
+    return 'denied';
+  }
   
 };
 
