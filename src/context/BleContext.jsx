@@ -86,7 +86,7 @@ export function BleProvider({ children }) {
   // ── 1. Manager Initialization & Auto-Reconnect ────────────────────────────
   useEffect(() => {
     destroyed.current = false;
-    manager.current = getBleManager();
+    // manager.current = getBleManager();
 
     const autoReconnect = async () => {
       try {

@@ -7,13 +7,14 @@ import React, {
   useCallback,
 } from 'react';
 import Geolocation from '@react-native-community/geolocation';
-import { requestLocationPermissions } from '../services/permissions.service';
+import { requestLocationPermission } from '../services/permissions.service';
 import { useSocket } from './SocketContext';
 import { useUserData } from '../hook/useUserData';
 import { useContactLocations } from '../hook/useContactLocations';
 import { LocationsService } from '../services/locations.service';
 import useUserAuth from '../hook/useUserAuth';
 import { AppState } from 'react-native';
+ 
  
 
 
@@ -88,7 +89,7 @@ export const LocationProvider = ({ children }) => {
   // ── Permission helpers ─────────────────────────────────────────────────────
   const requestPermissions = useCallback(async () => {
     try {
-      const status = await requestLocationPermissions();
+      const status = await requestLocationPermission();
       setPermissionStatus(status);
       return status;
     } catch (err) {
@@ -247,6 +248,10 @@ export const LocationProvider = ({ children }) => {
     }
 
     const onPersonalRoomJoined = () => {
+      if (!isAuthenticated) {
+          console.log('⛔ [Socket] personal:room:joined skipped — user not authenticated');
+          return;
+      }
       console.log('🏠 [Socket] personal:room:joined fired — starting tracking');
       startTrackingRef.current(location => {
         console.log('📍 Emitting location update:', location);
@@ -281,7 +286,7 @@ export const LocationProvider = ({ children }) => {
         locationIntervalRef.current = null;
       }
     };
-  }, [isConnected, on, emitNoAck]);
+  }, [isConnected, isAuthenticated, on, emitNoAck]);
 
   // ── Fetch contacts last locations on mount ─────────────────────────────────
   const getContactsLastLocations = useCallback(async () => {

@@ -29,8 +29,10 @@ target 'SOS_FRESH_SETUP' do
 
 
   setup_permissions([
-    'LocationAlways',
-   'LocationWhenInUse',
+     'LocationAlways',
+     'LocationWhenInUse',
+     'Notifications',
+     'Microphone'
   ])
 
   use_react_native!(

@@ -29,8 +29,7 @@ import NoInternetScreen from './src/components/noInternetScreen/index.jsx';
 import NoPermissionsScreen from './src/components/noPermissionsScreen/index.jsx';
 import {
   checkRequiredPermissions,
-  requestLocationPermissions,
-  requestMicrophonePermission,
+   
 } from './src/services/permissions.service';
 import CompleteProfileScreen from './src/screens/completeProfileScreen/index.jsx';
 import AuthLoadingScreen from './src/screens/authLoadingScreen/index.jsx';
@@ -63,11 +62,11 @@ import {
   logError,
 } from './src/middleware/nativeCrashLogger.js';
 import useUserAuth from './src/hook/useUserAuth.jsx';
-import { Device } from 'mediasoup-client';
+
 import { UserService } from './src/services/user.service.js';
 import { resetAllState } from './src/store/index.jsx';
 import * as Sentry from '@sentry/react-native';
-import { waitUntilLocationSettled, waitUntilNotificationSettled, waitUntilMicrophoneSettled } from './src/services/permissions.service';
+ 
 import EmergencyServicesScreen from './src/screens/EmergencyServicesScreen/index.jsx';
 import ReportListScreen from './src/screens/abuserReportListScreen/index.jsx';
 Sentry.init({
@@ -209,20 +208,13 @@ const App = () => {
   }, []);
 
   const handleCheckPermissions = useCallback(async () => {
+    if(!isAuthenticated) {
+      return;
+    }
     console.log('Checking permissions...');
-    // Request permissions one by one for iOS
-    await requestLocationPermissions();
-    await waitUntilLocationSettled();
-
-    await requestNotificationPermissions();
-    await waitUntilNotificationSettled();
-
-    await requestMicrophonePermission();
-    await waitUntilMicrophoneSettled();
     const missing = await checkRequiredPermissions();
-    console.log('Missing permissions:', missing);
     setMissingPermissions(missing);
-  }, []);
+  }, [isAuthenticated]);
 
   // Check permissions on mount
   useEffect(() => {
@@ -231,6 +223,7 @@ const App = () => {
 
   // Re-check permissions when app comes back to foreground (user returns from Settings)
   useEffect(() => {
+    if (!isAuthenticated) return;
     const subscription = AppState.addEventListener(
       'change',
       async nextState => {
@@ -262,7 +255,7 @@ const App = () => {
       },
     );
     return () => subscription.remove();
-  }, []);
+  }, [isAuthenticated]);
 
   const syncCurrentScreen = useCallback(() => {
     const routeName = navigationRef.getCurrentRoute()?.name;

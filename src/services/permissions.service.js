@@ -7,166 +7,160 @@ import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
 const getMsg = () => getMessaging(getApp());
 
-/**
- * Request location permissions on iOS.
- * Returns: 'full' | 'foreground-only' | 'denied'
- */
-export const requestLocationPermissions = async () => {
-  console.log('🔑 [permissions] requesting location permission...');
-  
+// ─── Check notification (no request) ─────────────────────────────────────────
+const isNotificationPermissionGranted = async () => {
   try {
-    // Step 1 — MUST request WhenInUse first
-    const whenInUse = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-    console.log('🔑 [permissions] whenInUse:', whenInUse);
-
-    if (whenInUse !== RESULTS.GRANTED) return 'denied';
-
-    // Step 2 — Then request Always
-    const always = await request(PERMISSIONS.IOS.LOCATION_ALWAYS);
-    console.log('🔑 [permissions] always:', always);
-
-    if (always === RESULTS.GRANTED) return 'full';
-    return 'foreground-only'; // WhenInUse granted but not Always
-    
-  } catch (err) {
-    console.error('❌ [permissions] error:', err.message);
-    return 'denied';
-  }
-  
-};
-
-/**
- * Request microphone permission on iOS.
- * getUserMedia triggers the system microphone permission dialog.
- * Returns: 'granted' | 'denied'
- */
-export const requestMicrophonePermission = async () => {
-  try {
-    const stream = await mediaDevices.getUserMedia({ audio: true, video: false });
-    stream.getTracks().forEach(track => track.stop());
-    return 'granted';
-  } catch {
-    return 'denied';
-  }
-};
-
-/**
- * Check (without prompting) whether all required permissions are granted.
- * Returns an array of missing permission keys: 'location' | 'microphone'
- * An empty array means all permissions are granted.
- *
- * NOTE: iOS does not expose a synchronous "check" API for most permissions.
- * The reliable approach is to attempt access and catch the denial error.
- */
-
-
-
-const checkLocationPermission = async () => {
- 
-const always = await request(
-  PERMISSIONS.IOS.LOCATION_ALWAYS,
-);
-
- 
-  if(always === RESULTS.GRANTED) {
-    return true;
-  }
-  return false;
-};
-export const checkRequiredPermissions = async () => {
-  const missing = [];
-
-  // ── Location ──────────────────────────────────────────────────────────────
-  const locationGranted = await checkLocationPermission();
-  if(!locationGranted) {
-    missing.push('location');
-  }
-
-  // ── Microphone ────────────────────────────────────────────────────────────
-  try {
-    const stream = await mediaDevices.getUserMedia({ audio: true, video: false });
-    stream.getTracks().forEach(track => track.stop());
-  } catch {
-    missing.push('microphone');
-  }
-
-  // ── Notifications (Notifee + Firebase Messaging) ──────────────────────────
-  try {
-    // notifee returns a settings object; authorizationStatus mirrors iOS values
     const notifeeSettings = await notifee.getNotificationSettings();
     const notifeeGranted =
-      notifeeSettings.authorizationStatus >= 1; // 1 = AUTHORIZED, 2 = PROVISIONAL
+      notifeeSettings.authorizationStatus >= AuthorizationStatus.AUTHORIZED;
 
-    // Firebase Messaging auth status as a secondary check
     const authStatus = await requestPermission(getMsg());
     const fcmGranted =
       authStatus === AuthorizationStatus.AUTHORIZED ||
       authStatus === AuthorizationStatus.PROVISIONAL;
 
-    if (!notifeeGranted || !fcmGranted) missing.push('notification');
+    return notifeeGranted && fcmGranted;
   } catch {
-    missing.push('notification');
+    return false;
+  }
+};
+
+// ─── Location Permission ──────────────────────────────────────────────────────
+/**
+ * Request location permissions on iOS in correct order.
+ * Returns: 'full' | 'foreground-only' | 'denied'
+ */
+export const requestLocationPermission = async () => {
+  // Step 1 — Check current status of When In Use
+  const whenInUse = await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+
+  // Step 2 — Request When In Use first (required before Always)
+  if (whenInUse === RESULTS.DENIED) {
+    const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+    if (result !== RESULTS.GRANTED) return 'denied';
+  } else if (whenInUse === RESULTS.BLOCKED) {
+    return 'denied';
   }
 
+  // Step 3 — Only then request Always
+  const always = await check(PERMISSIONS.IOS.LOCATION_ALWAYS);
+  if (always === RESULTS.DENIED) {
+    const result = await request(PERMISSIONS.IOS.LOCATION_ALWAYS);
+    if (result === RESULTS.GRANTED) return 'full';
+    return 'foreground-only'; // user chose "When In Use" instead
+  }
+
+  if (always === RESULTS.GRANTED) return 'full';
+  if (whenInUse === RESULTS.GRANTED) return 'foreground-only';
+
+  return 'denied';
+};
+
+// ─── Microphone Permission ────────────────────────────────────────────────────
+/**
+ * Request microphone permission on iOS.
+ * Returns: 'granted' | 'denied'
+ */
+export const requestMicrophonePermission = async () => {
+  try {
+    const currentStatus = await check(PERMISSIONS.IOS.MICROPHONE);
+    if (currentStatus === RESULTS.GRANTED) return 'granted';
+    if (currentStatus === RESULTS.BLOCKED) return 'blocked';
+
+    const requestedStatus = await request(PERMISSIONS.IOS.MICROPHONE);
+    return requestedStatus === RESULTS.GRANTED ? 'granted' : 'denied';
+  } catch {
+    return 'denied';
+  }
+};
+
+// ─── Notification Permission ──────────────────────────────────────────────────
+/**
+ * Request notification permission via Notifee (triggers iOS system popup).
+ * Then syncs Firebase Messaging after grant.
+ * Returns: 'granted' | 'denied'
+ */
+export const requestNotificationPermission = async () => {
+  try {
+    const alreadyGranted = await isNotificationPermissionGranted();
+    if (alreadyGranted) {
+      console.log('✅ Notifications already granted');
+      return 'granted';
+    }
+
+    console.log('📣 Requesting notification permission via Notifee...');
+
+    // ✅ Notifee triggers the real iOS system popup
+    const settings = await notifee.requestPermission({
+      alert: true,
+      sound: true,
+      badge: true,
+      announcement: false,
+      carPlay: false,
+      criticalAlert: false,
+    });
+
+    console.log('📣 Notifee permission result:', settings.authorizationStatus);
+
+    const granted =
+      settings.authorizationStatus >= AuthorizationStatus.AUTHORIZED;
+
+    if (!granted) {
+      console.log('❌ Notification permission denied by user');
+      return 'denied';
+    }
+
+    // ✅ Sync Firebase Messaging token after Notifee grants
+    try {
+      await requestPermission(getMsg());
+    } catch (fcmErr) {
+      console.warn('FCM sync warning:', fcmErr.message);
+    }
+
+    console.log('✅ Notification permission granted');
+    return 'granted';
+  } catch (err) {
+    console.error('requestNotificationPermission error:', err);
+    return 'denied';
+  }
+};
+
+// ─── Check location (no request) ─────────────────────────────────────────────
+const checkLocationPermission = async () => {
+  const whenInUse = await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+  if (whenInUse === RESULTS.DENIED || whenInUse === RESULTS.BLOCKED) {
+    return 'denied';
+  }
+
+  const always = await check(PERMISSIONS.IOS.LOCATION_ALWAYS);
+  if (always === RESULTS.GRANTED) return 'full';
+  if (always === RESULTS.DENIED || always === RESULTS.BLOCKED) return 'foreground-only';
+
+  return 'denied';
+};
+
+// ─── Check all required permissions ──────────────────────────────────────────
+export const checkRequiredPermissions = async () => {
+  console.log('🔑 [permissions] checking required permissions...');
+  const missing = [];
+
+  // Notifications — check only, never request here
+  const notificationGranted = await isNotificationPermissionGranted();
+  if (!notificationGranted) missing.push('notification');
+
+  // Location
+  const locationStatus = await checkLocationPermission();
+  if (locationStatus === 'denied') missing.push('location');
+  if (locationStatus === 'foreground-only') missing.push('location-background');
+
+  // Microphone
+  const micStatus = await check(PERMISSIONS.IOS.MICROPHONE);
+  if (micStatus !== RESULTS.GRANTED) missing.push('microphone');
+
+  console.log('🔑 [permissions] missing permissions:', missing);
   return missing;
 };
 
-
-export const waitUntilLocationSettled = (intervalMs = 300, timeoutMs = 10000) => {
-  return new Promise(resolve => {
-    const start = Date.now();
-
-    const poll = () => {
-      Geolocation.getCurrentPosition(
-        () => resolve('granted'),
-        error => {
-          if (error.code === 1) {
-            resolve('denied'); // Definitive denial — stop polling
-          } else if (Date.now() - start >= timeoutMs) {
-            resolve('timeout');
-          } else {
-            setTimeout(poll, intervalMs); // Still undetermined — keep polling
-          }
-        },
-        { timeout: 2000, maximumAge: 0 },
-      );
-    };
-
-    poll();
-  });
-};
-
-export const waitUntilNotificationSettled = async (
-  intervalMs = 300,
-  timeoutMs = 10000,
-) => {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const settings = await notifee.getNotificationSettings();
-    if (settings.authorizationStatus !== 0) return; // 0 = NOT_DETERMINED
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
-  }
-  console.warn('Notification permission timed out — proceeding anyway.');
-};
-
-export const waitUntilMicrophoneSettled = async (
-  intervalMs = 300,
-  timeoutMs = 10000,
-) => {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const stream = await mediaDevices.getUserMedia({ audio: true, video: false });
-      stream.getTracks().forEach(track => track.stop());
-      return 'granted';
-    } catch (err) {
-      // 'NotAllowedError' = user denied — stop polling
-      if (err?.name === 'NotAllowedError' || err?.message?.includes('denied')) {
-        return 'denied';
-      }
-      // 'NotFoundError' or others = dialog still pending — keep polling
-      await new Promise(resolve => setTimeout(resolve, intervalMs));
-    }
-  }
-  console.warn('Microphone permission timed out — proceeding anyway.');
-};
+ 
+ 
+ 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,17 @@ import {
   StyleSheet,
   Linking,
   ScrollView,
-  Alert
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {
+  requestMicrophonePermission,
+  requestNotificationPermission,
+  requestLocationPermission,
+  checkRequiredPermissions,
+} from '../../services/permissions.service';
 
-const PermissionItem = ({ icon, label, description, granted }) => (
+const PermissionItem = ({ icon, label, description, granted, onPress, loading }) => (
   <View style={styles.permissionItem}>
     <View style={[styles.permIconWrap, granted ? styles.permIconGranted : styles.permIconDenied]}>
       <Icon name={icon} size={22} color={granted ? '#00c48c' : '#FF3B5C'} />
@@ -19,28 +25,121 @@ const PermissionItem = ({ icon, label, description, granted }) => (
       <Text style={styles.permLabel}>{label}</Text>
       <Text style={styles.permDesc}>{description}</Text>
     </View>
-    <View style={[styles.statusBadge, granted ? styles.statusGranted : styles.statusDenied]}>
-      <Text style={[styles.statusText, granted ? styles.statusTextGranted : styles.statusTextDenied]}>
-        {granted ? 'Granted' : 'Required'}
-      </Text>
-    </View>
+    {granted ? (
+      <View style={[styles.statusBadge, styles.statusGranted]}>
+        <Text style={[styles.statusText, styles.statusTextGranted]}>Granted</Text>
+      </View>
+    ) : (
+      <TouchableOpacity
+        style={[styles.enableButton, loading && styles.enableButtonDisabled]}
+        onPress={onPress}
+        activeOpacity={0.8}
+        disabled={!onPress || loading}>
+        <Text style={styles.enableButtonText}>
+          {loading ? 'Wait...' : `Enable\nNow`}
+        </Text>
+      </TouchableOpacity>
+    )}
   </View>
 );
 
-const NoPermissionsScreen = ({ missingPermissions = [], onRetry }) => {
-  const locationMissing = missingPermissions.includes('location');
+const NoPermissionsScreen = ({ missingPermissions: initialMissing = [], onRetry }) => {
+  // ✅ Track missing permissions locally so UI updates after each grant
+  const [missingPermissions, setMissingPermissions] = useState(initialMissing);
+  const [loadingPermission, setLoadingPermission] = useState(null);
+
+  useEffect(() => {
+    setMissingPermissions(initialMissing);
+  }, [initialMissing]);
+
+  const locationForegroundMissing =
+    missingPermissions.includes('location') ||
+    missingPermissions.includes('location-foreground');
+  const locationBackgroundMissing =
+    missingPermissions.includes('location') ||
+    missingPermissions.includes('location-background');
   const notificationMissing = missingPermissions.includes('notification');
   const microphoneMissing = missingPermissions.includes('microphone');
 
+  // ✅ After any permission request, re-check and refresh UI
+  const refreshPermissions = async () => {
+    const missing = await checkRequiredPermissions();
+    setMissingPermissions(missing);
+    onRetry?.();
+  };
+
   const openSettings = async () => {
     try {
-      // await Linking.openSettings();
-      await Linking.openURL('app-settings:')
-    } catch (error) {
+      await Linking.openURL('app-settings:');
+    } catch {
       Alert.alert(
         'Unable to Open Settings',
         'Please go to Settings manually and grant the required permissions.',
       );
+    }
+  };
+
+  const handleNotification = async () => {
+    setLoadingPermission('notification');
+    try {
+      const result = await requestNotificationPermission();
+      console.log('📣 Notification permission result:', result);
+      if (result === 'denied') {
+        // ✅ Already denied before — send to Settings
+        Alert.alert(
+          'Notifications Blocked',
+          'Please enable notifications in Settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: openSettings },
+          ],
+        );
+      }
+      await refreshPermissions();
+    } finally {
+      setLoadingPermission(null);
+    }
+  };
+
+  const handleMicrophone = async () => {
+    setLoadingPermission('microphone');
+    try {
+      const result = await requestMicrophonePermission();
+      console.log('🎤 Microphone permission result:', result);
+      if (result === 'blocked') {
+        Alert.alert(
+          'Microphone Blocked',
+          'Please enable microphone access in Settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: openSettings },
+          ],
+        );
+      }
+      await refreshPermissions();
+    } finally {
+      setLoadingPermission(null);
+    }
+  };
+
+  const handleLocation = async () => {
+    setLoadingPermission('location');
+    try {
+      const result = await requestLocationPermission();
+      console.log('📍 Location permission result:', result);
+      if (result === 'denied') {
+        Alert.alert(
+          'Location Blocked',
+          'Please enable location access in Settings and choose "Always".',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: openSettings },
+          ],
+        );
+      }
+      await refreshPermissions();
+    } finally {
+      setLoadingPermission(null);
     }
   };
 
@@ -64,9 +163,20 @@ const NoPermissionsScreen = ({ missingPermissions = [], onRetry }) => {
         <View style={styles.card}>
           <PermissionItem
             icon="location-on"
-            label="Location (Foreground & Background)"
-            description="Required to share your real-time position with trusted contacts. Choose this option ''Always'' when granting permission."
-            granted={!locationMissing}
+            label="Location (Foreground)"
+            description="Required while using the app to determine your current location accurately."
+            granted={!locationForegroundMissing}
+            onPress={handleLocation}
+            loading={loadingPermission === 'location'}
+          />
+          <View style={styles.divider} />
+          <PermissionItem
+            icon="my-location"
+            label="Location (Background)"
+            description="Required to share your real-time position with trusted contacts during SOS, even when app is not open. Choose 'Always'."
+            granted={!locationBackgroundMissing}
+            onPress={handleLocation}
+            loading={loadingPermission === 'location'}
           />
           <View style={styles.divider} />
           <PermissionItem
@@ -74,6 +184,8 @@ const NoPermissionsScreen = ({ missingPermissions = [], onRetry }) => {
             label="Notifications"
             description="Required to receive SOS alerts and emergency messages."
             granted={!notificationMissing}
+            onPress={handleNotification}  // ✅ now calls handleNotification not raw service fn
+            loading={loadingPermission === 'notification'}
           />
           <View style={styles.divider} />
           <PermissionItem
@@ -81,52 +193,10 @@ const NoPermissionsScreen = ({ missingPermissions = [], onRetry }) => {
             label="Microphone"
             description="Required to stream live audio during an SOS emergency."
             granted={!microphoneMissing}
+            onPress={handleMicrophone}
+            loading={loadingPermission === 'microphone'}
           />
         </View>
-
-        {/* Action buttons */}
-        {locationMissing && (
-          <TouchableOpacity
-            onPress={openSettings}
-            activeOpacity={0.85}
-            style={[styles.actionBtn, styles.locationBtn]}>
-            <Icon name="location-on" size={18} color="#fff" style={styles.btnIcon} />
-            <Text style={styles.actionBtnText}>Enable Location in Settings</Text>
-          </TouchableOpacity>
-        )}
-
-        {notificationMissing && (
-          <TouchableOpacity
-            onPress={openSettings}
-            activeOpacity={0.85}
-            style={[styles.actionBtn, styles.notifBtn]}>
-            <Icon name="notifications" size={18} color="#fff" style={styles.btnIcon} />
-            <Text style={styles.actionBtnText}>Enable Notifications in Settings</Text>
-          </TouchableOpacity>
-        )}
-
-        {microphoneMissing && (
-          <TouchableOpacity
-            onPress={openSettings}
-            activeOpacity={0.85}
-            style={[styles.actionBtn, styles.micBtn]}>
-            <Icon name="mic" size={18} color="#fff" style={styles.btnIcon} />
-            <Text style={styles.actionBtnText}>Enable Microphone in Settings</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Re-check button */}
-        <TouchableOpacity
-          onPress={onRetry}
-          activeOpacity={0.85}
-          style={styles.retryBtn}>
-          <Icon name="refresh" size={18} color="#4a9eff" style={styles.btnIcon} />
-          <Text style={styles.retryText}>I've Enabled Permissions — Continue</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.hint}>
-          Tap the button above after granting permissions in Settings.
-        </Text>
       </ScrollView>
     </View>
   );
@@ -235,65 +305,33 @@ const styles = StyleSheet.create({
   statusTextGranted: {
     color: '#00c48c',
   },
+  enableButton: {
+    minWidth: 66,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,59,92,0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,59,92,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  enableButtonDisabled: {
+    opacity: 0.5,
+  },
+  enableButtonText: {
+    color: '#FF6A84',
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
   divider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.06)',
     marginHorizontal: -4,
-  },
-  actionBtn: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 13,
-    borderRadius: 13,
-    marginBottom: 10,
-  },
-  locationBtn: {
-    backgroundColor: '#1B3A6B',
-    borderWidth: 1,
-    borderColor: 'rgba(74,158,255,0.35)',
-  },
-  notifBtn: {
-    backgroundColor: '#2A1B3D',
-    borderWidth: 1,
-    borderColor: 'rgba(160,100,255,0.35)',
-  },
-  micBtn: {
-    backgroundColor: '#1B3030',
-    borderWidth: 1,
-    borderColor: 'rgba(0,196,140,0.35)',
-  },
-  btnIcon: {
-    marginRight: 8,
-  },
-  actionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  retryBtn: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 13,
-    borderRadius: 13,
-    marginTop: 4,
-    marginBottom: 14,
-    backgroundColor: 'rgba(74,158,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(74,158,255,0.3)',
-  },
-  retryText: {
-    color: '#4a9eff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  hint: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 12,
-    textAlign: 'center',
   },
 });
 
