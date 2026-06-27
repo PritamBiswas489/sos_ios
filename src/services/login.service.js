@@ -24,4 +24,12 @@ export class LoginService {
       callback({ success: false, error: error.message });
     }
   }
+  static async checkMobileHasLicense(payload, callback) {
+    try {
+      const response = await api.get('/login/check-mobile-number-has-license', { params: payload });
+      callback({ success: true, data: response.data });
+    } catch (error) {
+      callback({ success: false, error: error.message });
+    }
+  }
 }

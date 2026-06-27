@@ -4,248 +4,205 @@ import appFonts from '../../theme/appFonts';
 import { SH, SW, SF } from '../../theme/dimensions';
 
 export default StyleSheet.create({
+  // ─── Layout ───────────────────────────────────────────────────────────────
   container: {
     flex: 1,
-    backgroundColor: appColors.DarkPrimary,
-    paddingHorizontal: SW(20),
+    backgroundColor: '#0d1526',
+  },
+  contentContainer: {
+    paddingHorizontal: SW(22),
+    paddingBottom: SH(32),
   },
 
-  backBtn: {
-    marginTop: SH(16),
-    alignSelf: 'flex-start',
-    padding: SW(4),
-  },
-
+  // ─── Logo ─────────────────────────────────────────────────────────────────
   logoContainer: {
     alignItems: 'center',
-    marginTop: SH(70),
+    marginTop: SH(64),
+    marginBottom: SH(28),
   },
-
   logoBox: {
-    width: SW(60),
-    height: SH(60),
-    borderRadius: SW(18),
-    backgroundColor: appColors.primary,
+    width: SW(56),
+    height: SH(56),
+    borderRadius: SW(16),
+    backgroundColor: '#e63559',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SW(10),
+    marginBottom: SW(12),
   },
-
   appName: {
-    fontSize: SF(24),
+    fontSize: SF(22),
     fontFamily: appFonts.NunitoBlack,
-    color: appColors.white,
+    color: '#ffffff',
+    letterSpacing: -0.3,
   },
-
+  appNameAccent: {
+    color: '#e63559',
+  },
   tagline: {
-    fontSize: SF(11),
-    color: appColors.bodyColor,
-    marginTop: SW(4),
-    letterSpacing: SW(2),
-  },
-
-  welcome: {
-    color: appColors.white,
-    fontSize: SF(18),
-    fontFamily: appFonts.NunitoBold,
-    marginTop: SH(40),
-  },
-
-  subtitle: {
-    color: appColors.bodyColor,
-    fontSize: SF(11),
-    marginTop: SW(3),
-  },
-
-  label: {
-    color: appColors.bodyColor,
     fontSize: SF(10),
-    marginTop: SW(22),
+    color: '#4e6280',
+    marginTop: SW(4),
+    letterSpacing: SW(2.5),
   },
 
+  // ─── Step dots ────────────────────────────────────────────────────────────
+  stepDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SW(6),
+    marginBottom: SH(22),
+  },
+  stepDot: {
+    width: SW(6),
+    height: SW(6),
+    borderRadius: SW(3),
+    backgroundColor: '#1e2e4a',
+  },
+  stepDotActive: {
+    width: SW(18),
+    borderRadius: SW(3),
+    backgroundColor: '#e63559',
+  },
+
+  // ─── Welcome ──────────────────────────────────────────────────────────────
+  welcome: {
+    color: '#ffffff',
+    fontSize: SF(22),
+    fontFamily: appFonts.NunitoBold,
+    lineHeight: SH(28),
+  },
+  subtitle: {
+    color: '#4e6280',
+    fontSize: SF(10),
+    marginTop: SW(4),
+    marginBottom: SH(6),
+    letterSpacing: SW(1.8),
+  },
+
+  // ─── Field label ──────────────────────────────────────────────────────────
+  label: {
+    color: '#4e6280',
+    fontSize: SF(10),
+    marginTop: SW(20),
+    marginBottom: SH(8),
+    letterSpacing: SW(1.5),
+  },
+
+  // ─── Phone input ──────────────────────────────────────────────────────────
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 0.7,
-    borderColor: appColors.primary,
-    backgroundColor: appColors.primaryAA,
-    borderRadius: 14,
-    paddingHorizontal: SW(10),
-    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(230,53,89,0.35)',
+    backgroundColor: '#111d33',
+    borderRadius: SW(14),
+    paddingHorizontal: SW(14),
+    height: SH(52),
   },
-
   country: {
-    color: appColors.white,
-    marginRight: SW(8),
+    color: '#ffffff',
+    fontFamily: appFonts.NunitoBold,
+    fontSize: SF(14),
+    paddingRight: SW(10),
   },
-
+  phoneDivider: {
+    width: 1,
+    height: SH(22),
+    backgroundColor: '#1e2e4a',
+    marginRight: SW(10),
+  },
   input: {
     flex: 1,
-    color: appColors.white,
-    height: SH(41),
+    color: '#ffffff',
+    height: '100%',
+    fontSize: SF(15),
+    paddingVertical: 0,
   },
 
-  inputBoxDark: {
+  // ─── Buttons ──────────────────────────────────────────────────────────────
+  bottomActions: {
+    marginTop: SH(28),
+  },
+  buttonRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: appColors.secondary,
-    borderRadius: 14,
-    paddingHorizontal: SW(10),
-    marginTop: SW(8),
+    gap: SW(10),
+    marginTop: SH(24),
   },
-  otpBoxArea: {
-    position: 'relative',
-    marginTop: SH(30),
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  otpBoxLine: {
-    height: SH(0.5),
-    width: '100%',
-    backgroundColor: appColors.bodyColor,
-    position: 'absolute',
-    top: '50%',
-    // zIndex: -1,
-  },
-  otpTitle: {
-    color: appColors.bodyColor,
-    fontSize: SF(12),
-    textAlign: 'center',
-    fontFamily: appFonts.NunitoBold,
-    backgroundColor: appColors.DarkPrimary,
-    paddingHorizontal: SW(10),
-    zIndex: 1,
-  },
-
-  otpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SH(12),
-  },
-
-  otpBox: {
-    width: SW(50),
-    height: SH(50),
-    borderRadius: 10,
-    backgroundColor: appColors.secondary,
-    color: appColors.white,
-    textAlign: 'center',
-    fontSize: 18,
-    borderWidth: 1,
-    borderColor: '#1E2A44',
-  },
-
-  activeOtp: {
-    borderColor: appColors.primary,
-  },
-
-  termsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-
-  termsText: {
-    color: appColors.bodyColor,
-    fontSize: SF(10),
-    marginLeft: SW(4),
-    flex: 1,
-  },
-
   loginBtn: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: appColors.primary,
-    borderRadius: 16,
-    padding: SW(14),
-    marginTop: SW(25),
+    gap: SW(6),
+    backgroundColor: '#e63559',
+    borderRadius: SW(14),
+    height: SH(50),
+    paddingHorizontal: SW(16),
   },
-
   loginText: {
-    color: appColors.white,
+    color: '#ffffff',
     fontFamily: appFonts.NunitoBold,
     fontSize: SF(14),
   },
-
-  resend: {
-    textAlign: 'center',
-    color: appColors.bodyColor,
-    marginTop: SW(12),
-    fontSize: SF(12),
+  secondaryBtn: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#1e2e4a',
+  },
+  secondaryBtnText: {
+    color: '#7a9ab8',
   },
 
+  // ─── License panel ────────────────────────────────────────────────────────
   licensePanel: {
-    borderWidth: 0.7,
-    borderColor: 'rgba(255,59,92,0.35)',
-    backgroundColor: appColors.primaryAA,
-    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(230,53,89,0.3)',
+    backgroundColor: '#111d33',
+    borderRadius: SW(14),
     overflow: 'hidden',
-    marginTop: SH(20),
+    marginTop: SH(18),
   },
-
   licensePanelAccent: {
-    height: SH(3),
-    backgroundColor: appColors.primary,
+    height: SH(2),
+    backgroundColor: '#e63559',
     width: '100%',
   },
-
   licensePanelHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SW(12),
-    paddingTop: SH(10),
+    paddingHorizontal: SW(14),
+    paddingTop: SH(12),
     paddingBottom: SH(8),
   },
-
   licensePanelHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SW(6),
   },
-
   licensePanelTitle: {
-    color: appColors.white,
-    fontSize: SF(11),
+    color: '#c8d5ea',
+    fontSize: SF(10),
     fontFamily: appFonts.NunitoBold,
     letterSpacing: SW(1.5),
-    marginLeft: SW(5),
   },
-
-  licenseChip: {
-    backgroundColor: 'rgba(255,59,92,0.15)',
-    borderRadius: 20,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,59,92,0.5)',
-    paddingHorizontal: SW(8),
-    paddingVertical: SW(2),
-  },
-
-  licenseChipText: {
-    color: appColors.primary,
-    fontSize: SF(9),
-    fontFamily: appFonts.NunitoBold,
-    letterSpacing: SW(1),
-  },
-
   licenseInnerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: SW(12),
-    paddingBottom: SH(10),
-  },
-
-  licenseFieldWrap: {
-    backgroundColor: appColors.secondary,
-    borderRadius: 10,
-    borderWidth: 0.7,
-    borderColor: '#1E2A44',
     alignItems: 'center',
+    paddingHorizontal: SW(14),
+    paddingBottom: SH(12),
+    gap: SW(8),
+  },
+  licenseFieldWrap: {
+    backgroundColor: '#0d1526',
+    borderRadius: SW(10),
+    borderWidth: 1,
+    borderColor: '#1a2640',
     overflow: 'hidden',
   },
-
   licenseInput: {
-    color: appColors.white,
+    color: '#ffffff',
     height: SH(46),
     width: '100%',
     textAlign: 'center',
@@ -254,51 +211,128 @@ export default StyleSheet.create({
     letterSpacing: SW(2),
     paddingHorizontal: SW(4),
   },
-
   licenseInputDisabled: {
-    color: appColors.primary,
-    backgroundColor: 'rgba(255,59,92,0.12)',
+    color: '#e63559',
+    backgroundColor: 'rgba(230,53,89,0.1)',
   },
-
-  licenseSegLabel: {
-    color: '#3a4a66',
-    fontSize: SF(8),
-    fontFamily: appFonts.NunitoBold,
-    letterSpacing: SW(1),
-    textAlign: 'center',
-    paddingBottom: SW(4),
-  },
-
   licenseSep: {
-    color: 'rgba(255,59,92,0.6)',
+    color: 'rgba(230,53,89,0.5)',
     fontSize: SF(18),
     fontWeight: 'bold',
-    marginHorizontal: SW(5),
-    marginTop: SH(12),
   },
-
   licensePreviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: SW(8),
     backgroundColor: 'rgba(0,0,0,0.2)',
-    paddingVertical: SH(7),
+    paddingVertical: SH(8),
     borderTopWidth: 0.5,
-    borderTopColor: '#1E2A44',
+    borderTopColor: '#1a2640',
   },
-
   licensePreviewLabel: {
-    color: '#3a4a66',
+    color: '#2e3f5a',
     fontSize: SF(9),
     fontFamily: appFonts.NunitoBold,
     letterSpacing: SW(1.5),
-    marginRight: SW(8),
   },
-
   licensePreviewValue: {
-    color: appColors.primary,
+    color: '#e63559',
     fontSize: SF(13),
     fontFamily: appFonts.NunitoBold,
     letterSpacing: SW(2.5),
+  },
+
+  // ─── OTP divider ──────────────────────────────────────────────────────────
+  otpDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SH(10),
+    marginBottom: SH(4),
+  },
+  otpDividerLine: {
+    flex: 1,
+    height: 0.5,
+    backgroundColor: '#1e2e4a',
+  },
+  otpDividerText: {
+    fontSize: SF(11),
+    color: '#4e6280',
+    fontFamily: appFonts.NunitoBold,
+    letterSpacing: SW(1.5),
+    paddingHorizontal: SW(12),
+  },
+
+  // ─── OTP boxes ────────────────────────────────────────────────────────────
+  otpRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: SW(10),
+    marginTop: SH(4),
+  },
+  otpBox: {
+    flex: 1,
+    height: SH(56),
+    borderRadius: SW(12),
+    backgroundColor: '#111d33',
+    color: '#ffffff',
+    textAlign: 'center',
+    fontSize: SF(22),
+    fontFamily: appFonts.NunitoBold,
+    borderWidth: 1,
+    borderColor: '#1e2e4a',
+    paddingVertical: 0,
+    includeFontPadding: false,
+  },
+  otpBoxActive: {
+    borderColor: 'rgba(230,53,89,0.7)',
+    backgroundColor: 'rgba(230,53,89,0.08)',
+  },
+  otpBoxFilled: {
+    borderColor: 'rgba(230,53,89,0.5)',
+    backgroundColor: 'rgba(230,53,89,0.06)',
+  },
+
+  // ─── Terms ────────────────────────────────────────────────────────────────
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SW(8),
+    marginTop: SH(18),
+  },
+  termsText: {
+    color: '#4e6280',
+    fontSize: SF(11),
+    flex: 1,
+    lineHeight: SH(17),
+  },
+
+  // ─── Resend ───────────────────────────────────────────────────────────────
+  resendContainer: {
+    alignItems: 'center',
+    marginTop: SH(16),
+  },
+  resendLinkWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SW(6),
+    paddingVertical: SH(7),
+    paddingHorizontal: SW(14),
+    borderRadius: SW(10),
+    backgroundColor: 'rgba(230,53,89,0.07)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(230,53,89,0.25)',
+  },
+  resendLinkWrapDisabled: {
+    backgroundColor: 'transparent',
+    borderColor: '#1e2e4a',
+  },
+  resendLink: {
+    color: '#e66070',
+    fontSize: SF(12),
+    fontFamily: appFonts.NunitoBold,
+  },
+  resendLinkDisabled: {
+    color: '#4e6280',
   },
 });
