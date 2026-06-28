@@ -56,13 +56,24 @@ function parseHRCharacteristic(base64Value) {
 
 function waitForPoweredOn(mgr, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
+    let sub = null;
     const timer = setTimeout(() => {
-      sub.remove();
+      sub?.remove?.();
       reject(new Error('BLE adapter timeout — Bluetooth may be off'));
     }, timeoutMs);
-    const sub = mgr.onStateChange(s => {
-      if (s === 'PoweredOn') { clearTimeout(timer); sub.remove(); resolve(); }
-    }, true);
+
+    try {
+      sub = mgr.onStateChange(s => {
+        if (s === 'PoweredOn') {
+          clearTimeout(timer);
+          sub?.remove?.();
+          resolve();
+        }
+      }, true);
+    } catch (error) {
+      clearTimeout(timer);
+      reject(error);
+    }
   });
 }
 
@@ -205,6 +216,11 @@ async function connectDevice(device) {
           if (msg.includes('cancelled') || msg.includes('destroyed')) return;
           log.error(`HR monitor error: ${msg}`);
           _onStateChange?.({ error: msg });
+          return;
+        }
+
+        if (!characteristic?.value) {
+          log.warn('HR characteristic payload missing; skipping sample');
           return;
         }
 

@@ -141,6 +141,7 @@ export function StressProvider({ children, criticalThreshold = 76 }) {
   const lastSosTriggerScoreRef  = useRef(0);
   const lastSavedAtRef          = useRef(0);
   const lastSavedFingerprintRef = useRef('');
+  const lastNotificationAtRef   = useRef(0);
   const criticalThresholdRef    = useRef(criticalThreshold);
   const currentLocationRef      = useRef(currentLocation);
   const fetchOutgoingRequestsRef = useRef(fetchOutgoingRequests);
@@ -173,6 +174,24 @@ export function StressProvider({ children, criticalThreshold = 76 }) {
       // 2. SOS check — rising edge only (fg + bg)
       const inCritical = result.score >= criticalThresholdRef.current && result.score <= 100;
 
+      // Notify while in critical state, throttled to avoid notification spam.
+      if (inCritical) {
+        const now = Date.now();
+        if (now - lastNotificationAtRef.current >= 15_000) {
+          lastNotificationAtRef.current = now;
+          Promise.resolve()
+            .then(() =>
+              displayStressUpdateNotification({
+                score:      result.score,
+                stateLabel: result.state.label,
+                source:     'ble',
+                currentHR:  result.currentHR,
+              }),
+            )
+            .catch(err => console.log('Stress notification failed:', err));
+        }
+      }
+
       if (inCritical && result.score > lastSosTriggerScoreRef.current) {
         lastSosTriggerScoreRef.current = result.score;
         setSosArmed(true);
@@ -188,20 +207,6 @@ export function StressProvider({ children, criticalThreshold = 76 }) {
         }, res => {
           if (res.success) fetchOutgoingRequestsRef.current?.();
         });
-
-        Promise.resolve(
-            displayStressUpdateNotification({
-              score:      result.score,
-              stateLabel: result.state.label,
-              source:     'ble',
-              currentHR:  result.currentHR,
-            }),
-          ).catch(err => console.log('Stress notification failed:', err));
-
-
-       
-
-          
       }
 
       if (!inCritical) {
