@@ -158,4 +158,23 @@ export default StyleSheet.create({
     textAlign: 'center',
     fontFamily: appFonts.NunitoRegular,
   },
+
+  logoutBtn: {
+    marginTop: SH(16),
+    minHeight: SH(46),
+    borderRadius: SW(14),
+    borderWidth: 1,
+    borderColor: '#FF6B6B66',
+    backgroundColor: '#FF6B6B1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+
+  logoutText: {
+    color: '#FF6B6B',
+    marginLeft: SW(8),
+    fontFamily: appFonts.NunitoBold,
+    fontSize: SF(13),
+  },
 });

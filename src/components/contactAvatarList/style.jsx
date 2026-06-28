@@ -46,6 +46,20 @@ export default StyleSheet.create({
     alignItems: 'stretch',
     gap: SW(8),
   },
+
+  emptyStateContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: SW(46),
+    paddingHorizontal: SW(8),
+  },
+
+  emptyStateText: {
+    color: appColors.bodyColor,
+    fontFamily: appFonts.NunitoRegular,
+    fontSize: SF(12),
+  },
+
   avatarItem: {
     flexDirection: 'row',
     alignItems: 'center',

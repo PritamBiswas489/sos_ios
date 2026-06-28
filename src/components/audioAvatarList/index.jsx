@@ -35,6 +35,7 @@ const getAvatarColor = item => {
 
 const AudioAvatarList = ({ chatContacts, fetchChatContacts }) => {
     const ONLINE_COLOR = '#2ED573';
+  const safeContacts = Array.isArray(chatContacts) ? chatContacts : [];
 
      const [refreshing, setRefreshing] = useState(false);
       const lastOffsetXRef = useRef(0);
@@ -133,7 +134,7 @@ const AudioAvatarList = ({ chatContacts, fetchChatContacts }) => {
     }, [handleRefresh]);
 
     useEffect(() => {
-      if (!audioSelectedContact?.id || !Array.isArray(chatContacts) || chatContacts.length === 0) {
+      if (!audioSelectedContact?.id || safeContacts.length === 0) {
         return;
       }
 
@@ -141,7 +142,7 @@ const AudioAvatarList = ({ chatContacts, fetchChatContacts }) => {
         return;
       }
 
-      const selectedIndex = chatContacts.findIndex(contact => contact?.id === audioSelectedContact.id);
+      const selectedIndex = safeContacts.findIndex(contact => contact?.id === audioSelectedContact.id);
       if (selectedIndex < 0) {
         return;
       }
@@ -155,7 +156,7 @@ const AudioAvatarList = ({ chatContacts, fetchChatContacts }) => {
       });
 
       lastAutoScrolledIdRef.current = audioSelectedContact.id;
-    }, [chatContacts, audioSelectedContact?.id]);
+    }, [safeContacts, audioSelectedContact?.id]);
 
     const handleScrollToIndexFailed = useCallback((info) => {
       const estimatedOffset = Math.max(0, info.averageItemLength * info.index);
@@ -175,10 +176,15 @@ const AudioAvatarList = ({ chatContacts, fetchChatContacts }) => {
       <FlatList
         ref={flatListRef}
         horizontal
-        data={chatContacts}
+        data={safeContacts}
         keyExtractor={item => String(item.id)}
         renderItem={renderContactItem}
         extraData={audioSelectedContact?.id}
+        ListEmptyComponent={(
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateText}>No contacts found</Text>
+          </View>
+        )}
         showsHorizontalScrollIndicator={false}
         style={styles.avatarRow}
         contentContainerStyle={styles.avatarRowContent}

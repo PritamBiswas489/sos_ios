@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import {
 	ActivityIndicator,
+	Alert,
 	Image,
 	KeyboardAvoidingView,
 	Platform,
 	ScrollView,
+	SafeAreaView,
 	Text,
 	TextInput,
 	TouchableOpacity,
@@ -18,13 +20,18 @@ import useToast from '../../hook/useToast';
 import { useUserData } from '../../hook/useUserData';
 import { UserService } from '../../services/user.service';
 import { getProfileImage } from '../../config/utility';
+import { useDispatch } from 'react-redux';
+import { resetAllState } from '../../store';
+import useUserAuth from '../../hook/useUserAuth.jsx';
 
 const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
 
 const CompleteProfileScreen = ({ route }) => {
 	const navigation = useNavigation();
+	const dispatch = useDispatch();
 	const { showError, showSuccess } = useToast();
     const {userData, fetchUserData} = useUserData();
+	const { logout } = useUserAuth();
 	const [profileImageUri, setProfileImageUri] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
     const [fullName, setFullName] = useState(userData?.name || '');
@@ -112,12 +119,39 @@ const CompleteProfileScreen = ({ route }) => {
 
 	const initial = fullName?.trim()?.charAt(0)?.toUpperCase() || 'U';
 
+	const onLogout = () => {
+		Alert.alert('Log Out', 'Are you sure you want to log out?', [
+			{ text: 'Cancel', style: 'cancel' },
+			{
+				text: 'Log Out',
+				style: 'destructive',
+				onPress: async () => {
+					try {
+						await UserService.deleteFcmToken(() => {});
+						await UserService.logout();
+						dispatch(resetAllState());
+						logout();
+						Alert.alert('Logged Out', 'You have been logged out successfully.');
+						navigation.reset({
+							index: 0,
+							routes: [{ name: 'Login' }],
+						});
+					} catch (error) {
+						console.error('Logout failed:', error);
+						Alert.alert('Logout Failed', 'Unable to logout. Please try again.');
+					}
+				},
+			},
+		]);
+	};
+
 	return (
-		<KeyboardAvoidingView
-			style={styles.container}
-			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-		>
-			<ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+		<SafeAreaView style={styles.container}>
+			<KeyboardAvoidingView
+				style={styles.container}
+				behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+			>
+				<ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 				<View style={styles.header}>
 					 
 					<View style={styles.headerTextWrap}>
@@ -189,9 +223,15 @@ const CompleteProfileScreen = ({ route }) => {
 					<Text style={styles.infoText}>
 						This information helps keep your SOS profile accurate for trusted contacts.
 					</Text>
+
+					<TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
+						<Icon name="logout" size={18} color="#FF6B6B" />
+						<Text style={styles.logoutText}>Log Out</Text>
+					</TouchableOpacity>
 				</View>
-			</ScrollView>
-		</KeyboardAvoidingView>
+				</ScrollView>
+			</KeyboardAvoidingView>
+		</SafeAreaView>
 	);
 };
 

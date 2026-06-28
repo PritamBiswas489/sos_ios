@@ -94,7 +94,7 @@ Sentry.init({
 // logError(new Error('Test error from App.jsx to verify crash logging is working correctly'));
 // Isolated so that opening from FAB only re-renders this component logic
 const SOSController = React.memo(
-  ({ fabVisible, navigationRef, sosModalVisible, setSosModalVisible }) => {
+  ({ fabVisible, navigationRef, sosModalVisible, setSosModalVisible, hasLicense }) => {
     const [isOpening, setIsOpening] = useState(false);
 
     const handleFabPress = () => {
@@ -116,6 +116,7 @@ const SOSController = React.memo(
           navigationRef={navigationRef}
           onClose={() => setSosModalVisible(false)}
           onOpened={handleOpened}
+          hasLicense={hasLicense}
         />
       </>
     );
@@ -669,19 +670,16 @@ const App = () => {
                         isConnected &&
                         Array.isArray(missingPermissions) &&
                         missingPermissions.length === 0 &&
-                        activeScreen !== null &&
-                        ![
-                          'Splash',
-                          'Process',
-                          'Login',
-                          'CompleteProfile',
-                          'AuthLoading',
-                        ].includes(activeScreen) &&
-                        !(Platform.OS === 'ios' && activeScreen === 'Analysis')
+                         activeScreen !== null &&
+                          ![
+                            ...['Splash', 'Process', 'Login', 'CompleteProfile', 'AuthLoading'],
+                            ...(!hasLicense ? ['Home'] : []),
+                          ].includes(activeScreen)
                       }
                       navigationRef={navigationRef}
                       sosModalVisible={sosModalVisible}
                       setSosModalVisible={setSosModalVisible}
+                      hasLicense={hasLicense}
                     />
                   </SafeAreaProvider>
 

@@ -28,8 +28,9 @@ const MapAvatarList = ({
       const flatListRef = useRef(null);
       const lastAutoScrolledIdRef = useRef(null);
 
-     const dispatch = useDispatch();
-     const mapSelectedContact = useSelector(state => state.mapSelectedContact);
+    const dispatch = useDispatch();
+    const mapSelectedContact = useSelector(state => state.mapSelectedContact);
+    const normalizedContacts = Array.isArray(chatContacts) ? chatContacts : [];
 
     const selectContact = useCallback(item => {
       console.log('Selected contact:', item);
@@ -134,7 +135,7 @@ const getAvatarColor = item => {
     }, [handleRefresh]);
 
     useEffect(() => {
-      if (!mapSelectedContact?.id || !Array.isArray(chatContacts) || chatContacts.length === 0) {
+      if (!mapSelectedContact?.id || normalizedContacts.length === 0) {
         return;
       }
 
@@ -142,7 +143,7 @@ const getAvatarColor = item => {
         return;
       }
 
-      const selectedIndex = chatContacts.findIndex(contact => contact?.id === mapSelectedContact.id);
+      const selectedIndex = normalizedContacts.findIndex(contact => contact?.id === mapSelectedContact.id);
       if (selectedIndex < 0) {
         return;
       }
@@ -156,7 +157,7 @@ const getAvatarColor = item => {
       });
 
       lastAutoScrolledIdRef.current = mapSelectedContact.id;
-    }, [chatContacts, mapSelectedContact?.id]);
+    }, [normalizedContacts, mapSelectedContact?.id]);
 
     const handleScrollToIndexFailed = useCallback((info) => {
       const estimatedOffset = Math.max(0, info.averageItemLength * info.index);
@@ -175,13 +176,18 @@ const getAvatarColor = item => {
       <FlatList
         ref={flatListRef}
         horizontal
-        data={chatContacts}
+        data={normalizedContacts}
         keyExtractor={item => String(item.id)}
         renderItem={renderContactItem}
         extraData={mapSelectedContact?.id}
         showsHorizontalScrollIndicator={false}
         style={styles.avatarRow}
         contentContainerStyle={styles.avatarRowContent}
+        ListEmptyComponent={
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateText}>No contacts yet</Text>
+          </View>
+        }
         onScroll={handleHorizontalScroll}
         onScrollToIndexFailed={handleScrollToIndexFailed}
         scrollEventThrottle={16}

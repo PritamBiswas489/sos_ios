@@ -78,7 +78,7 @@ export const DUMMY_SOS_VICTIMS = DUMMY_INCOMING_SOS;
 // ---------------------------------------------------------------------------
 // Animated tab bar
 // ---------------------------------------------------------------------------
-const TabBar = ({ activeTab, onSelect }) => {
+const TabBar = ({ activeTab, onSelect , hasLicense}) => {
   const indicatorAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -105,13 +105,13 @@ const TabBar = ({ activeTab, onSelect }) => {
           </Text>
          
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabBtn} onPress={() => onSelect('outgoing')} activeOpacity={0.8}>
+       {hasLicense && <TouchableOpacity style={styles.tabBtn} onPress={() => onSelect('outgoing')} activeOpacity={0.8}>
           <Icon name="arrow-up-circle-outline" size={15} color={activeTab === 'outgoing' ? '#4A9EFF' : '#6B7C99'} />
           <Text style={[styles.tabLabel, activeTab === 'outgoing' && styles.tabLabelOutgoingActive]}>
             Outgoing SOS
           </Text>
           
-        </TouchableOpacity>
+        </TouchableOpacity>} 
       </View>
     </View>
   );
@@ -127,6 +127,7 @@ const SOSAlertModal = ({
   onAcceptSOS,
   onDeclineSOS,
   onOpened,
+  hasLicense
 }) => {
   
 
@@ -235,6 +236,7 @@ const SOSAlertModal = ({
             activeTab={activeTab}
             
             onSelect={setActiveTab}
+            hasLicense={hasLicense}
           />
 
           {/* Alert strip */}

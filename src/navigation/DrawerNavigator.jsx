@@ -220,7 +220,7 @@ const DrawerNavigator = () => {
           ),
         }}
       />
-      <Drawer.Screen
+      {hasLicense && <Drawer.Screen
         name="AbuseReport"
         component={ReportFormScreen}
         options={{
@@ -229,7 +229,7 @@ const DrawerNavigator = () => {
             <Icon name="person-off" size={size} color={color} />
           ),
         }}
-      />
+      />}
 
 
       <Drawer.Screen

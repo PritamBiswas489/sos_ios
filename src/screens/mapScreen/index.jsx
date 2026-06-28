@@ -245,7 +245,7 @@ const MapScreen = ({ route }) => {
       { latitude: userLocation.latitude, longitude: userLocation.longitude },
       { latitude: selectedContactLocation.latitude, longitude: selectedContactLocation.longitude },
     );
-    if (distanceM > 200000) {
+    if (distanceM > 50000) {
       setRouteCoords([]);
       setRouteInfo(null);
       lastRouteRef.current = '';

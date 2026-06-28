@@ -25,6 +25,7 @@ const ContactAvatarList = ({
   fetchChatContacts
 }) => {
     const ONLINE_COLOR = '#2ED573';
+    const safeContacts = Array.isArray(chatContacts) ? chatContacts : [];
 
     const onlineUsers = useChatPresence();
      const [refreshing, setRefreshing] = useState(false);
@@ -145,7 +146,7 @@ const getAvatarColor = item => {
     }, [handleRefresh]);
 
     useEffect(() => {
-      if (!chatSelectedTrustedContact?.id || !Array.isArray(chatContacts) || chatContacts.length === 0) {
+      if (!chatSelectedTrustedContact?.id || safeContacts.length === 0) {
         return;
       }
 
@@ -153,7 +154,7 @@ const getAvatarColor = item => {
         return;
       }
 
-      const selectedIndex = chatContacts.findIndex(contact => contact?.id === chatSelectedTrustedContact.id);
+      const selectedIndex = safeContacts.findIndex(contact => contact?.id === chatSelectedTrustedContact.id);
       if (selectedIndex < 0) {
         return;
       }
@@ -167,7 +168,7 @@ const getAvatarColor = item => {
       });
 
       lastAutoScrolledIdRef.current = chatSelectedTrustedContact.id;
-    }, [chatContacts, chatSelectedTrustedContact?.id]);
+    }, [safeContacts, chatSelectedTrustedContact?.id]);
 
     const handleScrollToIndexFailed = useCallback((info) => {
       const estimatedOffset = Math.max(0, info.averageItemLength * info.index);
@@ -186,10 +187,15 @@ const getAvatarColor = item => {
       <FlatList
         ref={flatListRef}
         horizontal
-        data={chatContacts}
+        data={safeContacts}
         keyExtractor={item => String(item.id)}
         renderItem={renderContactItem}
         extraData={chatSelectedTrustedContact?.id}
+        ListEmptyComponent={(
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateText}>No contacts found</Text>
+          </View>
+        )}
         showsHorizontalScrollIndicator={false}
         style={styles.avatarRow}
         contentContainerStyle={styles.avatarRowContent}

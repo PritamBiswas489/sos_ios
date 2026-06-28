@@ -10,6 +10,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useNavigation } from '@react-navigation/native';
@@ -24,12 +25,13 @@ const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
 const EditProfileScreen = ({ route }) => {
 	const navigation = useNavigation();
 	const { showError, showSuccess } = useToast();
-    const {userData, fetchUserData} = useUserData();
+	const { userData, fetchUserData } = useUserData();
+	const insets = useSafeAreaInsets();
+
 	const [profileImageUri, setProfileImageUri] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
-    const [fullName, setFullName] = useState(userData?.name || '');
+	const [fullName, setFullName] = useState(userData?.name || '');
 	const [email, setEmail] = useState(userData?.email || '');
-
 
 	const canSubmit = useMemo(() => {
 		return fullName.trim().length > 1 && email.trim().length > 4;
@@ -37,11 +39,7 @@ const EditProfileScreen = ({ route }) => {
 
 	const onPickProfileImage = () => {
 		launchImageLibrary(
-			{
-				mediaType: 'photo',
-				selectionLimit: 1,
-				quality: 0.9,
-			},
+			{ mediaType: 'photo', selectionLimit: 1, quality: 0.9 },
 			response => {
 				if (response.didCancel) return;
 				if (response.errorCode) {
@@ -53,60 +51,52 @@ const EditProfileScreen = ({ route }) => {
 					showError('Image Upload', 'Please select an image up to 5 MB only.');
 					return;
 				}
-				if (asset?.uri) {
-					setProfileImageUri(asset.uri);
-				}
+				if (asset?.uri) setProfileImageUri(asset.uri);
 			},
 		);
 	};
 
 	const onSubmit = async () => {
-		const trimmedName = fullName.trim();
+		const trimmedName  = fullName.trim();
 		const trimmedEmail = email.trim();
 
 		if (!trimmedName) {
 			showError('Validation', 'Please enter your full name.');
 			return;
 		}
-
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		if (!emailRegex.test(trimmedEmail)) {
 			showError('Validation', 'Please enter a valid email address.');
 			return;
 		}
+
 		setIsSubmitting(true);
 		try {
 			const formData = new FormData();
-            formData.append('name', trimmedName);
-            formData.append('email', trimmedEmail);
-            if (profileImageUri) {
-                const fileName = profileImageUri.split('/').pop();
-                const fileType = 'image/jpeg'; // Assuming JPEG, adjust if needed
-                formData.append('profile_image', {
-                    uri: profileImageUri,
-                    name: fileName,
-                    type: fileType,
-                });
-            }
-            const response  = await new Promise((resolve, reject) => {
-                UserService.updateProfile(formData, response => {
-                    if (response.success) {
-                        resolve(response.data);
-                    }
-                    else { 
-                        reject(new Error(response?.error || 'Profile update failed'));
-                    }
-                });
-            });
-            
-            await fetchUserData();
-            setIsSubmitting(false);
+			formData.append('name', trimmedName);
+			formData.append('email', trimmedEmail);
+			if (profileImageUri) {
+				const fileName = profileImageUri.split('/').pop();
+				formData.append('profile_image', {
+					uri: profileImageUri,
+					name: fileName,
+					type: 'image/jpeg',
+				});
+			}
+			await new Promise((resolve, reject) => {
+				UserService.updateProfile(formData, response => {
+					if (response.success) resolve(response.data);
+					else reject(new Error(response?.error || 'Profile update failed'));
+				});
+			});
+			await fetchUserData();
+			setIsSubmitting(false);
 			showSuccess('SUCCESS', 'Profile updated successfully.');
 		} catch (error) {
-            setIsSubmitting(false);
-            console.log('❌ Error updating profile:', error?.message);
+			setIsSubmitting(false);
+			console.log('❌ Error updating profile:', error?.message);
 			showError('Update Failed', error?.message || 'Could not update profile right now.');
-		} 
+		}
 	};
 
 	const initial = fullName?.trim()?.charAt(0)?.toUpperCase() || 'U';
@@ -115,27 +105,48 @@ const EditProfileScreen = ({ route }) => {
 		<KeyboardAvoidingView
 			style={styles.container}
 			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+			keyboardVerticalOffset={insets.top}
 		>
-			<ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-				<View style={styles.header}>
-					<TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-						<Icon name="arrow-back" size={20} color="#FFFFFF" />
-					</TouchableOpacity>
-					<View style={styles.headerTextWrap}>
-						<Text style={styles.title}>Edit Profile</Text>
-						<Text style={styles.subtitle}>UPDATE YOUR ACCOUNT DETAILS</Text>
-					</View>
-				</View>
+			{/* ── Fixed header — sits above ScrollView, respects safe area ── */}
+			<View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+				<TouchableOpacity
+					style={styles.backButton}
+					onPress={() => navigation.goBack()}
+					hitSlop={8}
+				>
+					<Icon name="arrow-back" size={20} color="#FFFFFF" />
+				</TouchableOpacity>
 
+				<View style={styles.headerTextWrap}>
+					<Text style={styles.title}>Edit Profile</Text>
+					<Text style={styles.subtitle}>UPDATE YOUR ACCOUNT DETAILS</Text>
+				</View>
+			</View>
+
+			{/* ── Scrollable body ── */}
+			<ScrollView
+				contentContainerStyle={styles.content}
+				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
+			>
 				<View style={styles.card}>
+					{/* Avatar */}
 					<View style={styles.avatarSection}>
 						<View style={styles.avatarWrap}>
 							{profileImageUri ? (
-								<Image source={{ uri: profileImageUri }} resizeMode="cover" style={styles.avatarImage} />
+								<Image
+									source={{ uri: profileImageUri }}
+									resizeMode="cover"
+									style={styles.avatarImage}
+								/>
 							) : userData?.profile_photo ? (
-								 <Image source={{ uri: getProfileImage(userData.profile_photo) }} resizeMode="cover" style={styles.avatarImage} />
+								<Image
+									source={{ uri: getProfileImage(userData.profile_photo) }}
+									resizeMode="cover"
+									style={styles.avatarImage}
+								/>
 							) : (
-								<Text style={{ color: '#FFFFFF', fontSize: 30, fontWeight: '700' }}>{initial}</Text>
+								<Text style={styles.avatarInitial}>{initial}</Text>
 							)}
 						</View>
 						<Text style={styles.uploadHint}>Upload Profile Image (max 5 MB)</Text>
@@ -145,6 +156,7 @@ const EditProfileScreen = ({ route }) => {
 						</TouchableOpacity>
 					</View>
 
+					{/* Full name */}
 					<Text style={styles.label}>FULL NAME</Text>
 					<View style={styles.inputBox}>
 						<Icon name="person" size={18} color="#6B7C99" />
@@ -158,6 +170,7 @@ const EditProfileScreen = ({ route }) => {
 						/>
 					</View>
 
+					{/* Email */}
 					<Text style={styles.label}>EMAIL ADDRESS</Text>
 					<View style={styles.inputBox}>
 						<Icon name="alternate-email" size={18} color="#6B7C99" />
@@ -172,6 +185,7 @@ const EditProfileScreen = ({ route }) => {
 						/>
 					</View>
 
+					{/* Submit */}
 					<TouchableOpacity
 						style={[styles.submitBtn, !canSubmit && { opacity: 0.6 }]}
 						onPress={onSubmit}

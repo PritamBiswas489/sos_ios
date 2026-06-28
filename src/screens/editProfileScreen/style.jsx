@@ -4,6 +4,8 @@ import appFonts from '../../theme/appFonts';
 import { SH, SW, SF } from '../../theme/dimensions';
 
 export default StyleSheet.create({
+
+  // ─── Root ────────────────────────────────────────────────────────────────────
   container: {
     flex: 1,
     backgroundColor: appColors.DarkPrimary,
@@ -11,14 +13,15 @@ export default StyleSheet.create({
 
   content: {
     paddingHorizontal: SW(18),
-    paddingTop: SH(18),
-    paddingBottom: SH(28),
+    // paddingTop is set dynamically via useSafeAreaInsets in index.jsx
+    paddingBottom: SH(32),
   },
 
+  // ─── Header ──────────────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SH(20),
+    marginBottom: SH(22),
   },
 
   backButton: {
@@ -28,7 +31,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: appColors.whiteTransparent,
-    borderWidth: 1,
+    borderWidth: 0.7,
     borderColor: appColors.whiteBdrTransparent,
   },
 
@@ -46,29 +49,35 @@ export default StyleSheet.create({
   subtitle: {
     color: appColors.bodyColor,
     fontFamily: appFonts.NunitoSemiBold,
-    fontSize: SF(11),
+    fontSize: SF(10),
+    letterSpacing: 0.6,
     marginTop: SH(2),
   },
 
+  // ─── Card ────────────────────────────────────────────────────────────────────
   card: {
     backgroundColor: appColors.whiteTransparent,
-    borderWidth: 1,
+    borderWidth: 0.7,
     borderColor: appColors.whiteBdrTransparent,
     borderRadius: SW(16),
-    paddingHorizontal: SW(14),
-    paddingVertical: SH(16),
+    paddingHorizontal: SW(16),
+    paddingVertical: SH(20),
   },
 
+  // ─── Avatar section ──────────────────────────────────────────────────────────
   avatarSection: {
     alignItems: 'center',
-    marginBottom: SH(16),
+    marginBottom: SH(22),
+    paddingBottom: SH(18),
+    borderBottomWidth: 0.7,
+    borderBottomColor: appColors.whiteBdrTransparent,
   },
 
   avatarWrap: {
     width: SW(96),
     height: SW(96),
     borderRadius: SW(48),
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: appColors.primary,
     backgroundColor: appColors.primaryAA,
@@ -82,23 +91,30 @@ export default StyleSheet.create({
     height: '100%',
   },
 
+  avatarInitial: {
+    color: appColors.white,
+    fontSize: SF(30),
+    fontFamily: appFonts.NunitoBold,
+    fontWeight: '700',
+  },
+
   uploadHint: {
     color: appColors.bodyColor,
     fontSize: SF(11),
     fontFamily: appFonts.NunitoSemiBold,
-    marginTop: SH(8),
+    marginTop: SH(10),
   },
 
   uploadButton: {
     marginTop: SH(10),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SW(12),
+    paddingHorizontal: SW(14),
     paddingVertical: SH(8),
     borderRadius: SW(20),
-    backgroundColor: '#2F6BFF1A',
-    borderWidth: 1,
-    borderColor: '#2F6BFF55',
+    backgroundColor: 'rgba(47,107,255,0.10)',
+    borderWidth: 0.7,
+    borderColor: 'rgba(47,107,255,0.35)',
   },
 
   uploadButtonText: {
@@ -108,23 +124,26 @@ export default StyleSheet.create({
     fontSize: SF(12),
   },
 
+  // ─── Field labels ─────────────────────────────────────────────────────────────
   label: {
     color: appColors.bodyColor,
-    fontSize: SF(11),
+    fontSize: SF(10),
     fontFamily: appFonts.NunitoSemiBold,
+    letterSpacing: 0.5,
     marginTop: SH(14),
     marginBottom: SH(6),
   },
 
+  // ─── Input ───────────────────────────────────────────────────────────────────
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 0.7,
     borderColor: appColors.primary,
     borderRadius: SW(14),
     backgroundColor: appColors.primaryAA,
     paddingHorizontal: SW(12),
-    minHeight: SH(48),
+    minHeight: SH(50),
   },
 
   input: {
@@ -135,11 +154,12 @@ export default StyleSheet.create({
     fontFamily: appFonts.NunitoRegular,
   },
 
+  // ─── Submit button ────────────────────────────────────────────────────────────
   submitBtn: {
     backgroundColor: appColors.primary,
-    borderRadius: SW(16),
-    marginTop: SH(22),
-    minHeight: SH(50),
+    borderRadius: SW(14),
+    marginTop: SH(24),
+    minHeight: SH(52),
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -151,11 +171,14 @@ export default StyleSheet.create({
     fontSize: SF(14),
   },
 
+  // ─── Info text ────────────────────────────────────────────────────────────────
   infoText: {
     color: appColors.bodyColor,
     marginTop: SH(14),
     fontSize: SF(11),
     textAlign: 'center',
     fontFamily: appFonts.NunitoRegular,
+    lineHeight: SF(17),
+    paddingHorizontal: SW(8),
   },
 });
