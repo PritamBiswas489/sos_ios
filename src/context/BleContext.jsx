@@ -24,18 +24,19 @@ const MAX_HR_BUFFER    = 60;
 // Logging helpers
 // ─────────────────────────────────────────────
 const log = {
-  info:    (msg) => console.log(`ℹ️  [BLE] ${msg}`),
-  success: (msg) => console.log(`✅ [BLE] ${msg}`),
-  warn:    (msg) => console.warn(`⚠️  [BLE] ${msg}`),
-  error:   (msg) => console.error(`❌ [BLE] ${msg}`),
-  scan:    (msg) => console.log(`🔍 [BLE] ${msg}`),
-  connect: (msg) => console.log(`🔗 [BLE] ${msg}`),
-  heart:   (msg) => console.log(`❤️  [BLE] ${msg}`),
-  fg:      (msg) => console.log(`☀️  [BLE][FG] ${msg}`),
-  bg:      (msg) => console.log(`🌙 [BLE][BG] ${msg}`),
-  disco:   (msg) => console.log(`🔌 [BLE] ${msg}`),
-  store:   (msg) => console.log(`💾 [BLE] ${msg}`),
-  shield:  (msg) => console.log(`🛡️  [BLE] ${msg}`),
+  info:    msg => console.log(`ℹ️  [BLE] ${msg}`),
+  success: msg => console.log(`✅ [BLE] ${msg}`),
+  warn:    msg => console.warn(`⚠️  [BLE] ${msg}`),
+  error:   msg => console.error(`❌ [BLE] ${msg}`),
+  scan:    msg => console.log(`🔍 [BLE] ${msg}`),
+  connect: msg => console.log(`🔗 [BLE] ${msg}`),
+  heart:   msg => console.log(`❤️  [BLE] ${msg}`),
+  fg:      msg => console.log(`☀️  [BLE][FG] ${msg}`),
+  bg:      msg => console.log(`🌙 [BLE][BG] ${msg}`),
+  disco:   msg => console.log(`🔌 [BLE] ${msg}`),
+  store:   msg => console.log(`💾 [BLE] ${msg}`),
+  shield:  msg => console.log(`🛡️  [BLE] ${msg}`),
+  stress:  msg => console.log(`🧠 [BLE][STRESS] ${msg}`),
 };
 
 // ─────────────────────────────────────────────
@@ -53,9 +54,6 @@ function parseHRCharacteristic(base64Value) {
   }
 }
 
-// ─────────────────────────────────────────────
-// Wait for BLE adapter to be powered on
-// ─────────────────────────────────────────────
 function waitForPoweredOn(mgr, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -71,42 +69,42 @@ function waitForPoweredOn(mgr, timeoutMs = 5000) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  MODULE-LEVEL BLE STATE
 //
-//  The single most important architectural decision in this file:
-//  manager, deviceRef, hrSubscription, and the active/destroyed flags all live
-//  at MODULE scope — completely outside React's component lifecycle.
+//  Everything here lives completely outside React's lifecycle.
+//  Screen changes, navigation, re-renders, hot reload — none of these
+//  can touch the BLE connection or HR stream.
 //
-//  Why this matters:
-//  React can unmount and remount BleProvider at any time (navigation, hot
-//  reload, parent re-renders). If BLE state lived inside the component, every
-//  unmount would tear down the connection and kill the HR stream.
-//
-//  By living at module scope these objects are never touched by React's
-//  cleanup cycle. The HR monitor callback runs on the native thread and
-//  delivers readings regardless of what React is doing.
-//
-//  The only thing that can stop readings is:
+//  The only things that stop HR readings:
 //    • disconnect() — explicit user action
-//    • A real hardware disconnect (device turned off / out of range)
+//    • Real hardware disconnect (device off / out of range)
+//
+//  ⚠️  iOS REQUIREMENT in Info.plist:
+//    <key>UIBackgroundModes</key>
+//    <array><string>bluetooth-central</string></array>
 // ─────────────────────────────────────────────────────────────────────────────
-let _manager         = null;   // BleManager singleton
-let _device          = null;   // Connected BLEDevice
-let _hrSub           = null;   // HR characteristic subscription
-let _manualDisconnect = false; // true only while disconnect() is running
-let _isActive        = true;   // false only during explicit full teardown
+let _manager          = null;
+let _device           = null;
+let _hrSub            = null;
+let _manualDisconnect = false;
+let _isActive         = true;
 
-// Callbacks registered by the React component to receive updates
-// These are swapped on every render so they always hold fresh setState refs
-let _onHR         = null;
-let _onStateChange = null;
+// ── Module-level HR buffer ────────────────────────────────────────────────────
+// SOURCE OF TRUTH for HR data — even in background.
+// React state (hrBuffer) is a COPY synced when React is alive.
+// StressContext reads THIS directly via _onRawHR → stress + SOS work in background.
+let _hrBufferModule = []; // plain numbers, max MAX_HR_BUFFER entries
+
+// ── Callbacks ─────────────────────────────────────────────────────────────────
+let _onStateChange = null; // → React setState (foreground only)
+let _appStateRef   = null; // → component appStateRef
+let _onRawHR       = null; // → StressContext callback (foreground + background)
 
 // ─────────────────────────────────────────────
-// Module-level helpers (no React dependency)
+// Module-level helpers
 // ─────────────────────────────────────────────
-
 function getManager() {
   if (!_manager) {
     _manager = getBleManager();
-    log.info('🆕 BLE manager created (module-level singleton)');
+    log.info('BLE manager created (module-level singleton)');
   }
   return _manager;
 }
@@ -123,7 +121,7 @@ function teardownSubscription() {
 function handleHardwareDisconnect(errMsg) {
   teardownSubscription();
   _device = null;
-  log.disco(`⚡ Hardware disconnect — ${errMsg || 'device turned off or out of range'}`);
+  log.disco(`Hardware disconnect — ${errMsg || 'device turned off or out of range'}`);
   _onStateChange?.({
     connected:  false,
     deviceName: null,
@@ -143,34 +141,17 @@ async function connectDevice(device) {
 
   // ── onDisconnected ────────────────────────────────────────────────────────
   //
-  //  This callback fires for THREE distinct cases:
-  //
-  //  Case A — manualDisconnect = true
-  //    We called cancelConnection() ourselves. Suppress entirely.
-  //
-  //  Case B — err.message contains library-noise keywords
-  //    react-native-ble-plx fires these for internal cancellations that are
-  //    NOT real hardware events (background transitions, re-renders, etc).
-  //    Suppress entirely.
-  //
-  //  Case C — err present with a real error message
-  //    Genuine hardware disconnect (out of range, device off). Update state.
-  //
-  //  Case D — err is null (clean disconnect at protocol level)
-  //    Some HR devices send a clean GATT disconnect when the strap is removed.
-  //    Treat the same as Case C.
+  //  Case A — manualDisconnect = true → suppress (we called cancelConnection)
+  //  Case B — library noise keywords → suppress
+  //  Case C/D — real hardware event → handleHardwareDisconnect
   //
   // ─────────────────────────────────────────────────────────────────────────
-  device.onDisconnected((err) => {
-    // Case A — we triggered it, ignore
+  device.onDisconnected(err => {
     if (_manualDisconnect) {
       log.shield('onDisconnected suppressed — manual disconnect in progress');
       return;
     }
-
     const msg = err?.message ?? '';
-
-    // Case B — library noise, ignore
     if (
       msg.includes('cancelled') ||
       msg.includes('destroyed') ||
@@ -179,8 +160,6 @@ async function connectDevice(device) {
       log.shield(`onDisconnected suppressed — library noise: "${msg}"`);
       return;
     }
-
-    // Case C / D — real hardware event
     handleHardwareDisconnect(msg || null);
   });
 
@@ -194,7 +173,6 @@ async function connectDevice(device) {
 
     _device = connected;
 
-    // Persist for auto-reconnect on next launch
     try {
       await AsyncStorage.setItem(
         SAVED_DEVICE_KEY,
@@ -209,18 +187,14 @@ async function connectDevice(device) {
 
     // ── Subscribe to HR notifications ─────────────────────────────────────
     //
-    //  This subscription is registered on the NATIVE CoreBluetooth layer.
-    //  It survives:
-    //    ✓ Screen changes / navigation stack changes
-    //    ✓ App backgrounding (requires bluetooth-central in Info.plist)
-    //    ✓ React component unmount / remount
-    //    ✓ Any re-render of BleProvider or its parents
+    //  This callback fires on the native CoreBluetooth thread — foreground AND background.
+    //  It pushes into:
+    //    1. _hrBufferModule  — module-level array, always current (fg + bg)
+    //    2. _onRawHR         — StressContext callback, triggers stress + SOS (fg + bg)
+    //    3. React setState   — updates UI when React is alive (foreground only)
     //
-    //  It is ONLY removed by:
-    //    • disconnect() — explicit user action
-    //    • handleHardwareDisconnect() — real hardware event
     // ─────────────────────────────────────────────────────────────────────
-    teardownSubscription(); // clean up any stale sub from a previous session
+    teardownSubscription();
     _hrSub = connected.monitorCharacteristicForService(
       HR_SERVICE_UUID,
       HR_CHAR_UUID,
@@ -228,16 +202,31 @@ async function connectDevice(device) {
         if (!_isActive) return;
         if (err) {
           const msg = err.message ?? '';
-          // Filter library-internal noise — NOT real errors
           if (msg.includes('cancelled') || msg.includes('destroyed')) return;
           log.error(`HR monitor error: ${msg}`);
           _onStateChange?.({ error: msg });
           return;
         }
+
         const hr = parseHRCharacteristic(characteristic.value);
-        if (hr !== null && hr > 20 && hr < 250) {
-          _onHR?.(hr);
+        if (hr === null || hr <= 20 || hr >= 250) return;
+
+        const isBackground = _appStateRef?.current !== 'active';
+        const mode = isBackground ? '🌙 BG' : '☀️ FG';
+        log.heart(`HR = ${hr} bpm  [${mode}]`);
+
+        // 1. Update module-level buffer (always, fg + bg)
+        _hrBufferModule = [..._hrBufferModule.slice(-(MAX_HR_BUFFER - 1)), hr];
+
+        // 2. Notify StressContext directly (fg + bg — this triggers SOS in background)
+        try {
+          _onRawHR?.(_hrBufferModule);
+        } catch (callbackErr) {
+          log.error(`Stress callback error: ${callbackErr?.message ?? 'Unknown'}`);
         }
+
+        // 3. Update React state for UI (only meaningful in foreground)
+        _onStateChange?.({ currentHR: hr, hrBuffer: _hrBufferModule });
       },
     );
     log.success('HR notifications subscribed — survives background & screen changes ✓');
@@ -255,8 +244,8 @@ async function connectDevice(device) {
 const BleContext = createContext(null);
 
 export function BleProvider({ children }) {
-  const appStateRef   = useRef(AppState.currentState);
-  const scanTimer     = useRef(null);
+  const appStateRef = useRef(AppState.currentState);
+  const scanTimer   = useRef(null);
 
   const [state, setState] = useState({
     currentHR:  null,
@@ -272,69 +261,55 @@ export function BleProvider({ children }) {
     [],
   );
 
-  // ── Wire up module-level callbacks to React state ─────────────────────────
-  //
-  //  These are plain assignments (not useEffect) so they are always current.
-  //  The module-level connectDevice / HR monitor call these refs to push
-  //  updates into React state without React needing to be mounted.
-  // ─────────────────────────────────────────────────────────────────────────
-  _onStateChange = setPartial;
+  // Wire up module-level callbacks — plain assignments, always current
+  _onStateChange = useCallback(partial => {
+    setState(prev => ({ ...prev, ...partial }));
+  }, []);
+  _appStateRef = appStateRef;
 
-  _onHR = (hr) => {
-    const mode = appStateRef.current === 'active' ? '☀️ FG' : '🌙 BG';
-    log.heart(`HR = ${hr} bpm  [${mode}]`);
-    setState(prev => ({
-      ...prev,
-      currentHR: hr,
-      hrBuffer: [...prev.hrBuffer.slice(-(MAX_HR_BUFFER - 1)), hr],
-    }));
-  };
-
-  // ── 1. Mount / Unmount ────────────────────────────────────────────────────
-  //
-  //  Cleanup does NOT touch the BLE connection, subscription, or _isActive.
-  //  React unmounting BleProvider (screen change, hot reload) must never
-  //  affect the native BLE layer.
-  //
-  //  Full teardown only happens in disconnect() by explicit user action.
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Mount / Unmount ───────────────────────────────────────────────────────
+  // Cleanup intentionally does NOT touch BLE connection or subscription.
+  // React unmounting ≠ user wanting to disconnect.
   useEffect(() => {
     _isActive = true;
+    // Sync module buffer into React state on mount (in case provider remounted)
+    if (_hrBufferModule.length > 0) {
+      setState(prev => ({
+        ...prev,
+        hrBuffer:  _hrBufferModule,
+        currentHR: _hrBufferModule[_hrBufferModule.length - 1],
+      }));
+    }
     log.info('BleProvider mounted — native BLE layer unaffected by React lifecycle');
-
     return () => {
-      // ✅ Intentionally NOT setting _isActive = false here.
-      //    NOT removing _hrSub.
-      //    NOT cancelling the connection.
-      //    React unmounting ≠ user wanting to disconnect.
       clearTimeout(scanTimer.current);
       log.info('BleProvider unmounted — BLE connection & HR stream kept alive intentionally');
     };
   }, []);
 
-  // ── 2. AppState — foreground / background logging ─────────────────────────
-  //
-  //  ⚠️  REQUIRED in Info.plist for background BLE to work:
-  //    <key>UIBackgroundModes</key>
-  //    <array><string>bluetooth-central</string></array>
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── AppState ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const sub = AppState.addEventListener('change', nextAppState => {
-      const prev      = appStateRef.current;
-      const wasActive = prev === 'active';
+      const prev        = appStateRef.current;
+      const wasActive   = prev === 'active';
       const isNowActive = nextAppState === 'active';
 
       if (wasActive && !isNowActive) {
         log.bg(`App → background  (${prev} → ${nextAppState})`);
-        if (state.connected) {
-          log.bg(`HR stream stays alive in background — device: ${state.deviceName} ✓`);
-        } else {
-          log.bg('No active HR connection');
-        }
+        if (state.connected) log.bg(`HR stream stays alive in background — device: ${state.deviceName} ✓`);
+        else log.bg('No active HR connection');
       } else if (!wasActive && isNowActive) {
         log.fg(`App → foreground  (${prev} → ${nextAppState})`);
         if (state.connected) {
           log.fg(`HR stream still running — device: ${state.deviceName} ✓`);
+          // Sync module buffer back into React state after returning from background
+          if (_hrBufferModule.length > 0) {
+            setState(prev => ({
+              ...prev,
+              hrBuffer:  _hrBufferModule,
+              currentHR: _hrBufferModule[_hrBufferModule.length - 1],
+            }));
+          }
         } else {
           log.fg('No HR device connected');
         }
@@ -344,60 +319,59 @@ export function BleProvider({ children }) {
     return () => sub.remove();
   }, [state.connected, state.deviceName]);
 
-  // ── 3. Scan ───────────────────────────────────────────────────────────────
+  // ── Scan ──────────────────────────────────────────────────────────────────
   const startScan = useCallback(async () => {
-    if (state.scanning) {
-      log.warn('Scan already in progress — ignoring');
-      return;
-    }
+    if (state.scanning) { log.warn('Scan already in progress'); return; }
 
-    // ── Lazy-init ─────────────────────────────────────────────────────────
-    //  getManager() creates BleManager only if it doesn't exist yet.
-    //  On iOS, constructing BleManager triggers the Bluetooth permission
-    //  dialog. Calling it here (inside startScan) means the prompt only
-    //  appears when the user explicitly taps the scan button.
+    // On iOS, constructing BleManager triggers the Bluetooth permission dialog.
+    // Calling getManager() here means the prompt only appears when user taps scan.
     const mgr = getManager();
 
-    // ── Auto-reconnect on first scan after a fresh launch ─────────────────
-    //  Only attempts if no device is already connected
+    // Auto-reconnect on first scan after a fresh launch
     if (!_device) {
       const saved = await AsyncStorage.getItem(SAVED_DEVICE_KEY).catch(() => null);
       if (saved) {
-        const { id, name } = JSON.parse(saved);
-        log.info(`Saved device found — attempting auto-reconnect to: ${name} (${id})`);
+        let parsedSaved;
         try {
-          await waitForPoweredOn(mgr);
-          const device = await mgr.connectToDevice(id, { autoConnect: false });
-          await connectDevice(device);
-          log.success(`Auto-reconnected to: ${name} ✓`);
-          return; // connected — skip scan
-        } catch (e) {
-          log.warn(`Auto-reconnect failed (will scan): ${e.message}`);
+          parsedSaved = JSON.parse(saved);
+        } catch {
+          log.warn('Saved BLE device is invalid JSON; clearing stale value');
+          AsyncStorage.removeItem(SAVED_DEVICE_KEY).catch(() => {});
+          parsedSaved = null;
+        }
+        if (!parsedSaved?.id) {
+          log.warn('Saved BLE device missing id; skipping auto-reconnect');
+        } else {
+          const { id, name } = parsedSaved;
+          log.info(`Saved device found — attempting auto-reconnect to: ${name} (${id})`);
+          try {
+            await waitForPoweredOn(mgr);
+            const device = await mgr.connectToDevice(id, { autoConnect: false });
+            await connectDevice(device);
+            log.success(`Auto-reconnected to: ${name} ✓`);
+            return;
+          } catch (e) {
+            log.warn(`Auto-reconnect failed (will scan): ${e.message}`);
+          }
         }
       }
     }
 
-    // ── Permission check ──────────────────────────────────────────────────
+    // Permission / adapter checks
     const bleState = await mgr.state();
     log.info(`BLE adapter state: ${bleState}`);
     if (bleState === 'Unauthorized') {
       setPartial({ error: 'Bluetooth access denied. Enable it in Settings → Privacy → Bluetooth.' });
-      log.error('Bluetooth unauthorized');
       return;
     }
     if (bleState === 'PoweredOff') {
       setPartial({ error: 'Bluetooth is turned off. Please enable it in Settings.' });
-      log.warn('Bluetooth powered off');
       return;
     }
 
-    // ── Wait for adapter ──────────────────────────────────────────────────
-    log.scan('Waiting for BLE adapter...');
     try {
       await waitForPoweredOn(mgr);
-      log.scan('Adapter ready — starting scan');
     } catch (e) {
-      log.error(`BLE not ready: ${e.message}`);
       setPartial({ scanning: false, error: 'Bluetooth is not available. Please enable it.' });
       return;
     }
@@ -411,11 +385,9 @@ export function BleProvider({ children }) {
         { allowDuplicates: false },
         async (error, device) => {
           if (!device && !error) return;
-
           try {
             if (error) {
               if (error.message?.includes('destroyed')) return;
-              log.error(`Scan error: ${error.message}`);
               setPartial({ scanning: false, error: error.message });
               return;
             }
@@ -428,14 +400,12 @@ export function BleProvider({ children }) {
             await connectDevice(device);
           } catch (callbackErr) {
             if (!callbackErr?.message?.includes('destroyed')) {
-              log.error(`Scan callback error: ${callbackErr.message}`);
               setPartial({ scanning: false, error: callbackErr.message });
             }
           }
         },
       );
     } catch (e) {
-      log.error(`startDeviceScan threw: ${e.message}`);
       setPartial({ scanning: false, error: e.message });
       return;
     }
@@ -447,36 +417,25 @@ export function BleProvider({ children }) {
     }, SCAN_TIMEOUT_MS);
   }, [state.scanning, setPartial]);
 
-  // ── 4. Disconnect ─────────────────────────────────────────────────────────
-  //
-  //  This is the ONLY place that permanently stops the HR stream.
-  //  Everything else (screen changes, background, re-renders) must leave
-  //  the connection and subscription fully intact.
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Disconnect ────────────────────────────────────────────────────────────
   const disconnect = useCallback(async () => {
     log.disco('Manual disconnect — tearing down BLE session');
 
-    // Tell onDisconnected to suppress its callback — we're the ones
-    // calling cancelConnection so we don't want a state update from it
     _manualDisconnect = true;
-
     clearTimeout(scanTimer.current);
 
     // Remove subscription BEFORE cancelling connection so the monitor
     // callback doesn't fire a "cancelled" error during teardown
     teardownSubscription();
 
+    // Clear module-level buffer on disconnect
+    _hrBufferModule = [];
+
     AsyncStorage.removeItem(SAVED_DEVICE_KEY).catch(() => {});
     log.store('Cleared saved device');
 
-    if (_manager) {
-      try { await _manager.stopDeviceScan(); } catch (_) {}
-    }
-    if (_device) {
-      try { await _device.cancelConnection(); } catch (_) {}
-      _device = null;
-      log.disco('Connection cancelled');
-    }
+    if (_manager) { try { await _manager.stopDeviceScan(); } catch (_) {} }
+    if (_device)  { try { await _device.cancelConnection(); } catch (_) {} _device = null; }
 
     _manualDisconnect = false;
 
@@ -484,14 +443,28 @@ export function BleProvider({ children }) {
       connected:  false,
       deviceName: null,
       currentHR:  null,
+      hrBuffer:   [],
       scanning:   false,
       error:      null,
     });
     log.success('Disconnected cleanly ✓');
   }, [setPartial]);
 
+  // ── registerStressCallback ────────────────────────────────────────────────
+  // StressContext calls this once on mount to receive raw HR buffer updates.
+  // The callback fires on EVERY HR reading, foreground AND background.
+  // This is what makes stress calculation + SOS trigger work in iOS background.
+  const registerStressCallback = useCallback(cb => {
+    _onRawHR = cb;
+    log.stress('Stress callback registered ✓');
+    return () => {
+      _onRawHR = null;
+      log.stress('Stress callback unregistered');
+    };
+  }, []);
+
   return (
-    <BleContext.Provider value={{ ...state, startScan, disconnect }}>
+    <BleContext.Provider value={{ ...state, startScan, disconnect, registerStressCallback }}>
       {children}
     </BleContext.Provider>
   );

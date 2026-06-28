@@ -231,6 +231,47 @@ export const subscribeNotificationPress = handler => {
     onNotificationPress = null;
   };
 };
+export const displayStressUpdateNotification = async ({
+  score,
+  stateLabel,
+  source,
+  currentHR,
+}) => {
+  const title = 'Stress Score Updated';
+  const details = [
+    `Score: ${score}`,
+    stateLabel ? `State: ${stateLabel}` : null,
+    currentHR != null ? `HR: ${currentHR} bpm` : null,
+    source ? `Source: ${source}` : null,
+  ].filter(Boolean).join(' | ');
+
+  await notifee.displayNotification({
+    title,
+    body: details,
+    data: {
+      messageType:'CHAT',
+      score: String(score ?? ''),
+      stateLabel: stateLabel ?? '',
+      source: source ?? '',
+      currentHR: currentHR == null ? '' : String(currentHR),
+    },
+    ios: {
+      sound: IOS_SOUNDS.CHAT,
+      foregroundPresentationOptions: {
+        alert: true,
+        badge: true,
+        sound: true,
+      },
+    },
+    android: {
+      channelId: 'default',
+      smallIcon: 'ic_launcher',
+      pressAction: {
+        id: 'default',
+      },
+    },
+  });
+};
 
 export const consumePendingNotificationPress = async () => {
   try {
