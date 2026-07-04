@@ -172,7 +172,7 @@ export default function StressMonitorScreen({ route }) {
         </View>
       ) : (
         <>
-          {isMe ? <MyStressMonitor /> : null}
+          {isMe && hasLicense  ? <MyStressMonitor /> : null}
           {!isMe ? <ContactStressMonitor /> : null}
         </>
       )}

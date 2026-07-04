@@ -68,9 +68,9 @@ function ContactAvatar({ contact, stressColor }) {
       ]}
     >
       <View style={[styles.avatarRing, { borderColor: stressColor }]}>
-        {contact.profile_image ? (
+        {contact?.profile_image ? (
           <Image
-            source={{ uri: contact.profile_image }}
+            source={{ uri: contact?.profile_image }}
             style={styles.avatarImg}
           />
         ) : (
@@ -81,7 +81,7 @@ function ContactAvatar({ contact, stressColor }) {
             ]}
           >
             <Text style={[styles.avatarInitial, { color: stressColor }]}>
-              {contact.initial || contact.name?.[0]?.toUpperCase() || '?'}
+              {contact?.initial || contact?.name?.[0]?.toUpperCase() || '?'}
             </Text>
           </View>
         )}
@@ -466,7 +466,7 @@ export default function ContactStressMonitor() {
         <ContactAvatar contact={contact} stressColor={stress.color} />
         <View style={styles.contactInfo}>
           <Text style={styles.contactName} numberOfLines={1}>
-            {contact.name}
+            {contact?.name}
           </Text>
           
           <View

@@ -208,9 +208,9 @@ export const ChatProvider = ({ children }) => {
       console.log('New Message:', message);
       if (
         !message?.isSelf &&
-        (currentScreenRef.current !== 'Chat' ||
+        ((currentScreenRef.current !== 'Chat' ||
           (chatSelectedTrustedContactRef.current.roomId !== message.roomId &&
-            currentScreenRef.current === 'Chat'))
+            currentScreenRef.current === 'Chat')) && message?.senderId !== currentUserId)
       ) {
         const senderName = message?.senderName;
         ('New Message');

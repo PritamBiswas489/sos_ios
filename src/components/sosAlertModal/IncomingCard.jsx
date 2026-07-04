@@ -1,4 +1,4 @@
-import React, {useCallback} from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getProfileImage } from '../../config/utility';
@@ -8,24 +8,24 @@ import useToast from '../../hook/useToast';
 import Spinner from 'react-native-loading-spinner-overlay';
 import AudioPlayerModal from '../audioPlayerModal';
 import { getMediaUrlFromRawUrl } from '../../config/utility';
- 
+
 
 // ── Session status config ──────────────────────────────────────────────────
 const SESSION_STATUS_CONFIG = {
-  active:    { color: '#4ADE80', icon: 'shield-alert-outline',  label: 'Active'    },
-  expired:   { color: '#FACC15', icon: 'clock-alert-outline',   label: 'Expired'   },
-  cancelled: { color: '#F87171', icon: 'close-circle-outline',  label: 'Cancelled' },
-  resolved:  { color: '#818CF8', icon: 'check-circle-outline',  label: 'Resolved'  },
+  active: { color: '#4ADE80', icon: 'shield-alert-outline', label: 'Active' },
+  expired: { color: '#FACC15', icon: 'clock-alert-outline', label: 'Expired' },
+  cancelled: { color: '#F87171', icon: 'close-circle-outline', label: 'Cancelled' },
+  resolved: { color: '#818CF8', icon: 'check-circle-outline', label: 'Resolved' },
 };
 
 // ── My response status config ──────────────────────────────────────────────
 const RESPONSE_STATUS_CONFIG = {
-  pending:    { color: '#FACC15', icon: 'clock-outline',        label: 'Pending'    },
-  accepted:   { color: '#4ADE80', icon: 'check-circle-outline', label: 'Accepted'   },
-  on_the_way: { color: '#4A9EFF', icon: 'car-arrow-right',      label: 'On the way' },
-  declined:   { color: '#F87171', icon: 'close-circle-outline', label: 'Declined'   },
-  failed:     { color: '#EF4444', icon: 'alert-circle-outline',  label: 'Failed to reach'     },
-  reached :    { color: '#22C55E', icon: 'check-circle-outline', label: 'Reached'    },
+  pending: { color: '#FACC15', icon: 'clock-outline', label: 'Pending' },
+  accepted: { color: '#4ADE80', icon: 'check-circle-outline', label: 'Accepted' },
+  on_the_way: { color: '#4A9EFF', icon: 'car-arrow-right', label: 'On the way' },
+  declined: { color: '#F87171', icon: 'close-circle-outline', label: 'Declined' },
+  failed: { color: '#EF4444', icon: 'alert-circle-outline', label: 'Failed to reach' },
+  reached: { color: '#22C55E', icon: 'check-circle-outline', label: 'Reached' },
 };
 
 const AVATAR_COLORS = ['#4A9EFF', '#4ADE80', '#FACC15', '#F87171', '#818CF8', '#FB923C'];
@@ -70,26 +70,26 @@ const UserAvatar = ({ user, size = 52 }) => {
 // ---------------------------------------------------------------------------
 // Incoming SOS card
 // ---------------------------------------------------------------------------
-const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, onClose }) => {
+const IncomingCard = ({ item: incomingItem, navigationRef, onAccept, onDecline, onClose }) => {
   console.log('Rendering IncomingCard with item:', incomingItem);
   const [item, setItem] = useState(incomingItem);
   const [activeAudioUrl, setActiveAudioUrl] = useState('');
   const [isAudioModalVisible, setIsAudioModalVisible] = useState(false);
-  const session        = item.sos_session ?? {};
-  const sender         = session.user ?? {};
-  const audioRecords   = session.audio_records ?? [];
-  const sessionStatus  = (session.status ?? 'active').toLowerCase();
+  const session = item.sos_session ?? {};
+  const sender = session.user ?? {};
+  const audioRecords = session.audio_records ?? [];
+  const sessionStatus = (session.status ?? 'active').toLowerCase();
   const responseStatus = (item.response_status ?? 'pending').toLowerCase();
-  const stressData     = session.stress_data ?? null;
-  const stressHR       = stressData?.hr ?? null;
-  const stressScore    = stressData?.stress_score ?? null;
-  const hasStressData  = stressHR !== null || stressScore !== null;
-  const latitude       = stressData?.latitude ?? session.latitude ?? null;
-  const longitude      = stressData?.longitude ?? session.longitude ?? null;
-  const location       = session?.location;
-  const hasLocation    = latitude !== null && longitude !== null;
-  
-   
+  const stressData = session.stress_data ?? null;
+  const stressHR = stressData?.hr ?? null;
+  const stressScore = stressData?.stress_score ?? null;
+  const hasStressData = stressHR !== null || stressScore !== null;
+  const latitude = stressData?.latitude ?? session.latitude ?? null;
+  const longitude = stressData?.longitude ?? session.longitude ?? null;
+  const location = session?.location;
+  const hasLocation = latitude !== null && longitude !== null;
+
+
   const sCfg =
     SESSION_STATUS_CONFIG[sessionStatus] ?? SESSION_STATUS_CONFIG.active;
   const rCfg =
@@ -98,37 +98,43 @@ const IncomingCard = ({ item:incomingItem, navigationRef, onAccept, onDecline, o
   const [loading, setLoading] = useState(false);
 
   const navigateToAudioStream = useCallback(() => {
-  if (!navigationRef.isReady()) return;
-  const receipentId = item.sos_session?.user?.id;
-  onClose?.();
- 
-  // ✅ Step 1: Reset params to undefined first
-  navigationRef.navigate('Main', {
-    screen: 'MainTabs',
-    params: {
-      screen: 'AudioStream',
-      params: { selectedReceipentId: undefined },
-    },
-  });
+    if (!navigationRef.isReady()) return;
+    const receipentId = item.sos_session?.user?.id;
+    onClose?.();
 
-  // ✅ Step 2: Set actual params in next tick
-  setTimeout(() => {
-    console.log('Navigating to AudioStream with receipentId:', receipentId);
+    // ✅ Step 1: Reset params to undefined first
     navigationRef.navigate('Main', {
       screen: 'MainTabs',
       params: {
         screen: 'AudioStream',
-        params: { selectedReceipentId: receipentId },
+        params: { selectedReceipentId: undefined },
       },
     });
-  }, 50);
-}, [item, navigationRef, onClose]);
+
+    // ✅ Step 2: Set actual params in next tick
+    setTimeout(() => {
+      console.log('Navigating to AudioStream with receipentId:', receipentId);
+      navigationRef.navigate('Main', {
+        screen: 'MainTabs',
+        params: {
+          screen: 'AudioStream',
+          params: { selectedReceipentId: receipentId },
+        },
+      });
+    }, 50);
+  }, [item, navigationRef, onClose]);
+
+  const navigateToContactHub = useCallback(() => {
+    if (!navigationRef.isReady()) return;
+    const victimId = item.sos_session?.user?.id;
+    onClose?.();
+    navigationRef.navigate('ContactHub', { selectedReceipentId: victimId });
+  }, [item, navigationRef, onClose]);
 
 
-
-const onAcceptSOS = useCallback(() => {
-  navigateToAudioStream();
-}, [navigateToAudioStream]);
+  const onAcceptSOS = useCallback(() => {
+    navigateToAudioStream();
+  }, [navigateToAudioStream]);
 
 
   const changeStatus = newStatus => {
@@ -154,10 +160,10 @@ const onAcceptSOS = useCallback(() => {
                 } else {
                   setItem(prev => ({ ...prev, response_status: newStatus }));
                   showSuccess('SOS response status updated successfully');
-                  if(newStatus === 'accepted') {
+                  if (newStatus === 'accepted') {
                     // onAcceptSOS?.();
                   }
-                   
+
                 }
               },
             );
@@ -181,7 +187,7 @@ const onAcceptSOS = useCallback(() => {
     setIsAudioModalVisible(false);
     setActiveAudioUrl('');
   };
- 
+
 
   return (
     <View style={[styles.card, { borderColor: sCfg.color + '30' }]}>
@@ -234,9 +240,20 @@ const onAcceptSOS = useCallback(() => {
       <View style={styles.profileRow}>
         <UserAvatar user={sender} size={52} />
         <View style={styles.profileInfo}>
-          <Text style={styles.senderName} numberOfLines={1}>
-            {sender.name ?? 'Unknown'}
-          </Text>
+          <View style={styles.senderNameRow}>
+            <Text style={styles.senderName} numberOfLines={2}>
+              {sender.name ?? 'Unknown'}
+            </Text>
+            <TouchableOpacity
+              style={styles.contactHubLinkBtn}
+              activeOpacity={0.75}
+              onPress={navigateToContactHub}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Icon name="shield-alert" size={16} color="#b60a0a" />
+              <Text style={styles.contactHubLinkText}>SOS Profile</Text>
+            </TouchableOpacity>
+          </View>
           <View
             style={[
               styles.responseBadge,
@@ -297,7 +314,7 @@ const onAcceptSOS = useCallback(() => {
             if (navigationRef.isReady()) {
               const receipentId = item.sos_session?.user?.id;
               onClose?.();
-              
+
               // ✅ Step 1: Reset params to undefined first
               navigationRef.navigate('Main', {
                 screen: 'MainTabs',
@@ -389,7 +406,7 @@ const onAcceptSOS = useCallback(() => {
             <Text style={styles.acceptBtnText}>Reached</Text>
           </TouchableOpacity>
         </View>
-        
+
 
       )}
 
@@ -440,7 +457,7 @@ const onAcceptSOS = useCallback(() => {
             if (navigationRef.isReady()) {
               const receipentId = item.sos_session?.user?.id;
               onClose?.();
-              
+
               // ✅ Step 1: Reset params to undefined first
               navigationRef.navigate('Main', {
                 screen: 'MainTabs',
@@ -488,7 +505,7 @@ const onAcceptSOS = useCallback(() => {
             if (navigationRef.isReady()) {
               const receipentId = item.sos_session?.user?.id;
               onClose?.();
-              
+
               // ✅ Step 1: Reset params to undefined first
               navigationRef.navigate('Main', {
                 screen: 'MainTabs',
@@ -525,7 +542,7 @@ const onAcceptSOS = useCallback(() => {
             if (navigationRef.isReady()) {
               const receipentId = item.sos_session?.user?.id;
               onClose?.();
-              
+
               // ✅ Step 1: Reset params to undefined first
               navigationRef.navigate('Main', {
                 screen: 'MainTabs',
@@ -650,10 +667,34 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
   },
+  senderNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   senderName: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    flexShrink: 1,
+
+  },
+  contactHubLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: 'rgba(74,158,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(74,158,255,0.3)',
+  },
+  contactHubLinkText: {
+    color: '#ea2d43',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   phoneRow: {
     flexDirection: 'row',
@@ -780,10 +821,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionIconChat:   { backgroundColor: 'rgba(74,158,255,0.12)' },
-  actionIconAudio:  { backgroundColor: 'rgba(0,255,156,0.10)'  },
-  actionIconMap:    { backgroundColor: 'rgba(255,165,2,0.10)'  },
-  actionIconHealth: { backgroundColor: 'rgba(255,59,92,0.12)'  },
+  actionIconChat: { backgroundColor: 'rgba(74,158,255,0.12)' },
+  actionIconAudio: { backgroundColor: 'rgba(0,255,156,0.10)' },
+  actionIconMap: { backgroundColor: 'rgba(255,165,2,0.10)' },
+  actionIconHealth: { backgroundColor: 'rgba(255,59,92,0.12)' },
   actionLabel: {
     fontSize: 12,
     fontWeight: '600',
@@ -904,6 +945,5 @@ const styles = StyleSheet.create({
 
 export default IncomingCard;
 
- 
 
- 
+

@@ -12,6 +12,7 @@ const MessageInput = forwardRef(({}, ref) => {
   const typingDebounceRef = useRef(null);
 
   const chatActions = useChatActions();
+  const chatActionsRef = useRef(chatActions);
   const currentRoomId = useSelector(state => state.chatSelectedTrustedContact?.roomId);
 
   useImperativeHandle(ref, () => ({
@@ -22,18 +23,22 @@ const MessageInput = forwardRef(({}, ref) => {
     },
   }));
 
-  const handleChangeText = useCallback(
-    text => {
-      setValue(text);
-      valueRef.current = text;
-      if (!currentRoomId || !text.trim()) return;
-      if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
-      typingDebounceRef.current = setTimeout(() => {
-        chatActions.sendTyping(currentRoomId);
-      }, TYPING_DEBOUNCE_MS);
-    },
-    [currentRoomId, chatActions],
-  );
+  useEffect(() => {
+  chatActionsRef.current = chatActions;
+}, [chatActions]);
+
+const handleChangeText = useCallback(
+  text => {
+    setValue(text);
+    valueRef.current = text;
+    if (!currentRoomId || !text.trim()) return;
+    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+    typingDebounceRef.current = setTimeout(() => {
+      chatActionsRef.current.sendTyping(currentRoomId); // ✅ stable ref
+    }, TYPING_DEBOUNCE_MS);
+  },
+  [currentRoomId], // ✅ no chatActions dep — always stable
+);
 
   useEffect(() => {
     return () => {

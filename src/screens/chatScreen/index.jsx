@@ -63,50 +63,61 @@ const ChatScreen = ({ route }) => {
     return () => sub.remove();
   }, []);
 
+  const onlineStatusKey = useMemo(() => {
+  if (!chatContacts || chatContacts.length === 0) return '';
+  return chatContacts
+    .map(c => {
+      const onlineId = c.user_id === usrId ? c.trusted_user_id : c.user_id;
+      return `${c.id}:${onlineUsers[onlineId] || false}`;
+    })
+    .join(',');
+}, [chatContacts, usrId, onlineUsers]);
+
   const mappedChatContacts = useMemo(() => {
-    const list = chatContacts;
-    if (!list || list.length === 0) return [];
+  const list = chatContacts;
+  if (!list || list.length === 0) return [];
 
-    const trustedContacts = [];
-    const otherContacts = [];
+  const trustedContacts = [];
+  const otherContacts = [];
 
-    for (const contact of list) {
-      const roomid = [contact.user_id, contact.trusted_user_id].sort().join(':');
-      if (contact.user_id === usrId) {
-        const displayName =
-          contact.nickname || contact.trusted_contact.name || contact.relationship || '?';
-        trustedContacts.push({
-          id: contact.id,
-          name: displayName,
-          initial: displayName?.charAt(0).toUpperCase(),
-          isOnline: onlineUsers[contact.trusted_user_id] || false,
-          receipent_id: contact.trusted_user_id,
-          phone_number: contact.trusted_contact.phone_number,
-          roomId: roomid,
-        });
-      } else if (contact.trusted_user_id === usrId) {
-        const displayName = contact?.inviter?.name || contact?.inviter?.phone_number || 'Unknown';
-        otherContacts.push({
-          id: contact.id,
-          name: displayName,
-          initial: displayName.charAt(0).toUpperCase(),
-          phone_number: contact?.inviter?.phone_number,
-          isOnline: onlineUsers[contact.user_id] || false,
-          receipent_id: contact.user_id,
-          roomId: roomid,
-        });
-      }
+  for (const contact of list) {
+    const roomid = [contact.user_id, contact.trusted_user_id].sort().join(':');
+    if (contact.user_id === usrId) {
+      const displayName =
+        contact.nickname || contact.trusted_contact.name || contact.relationship || '?';
+      trustedContacts.push({
+        id: contact.id,
+        name: displayName,
+        initial: displayName?.charAt(0).toUpperCase(),
+        isOnline: onlineUsers[contact.trusted_user_id] || false,
+        receipent_id: contact.trusted_user_id,
+        phone_number: contact.trusted_contact.phone_number,
+        roomId: roomid,
+      });
+    } else if (contact.trusted_user_id === usrId) {
+      const displayName =
+        contact?.inviter?.name || contact?.inviter?.phone_number || 'Unknown';
+      otherContacts.push({
+        id: contact.id,
+        name: displayName,
+        initial: displayName.charAt(0).toUpperCase(),
+        phone_number: contact?.inviter?.phone_number,
+        isOnline: onlineUsers[contact.user_id] || false,
+        receipent_id: contact.user_id,
+        roomId: roomid,
+      });
     }
+  }
 
-    const filteredOtherContacts = otherContacts.filter(
-      oc => !trustedContacts.some(tc => tc.roomId === oc.roomId),
-    );
+  const filteredOtherContacts = otherContacts.filter(
+    oc => !trustedContacts.some(tc => tc.roomId === oc.roomId),
+  );
 
-    return [...trustedContacts, ...filteredOtherContacts].sort((a, b) => {
-      if (a.isOnline === b.isOnline) return 0;
-      return a.isOnline ? -1 : 1;
-    });
-  }, [chatContacts, usrId, onlineUsers]);
+  return [...trustedContacts, ...filteredOtherContacts].sort((a, b) => {
+    if (a.isOnline === b.isOnline) return 0;
+    return a.isOnline ? -1 : 1;
+  });
+}, [chatContacts, usrId, onlineStatusKey]);
 
   // Keep a ref of the latest contacts for use inside the event listener closure
   const mappedChatContactsRef = useRef([]);
@@ -116,44 +127,42 @@ const ChatScreen = ({ route }) => {
 
   // Consume pending event recipient — runs on every trigger increment or when contacts reload
   useEffect(() => {
-    if (!eventRecipientRef.current || mappedChatContacts.length === 0) return;
+  if (mappedChatContacts.length === 0) return;
+
+  // Priority 1 — handle event recipient (push notification)
+  if (eventRecipientRef.current) {
     const contact = mappedChatContacts.find(
       c => String(c.receipent_id) === eventRecipientRef.current,
     );
     if (contact) {
       dispatch(chatSelectedTrustedContactActions.setSelectedTrustedContact(contact));
       eventRecipientRef.current = null;
-    }
-  }, [eventTrigger, mappedChatContacts, dispatch]);
-
-  useEffect(() => {
-    console.log('Mapped chat contacts updated:', mappedChatContacts);
-    if (mappedChatContacts.length === 0) return;
-
-    if (normalizedSelectedReceipentId && !hasAutoSelectedFromParamRef.current) {
-      hasAutoSelectedFromParamRef.current = true;
-      const contactToSelect = mappedChatContacts.find(
-        c => String(c.receipent_id) === normalizedSelectedReceipentId,
-      );
-      console.log('Auto-selecting contact from route param:', contactToSelect);
-      dispatch(
-        chatSelectedTrustedContactActions.setSelectedTrustedContact(
-          contactToSelect ?? mappedChatContacts[0],
-        ),
-      );
       return;
     }
+  }
 
-    const stillExists = chatSelectedTrustedContact?.id
-      ? mappedChatContacts.some(c => c.id === chatSelectedTrustedContact.id)
-      : false;
+  // Priority 2 — handle route param auto-select
+  if (normalizedSelectedReceipentId && !hasAutoSelectedFromParamRef.current) {
+    hasAutoSelectedFromParamRef.current = true;
+    const contact =
+      mappedChatContacts.find(
+        c => String(c.receipent_id) === normalizedSelectedReceipentId,
+      ) ?? mappedChatContacts[0];
+    dispatch(chatSelectedTrustedContactActions.setSelectedTrustedContact(contact));
+    return;
+  }
 
-    if (!stillExists) {
-      dispatch(
-        chatSelectedTrustedContactActions.setSelectedTrustedContact(mappedChatContacts[0]),
-      );
-    }
-  }, [mappedChatContacts, normalizedSelectedReceipentId, chatSelectedTrustedContact?.id, dispatch]);
+  // Priority 3 — fallback if selected contact no longer exists
+  const stillExists = chatSelectedTrustedContact?.id
+    ? mappedChatContacts.some(c => c.id === chatSelectedTrustedContact.id)
+    : false;
+
+  if (!stillExists) {
+    dispatch(
+      chatSelectedTrustedContactActions.setSelectedTrustedContact(mappedChatContacts[0]),
+    );
+  }
+}, [mappedChatContacts, eventTrigger, normalizedSelectedReceipentId, chatSelectedTrustedContact?.id, dispatch]);
 
   const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
   const isAndroid15OrAbove = Platform.OS === 'android' && Number(Platform.Version) >= 35;
@@ -186,15 +195,7 @@ const ChatScreen = ({ route }) => {
   return (
     <KeyboardAvoidingView
       style={[
-        styles.container,
-        Platform.OS === 'android'
-          ? {
-              paddingBottom:
-                isAndroid15OrAbove && androidKeyboardHeight > 0
-                  ? androidKeyboardHeight + ANDROID_15_KEYBOARD_GAP
-                  : 0,
-            }
-          : null,
+        styles.container
       ]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       enabled={Platform.OS === 'ios'}

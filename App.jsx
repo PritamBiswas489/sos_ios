@@ -69,6 +69,7 @@ import * as Sentry from '@sentry/react-native';
  
 import EmergencyServicesScreen from './src/screens/EmergencyServicesScreen/index.jsx';
 import ReportListScreen from './src/screens/abuserReportListScreen/index.jsx';
+import ContactHubScreen from './src/screens/contactHubScreen/index.jsx';
 Sentry.init({
   dsn: 'https://4c7ce135cfa3fd9b5810b5f3109c6366@o4511060608155648.ingest.us.sentry.io/4511521653587968',
 
@@ -361,6 +362,22 @@ const App = () => {
 
   }, []);
 
+   const redirectToContactHubScreen = useCallback(victimId => {
+    const currentRoute = navigationRef.getCurrentRoute();
+    if (currentRoute?.name === 'ContactHub') {
+      console.log('Already on ContactHub screen, skipping redirect');
+      return;
+    }
+    if (!navigationRef.isReady()) {
+      pendingNavigationRef.current = () => {
+        navigationRef.navigate('ContactHub', {  selectedReceipentId: victimId });
+      };
+      return;
+    }
+
+    navigationRef.navigate('ContactHub', {  selectedReceipentId: victimId });
+  }, []);
+
   const notificationAction = useCallback(
     payload => {
       const payloadData =
@@ -396,12 +413,12 @@ const App = () => {
         if (payloadData?.type === 'stress') {
           if (victimId) {
             console.log('Redirecting to stress screen for victimId:', victimId);
-            redirectToStressScreen(victimId);
+            redirectToContactHubScreen(victimId);
           }
         } else {
           if (victimId) {
             console.log('Redirecting to audio screen for victimId:', victimId);
-            redirectToAudioScreen(victimId);
+            redirectToContactHubScreen(victimId);
           }
         }
       }
@@ -660,6 +677,7 @@ const App = () => {
                             <Stack.Screen name="Main" component={DrawerNavigator} />
                             <Stack.Screen name="EmergencyServices" component={EmergencyServicesScreen} />
                             <Stack.Screen name="ReportList" component={ReportListScreen} />
+                            <Stack.Screen name="ContactHub" component={ContactHubScreen} />
                           </Stack.Navigator>
                         </NavigationContainer>
                         <Toast config={toastConfig} />
