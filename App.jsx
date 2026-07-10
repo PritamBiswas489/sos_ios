@@ -188,7 +188,7 @@ const App = () => {
   const [emittedSOS, setEmittedSOS] = useState(null);
   const { hasLicense } = useUserData();
 
-  const openSosModalFromNotification = useCallback(() => {
+  const openSosModalFromNotification = useCallback((payloadData) => {
     if (AppState.currentState === 'active') {
       pendingSosRef.current = false;
       setSosModalVisible(true);
@@ -202,12 +202,12 @@ const App = () => {
       if (pendingSosRef.current && AppState.currentState === 'active') {
         pendingSosRef.current = false;
         setSosModalVisible(true);
-        if (fetchSOS) {
+        if (payloadData?.fetchSOS) {
           fetchSosNotifications();
         }
       }
     }, 450);
-  }, []);
+  }, [fetchSosNotifications]);
 
   const handleCheckPermissions = useCallback(async () => {
     if(!isAuthenticated) {
@@ -408,7 +408,7 @@ const App = () => {
           'Opening SOS modal from notification with payloadData:',
           payloadData,
         );
-        openSosModalFromNotification();
+        openSosModalFromNotification(payloadData);
         const victimId = payloadData?.fromUserId;
         if (payloadData?.type === 'stress') {
           if (victimId) {
