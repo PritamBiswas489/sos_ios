@@ -17,8 +17,15 @@ import { useNavigation } from '@react-navigation/native';
 import appColors from '../../theme/appColors';
 import appFonts from '../../theme/appFonts';
 import { SW, SF } from '../../theme/dimensions';
+import { useSettings } from '../../hook/useSettings.js';
 
-const MAX_ABUSER_IMAGE_SIZE = 5 * 1024 * 1024;
+const DEFAULT_ABUSER_IMAGE_SIZE = 5 * 1024 * 1024;
+const DEFAULT_EVIDENCE_FILE_SIZES = {
+    image: 20 * 1024 * 1024,
+    video: 100 * 1024 * 1024,
+    audio: 20 * 1024 * 1024,
+    document: 20 * 1024 * 1024,
+};
 const ABUSE_TYPES = ['Physical', 'Psychological', 'Sexual', 'Financial', 'Stalking', 'Other'];
 const THREAT_LEVELS = ['Low', 'Medium', 'High'];
 const EVIDENCE_TYPES = [
@@ -37,6 +44,12 @@ const formatFileSize = size => {
 const formatMimeType = mimeType => {
     if (!mimeType) return 'Unknown type';
     return mimeType.split('/').pop()?.toUpperCase() || mimeType;
+};
+
+const formatSizeInMB = size => {
+    const mb = Number(size || 0) / (1024 * 1024);
+    if (!mb || Number.isNaN(mb)) return '0 MB';
+    return Number.isInteger(mb) ? `${mb} MB` : `${mb.toFixed(1)} MB`;
 };
 
  
@@ -112,6 +125,13 @@ export default function ReportFormScreen({ onNavigateBack }) {
     const [abuserPhoto, setAbuserPhoto] = useState(null);
     const [evidenceFiles, setEvidenceFiles] = useState({ document: null, image: null, video: null });
     const [successModal, setSuccessModal] = useState({ visible: false, reportId: null, abuserName: '' });
+    const { siteSettings } = useSettings();
+    const maxAbuserImageSize = Number(siteSettings?.PROFILE_IMAGE_SIZE || DEFAULT_ABUSER_IMAGE_SIZE);
+    const evidenceFileSizes = {
+        ...DEFAULT_EVIDENCE_FILE_SIZES,
+        ...(siteSettings?.EVIDENCE_FILE_SIZES || {}),
+    };
+    const evidenceLimitsText = `Max size: Document ${formatSizeInMB(evidenceFileSizes.document)} | Image ${formatSizeInMB(evidenceFileSizes.image)} | Video ${formatSizeInMB(evidenceFileSizes.video)}`;
     const navigation = useNavigation();
 
     const handleToggleTestData = () => {
@@ -235,15 +255,23 @@ export default function ReportFormScreen({ onNavigateBack }) {
             if (response.errorCode) { Alert.alert('Image Upload', response.errorMessage || 'Failed to pick image'); return; }
             const asset = response?.assets?.[0];
             if (!asset?.uri) { Alert.alert('Image Upload', 'No image was selected. Please try again.'); return; }
-            if (Number(asset?.fileSize || 0) > MAX_ABUSER_IMAGE_SIZE) { Alert.alert('Image Upload', 'Please select an image up to 5 MB only.'); return; }
+            if (Number(asset?.fileSize || 0) > maxAbuserImageSize) { Alert.alert('Image Upload', `Please select an image up to ${maxAbuserImageSize / (1024 * 1024)} MB only.`); return; }
             setAbuserPhoto({ uri: asset.uri, name: asset.fileName || form.fullName?.trim() || 'Abuser photo', type: asset.type || 'image/jpeg', fileSize: asset.fileSize || 0 });
         });
     };
 
+
     const handlePickEvidence = async type => {
         try {
             const [file] = await pick({ type: [types.allFiles] });
+            
             if (!file?.uri) return;
+            const selectedFileSize = Number(file?.size || 0);
+            const maxAllowedSize = Number(evidenceFileSizes?.[type] || DEFAULT_EVIDENCE_FILE_SIZES[type] || DEFAULT_EVIDENCE_FILE_SIZES.document);
+            if (selectedFileSize > maxAllowedSize) {
+                Alert.alert('File Picker', `Please select a file up to ${maxAllowedSize / (1024 * 1024)} MB only.`);
+                return;
+            }
             setEvidenceFiles(prev => ({ ...prev, [type]: { name: file?.name || `${type}_file`, mimeType: file?.type || 'application/octet-stream', uri: file.uri, size: file?.size || 0 } }));
         } catch (err) {
             if (!isErrorWithCode(err) || err.code !== errorCodes.OPERATION_CANCELED) Alert.alert('File Picker', 'Could not pick a file. Please try again.');
@@ -485,6 +513,7 @@ export default function ReportFormScreen({ onNavigateBack }) {
                     </FormField>
 
                     <SectionDivider title="Evidence File" />
+                    <Text style={styles.evidenceLimitText}>{evidenceLimitsText}</Text>
                     <View style={styles.evidenceGrid}>
                         {EVIDENCE_TYPES.map(item => {
                             const selected = evidenceFiles[item.key];
@@ -800,6 +829,12 @@ const styles = StyleSheet.create({
         borderColor: appColors.whiteBdrTransparent,
         paddingHorizontal: SW(14),
         marginBottom: SW(14),
+    },
+     evidenceLimitText: {
+        color: appColors.bodyColor,
+        fontSize: SF(11),
+        marginTop: -SW(8),
+        marginBottom: SW(12),
     },
     toggleDivider: { height: 1, backgroundColor: appColors.whiteBdrTransparent },
 

@@ -16,6 +16,7 @@ import mySosSessionsSlice from './redux/mySosSessions.redux';
 import healthSelectedContactSlice from './redux/healthSelectedContact.redux';
 import deviceIdSlice from './redux/useDeviceId.redux';
 import authSlice from './redux/useAuth.redux';
+import settingsSlice from './redux/settings.redux';
 
 export const resetAllState = createAction('store/resetAll');
 
@@ -37,6 +38,7 @@ const appReducer = combineReducers({
   healthSelectedContact: healthSelectedContactSlice.reducer,
   deviceId: deviceIdSlice.reducer,
   auth: authSlice.reducer,
+  settings: settingsSlice.reducer,
 });
 
 const rootReducer = (state, action) => {

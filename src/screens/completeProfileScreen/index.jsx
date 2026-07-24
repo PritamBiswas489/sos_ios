@@ -23,6 +23,7 @@ import { getProfileImage } from '../../config/utility';
 import { useDispatch } from 'react-redux';
 import { resetAllState } from '../../store';
 import useUserAuth from '../../hook/useUserAuth.jsx';
+import { useSettings } from '../../hook/useSettings';
 
 const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
 
@@ -36,6 +37,10 @@ const CompleteProfileScreen = ({ route }) => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
     const [fullName, setFullName] = useState(userData?.name || '');
 	const [email, setEmail] = useState(userData?.email || '');
+
+	const { siteSettings } = useSettings();
+		 
+    const PROFILE_IMAGE_SIZE = Number(siteSettings?.PROFILE_IMAGE_SIZE) || MAX_PROFILE_IMAGE_SIZE;
 
 
 	const canSubmit = useMemo(() => {
@@ -56,8 +61,8 @@ const CompleteProfileScreen = ({ route }) => {
 					return;
 				}
 				const asset = response?.assets?.[0];
-				if (Number(asset?.fileSize || 0) > MAX_PROFILE_IMAGE_SIZE) {
-					showError('Image Upload', 'Please select an image up to 5 MB only.');
+				if (Number(asset?.fileSize || 0) > PROFILE_IMAGE_SIZE) {
+					showError('Image Upload', `Please select an image up to ${PROFILE_IMAGE_SIZE / (1024 * 1024)} MB only.`);
 					return;
 				}
 				if (asset?.uri) {
@@ -171,7 +176,7 @@ const CompleteProfileScreen = ({ route }) => {
 								<Text style={{ color: '#FFFFFF', fontSize: 30, fontWeight: '700' }}>{initial}</Text>
 							)}
 						</View>
-						<Text style={styles.uploadHint}>Upload Profile Image (max 5 MB)</Text>
+						<Text style={styles.uploadHint}>Upload Profile Image (max {PROFILE_IMAGE_SIZE / (1024 * 1024)} MB)</Text>
 						<TouchableOpacity style={styles.uploadButton} onPress={onPickProfileImage}>
 							<Icon name="photo-camera" size={16} color="#4DA3FF" />
 							<Text style={styles.uploadButtonText}>Choose from Gallery</Text>

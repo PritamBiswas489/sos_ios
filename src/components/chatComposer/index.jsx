@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -27,14 +27,20 @@ import styles from './style';
 import MessageInput from './MessageInput';
 import { selectedReplyMessageActions } from '../../store/redux/selectedReplyMessage.redux';
 import { useUserData } from '../../hook/useUserData';
-const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
-const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
-const MAX_AUDIO_SIZE_BYTES = 20 * 1024 * 1024;
-const MAX_DOCUMENT_SIZE_BYTES = 20 * 1024 * 1024;
-const getMediaSizeLimit = mediaCategory =>
-  mediaCategory === 'video' ? MAX_VIDEO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES;
+import { useSettings } from '../../hook/useSettings';
 
-const formatMegabytes = bytes => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+
+const DEFAULT_MEDIA_SIZE_LIMITS = {
+  image: 5 * 1024 * 1024,
+  video: 30 * 1024 * 1024,
+  audio: 20 * 1024 * 1024,
+  document: 20 * 1024 * 1024,
+};
+
+const MAX_RECORDING_DURATION_SECONDS = 60;
+
+ 
 
 const AUDIO_RECORD_OPTIONS = {
   sampleRate: 16000,
@@ -60,7 +66,27 @@ const ChatComposer = ({
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingTimerRef = useRef(null);
+   const isStoppingRecordingRef = useRef(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+
+   const { siteSettings } = useSettings();
+  const mediaSizeLimits = useMemo(() => ({
+    image: Number(siteSettings?.CHAT_MEDIA_FILE_SIZES?.image) || DEFAULT_MEDIA_SIZE_LIMITS.image,
+    video: Number(siteSettings?.CHAT_MEDIA_FILE_SIZES?.video) || DEFAULT_MEDIA_SIZE_LIMITS.video,
+    audio: Number(siteSettings?.CHAT_MEDIA_FILE_SIZES?.audio) || DEFAULT_MEDIA_SIZE_LIMITS.audio,
+    document: Number(siteSettings?.CHAT_MEDIA_FILE_SIZES?.document) || DEFAULT_MEDIA_SIZE_LIMITS.document,
+  }), [siteSettings]);
+
+  console.log('Media size limits:', mediaSizeLimits);
+
+  // const mediaSizeLimits = useMemo(() => DEFAULT_MEDIA_SIZE_LIMITS, []);
+  const getMediaSizeLimit = useCallback(
+    mediaCategory => mediaSizeLimits[mediaCategory] ?? mediaSizeLimits.image,
+    [mediaSizeLimits],
+  );
+
+  const formatMegabytes = useCallback(bytes => `${(bytes / (1024 * 1024)).toFixed(1)} MB`, []);
 
   const chatSelectedTrustedContact = useSelector(state => state.chatSelectedTrustedContact);
   const {userData} = useUserData();
@@ -261,10 +287,10 @@ const ChatComposer = ({
   const uploadAudioUri = useCallback(
     async ({ uri, mimeType = 'audio/wav', name = 'audio.wav', fileSize = 0 }) => {
       if (!uri) return;
-      if (fileSize > 0 && fileSize > MAX_AUDIO_SIZE_BYTES) {
+      if (fileSize > 0 && fileSize > mediaSizeLimits.audio) {
         Alert.alert(
           'File too large',
-          `Audio exceeds ${formatMegabytes(MAX_AUDIO_SIZE_BYTES)}. Please choose a smaller file.`,
+          `Audio exceeds ${formatMegabytes(mediaSizeLimits.audio)}. Please choose a smaller file.`,
         );
         return;
       }
@@ -303,7 +329,7 @@ const ChatComposer = ({
       }
       setIsUploadingMedia(false);
     },
-    [],
+    [formatMegabytes, mediaSizeLimits.audio],
   );
 
   const handlePickAudio = useCallback(async () => {
@@ -327,16 +353,13 @@ const ChatComposer = ({
     }, 400);
   }, [closeActionMenu, uploadAudioUri]);
 
-  const handleRecordAudio = useCallback(async () => {
-    closeActionMenu();
-    try {
-      if (!isRecordingAudio) {
-        AudioRecord.init(AUDIO_RECORD_OPTIONS);
-        AudioRecord.start();
-        setIsRecordingAudio(true);
-        return;
-      }
+ const stopAndUploadRecording = useCallback(async () => {
+    if (isStoppingRecordingRef.current) {
+      return;
+    }
 
+    isStoppingRecordingRef.current = true;
+    try {
       const recordedPath = await AudioRecord.stop();
       setIsRecordingAudio(false);
 
@@ -345,9 +368,12 @@ const ChatComposer = ({
         return;
       }
 
-      const recordedUri = recordedPath.startsWith('file://')
-        ? recordedPath
-        : `file://${recordedPath}`;
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const recordedUri =
+        recordedPath.startsWith('file://') || recordedPath.startsWith('content://')
+          ? recordedPath
+          : `file://${recordedPath}`;
 
       await uploadAudioUri({
         uri: recordedUri,
@@ -357,8 +383,45 @@ const ChatComposer = ({
     } catch {
       setIsRecordingAudio(false);
       Alert.alert('Recording error', 'Could not record audio. Please try again.');
+    } finally {
+      isStoppingRecordingRef.current = false;
     }
-  }, [closeActionMenu, isRecordingAudio, uploadAudioUri]);
+  }, [uploadAudioUri]);
+
+  useEffect(() => {
+    if (!isRecordingAudio || recordingDuration < MAX_RECORDING_DURATION_SECONDS) {
+      return;
+    }
+
+    stopAndUploadRecording();
+  }, [isRecordingAudio, recordingDuration, stopAndUploadRecording]);
+
+  const handleRecordAudio = useCallback(async () => {
+    closeActionMenu();
+    try {
+      if (!isRecordingAudio) {
+        if (Platform.OS === 'android') {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert('Permission denied', 'Microphone permission is required to record audio.');
+            return;
+          }
+        }
+
+        AudioRecord.init(AUDIO_RECORD_OPTIONS);
+        AudioRecord.start();
+        setIsRecordingAudio(true);
+        return;
+      }
+
+      await stopAndUploadRecording();
+    } catch {
+      setIsRecordingAudio(false);
+      Alert.alert('Recording error', 'Could not record audio. Please try again.');
+    }
+  }, [closeActionMenu, isRecordingAudio, stopAndUploadRecording]);
 
   const handleCancelRecording = useCallback(async () => {
     try {
@@ -379,13 +442,13 @@ const ChatComposer = ({
 
         const mimeType = file?.type || 'application/octet-stream';
         const fileSize = Number(file?.size || 0);
-        if (fileSize > 0 && fileSize > MAX_DOCUMENT_SIZE_BYTES) {
-          Alert.alert(
-            'File too large',
-            `Document exceeds ${formatMegabytes(MAX_DOCUMENT_SIZE_BYTES)}. Please choose a smaller file.`,
-          );
-          return;
-        }
+        if (fileSize > 0 && fileSize > mediaSizeLimits.document) {
+        Alert.alert(
+          'File too large',
+          `Document exceeds ${formatMegabytes(mediaSizeLimits.document)}. Please choose a smaller file.`,
+        );
+        return;
+      }
 
         setSelectedMediaType('document');
         setIsUploadingMedia(true);
@@ -424,7 +487,7 @@ const ChatComposer = ({
         }
       }
     }, 400);
-  }, [closeActionMenu]);
+  },  [closeActionMenu, formatMegabytes, mediaSizeLimits.document]);
 
   const handleCaptureFromCamera = useCallback(() => {
     closeActionMenu();
@@ -438,10 +501,10 @@ const ChatComposer = ({
         if (!uri) return;
         const mimeType = asset?.type || 'image/jpeg';
         const fileSize = Number(asset?.fileSize || 0);
-        if (fileSize > 0 && fileSize > MAX_IMAGE_SIZE_BYTES) {
+        if (fileSize > 0 && fileSize > mediaSizeLimits.image) {
           Alert.alert(
             'File too large',
-            `Image exceeds ${formatMegabytes(MAX_IMAGE_SIZE_BYTES)}. Please capture a smaller image.`,
+            `Image exceeds ${formatMegabytes(mediaSizeLimits.image)}. Please capture a smaller image.`,
           );
           return;
         }
@@ -478,7 +541,7 @@ const ChatComposer = ({
       },
     );
     }, 400);
-  }, [closeActionMenu]);
+  }, [closeActionMenu, formatMegabytes, mediaSizeLimits.image]);
 
   const handleShareCurrentLocation = useCallback(async () => {
     closeActionMenu();
@@ -677,6 +740,8 @@ const ChatComposer = ({
         onPickDocument={handlePickDocument}
         onCaptureFromCamera={handleCaptureFromCamera}
         onShareCurrentLocation={handleShareCurrentLocation}
+         mediaCategoryLimits={mediaSizeLimits}
+        maxRecordingDuration={MAX_RECORDING_DURATION_SECONDS}
       />
     </KeyboardAvoidingView>
   );

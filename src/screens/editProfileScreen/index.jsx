@@ -19,8 +19,9 @@ import useToast from '../../hook/useToast';
 import { useUserData } from '../../hook/useUserData';
 import { UserService } from '../../services/user.service';
 import { getProfileImage } from '../../config/utility';
+import { useSettings } from '../../hook/useSettings';
 
-const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
+const  MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024; // Default value
 
 const EditProfileScreen = ({ route }) => {
 	const navigation = useNavigation();
@@ -32,6 +33,9 @@ const EditProfileScreen = ({ route }) => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [fullName, setFullName] = useState(userData?.name || '');
 	const [email, setEmail] = useState(userData?.email || '');
+	const { siteSettings } = useSettings();
+	 
+	const PROFILE_IMAGE_SIZE = Number(siteSettings?.PROFILE_IMAGE_SIZE) || MAX_PROFILE_IMAGE_SIZE;
 
 	const canSubmit = useMemo(() => {
 		return fullName.trim().length > 1 && email.trim().length > 4;
@@ -47,8 +51,8 @@ const EditProfileScreen = ({ route }) => {
 					return;
 				}
 				const asset = response?.assets?.[0];
-				if (Number(asset?.fileSize || 0) > MAX_PROFILE_IMAGE_SIZE) {
-					showError('Image Upload', 'Please select an image up to 5 MB only.');
+				if (Number(asset?.fileSize || 0) > PROFILE_IMAGE_SIZE) {
+					showError('Image Upload', `Please select an image up to ${PROFILE_IMAGE_SIZE / (1024 * 1024)} MB only.`);
 					return;
 				}
 				if (asset?.uri) setProfileImageUri(asset.uri);
@@ -149,7 +153,7 @@ const EditProfileScreen = ({ route }) => {
 								<Text style={styles.avatarInitial}>{initial}</Text>
 							)}
 						</View>
-						<Text style={styles.uploadHint}>Upload Profile Image (max 5 MB)</Text>
+						<Text style={styles.uploadHint}>Upload Profile Image (max {PROFILE_IMAGE_SIZE / (1024 * 1024)} MB)</Text>
 						<TouchableOpacity style={styles.uploadButton} onPress={onPickProfileImage}>
 							<Icon name="photo-camera" size={16} color="#4DA3FF" />
 							<Text style={styles.uploadButtonText}>Choose from Gallery</Text>

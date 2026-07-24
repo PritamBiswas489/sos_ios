@@ -13,6 +13,8 @@ const ChatActionSheet = ({
     onPickDocument,
   onCaptureFromCamera,
   onShareCurrentLocation,
+   mediaCategoryLimits,
+  maxRecordingDuration
 }) => {
     return (
     <Modal
@@ -27,29 +29,29 @@ const ChatActionSheet = ({
             <View style={styles.actionSheetContainer}>
                 <TouchableOpacity style={styles.actionItem} onPress={() => onPickFromGallery('image')}>
                     <Icon name="image" size={20} color="#FFFFFF" />
-                    <Text style={styles.actionText}>Image</Text>
+                    <Text style={styles.actionText}>Image ({(mediaCategoryLimits?.image / 1024 / 1024).toFixed(2)} MB)</Text>
                 </TouchableOpacity>
 
                  <TouchableOpacity style={styles.actionItem} onPress={() => onPickFromGallery('video')}>
                     <Icon name="video-library" size={20} color="#FFFFFF" />
-                    <Text style={styles.actionText}>Video</Text>
+                    <Text style={styles.actionText}>Video ({(mediaCategoryLimits?.video / 1024 / 1024).toFixed(2)} MB)</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.actionItem} onPress={onPickAudio}>
                     <Icon name="headset" size={20} color="#FFFFFF" />
-                    <Text style={styles.actionText}>Audio File</Text>
+                    <Text style={styles.actionText}>Audio File ({(mediaCategoryLimits?.audio / 1024 / 1024).toFixed(2)} MB)</Text>
                 </TouchableOpacity>
 
                 {typeof onRecordAudio === 'function' && (
                     <TouchableOpacity style={styles.actionItem} onPress={onRecordAudio}>
                         <Icon name={isRecordingAudio ? 'stop-circle' : 'keyboard-voice'} size={20} color="#FFFFFF" />
-                        <Text style={styles.actionText}>{isRecordingAudio ? 'Stop Recording' : 'Record Audio'}</Text>
+                        <Text style={styles.actionText}>{isRecordingAudio ? 'Stop Recording' : 'Record Audio'} {maxRecordingDuration ? `(Max duration ${maxRecordingDuration} sec)` : ''}</Text>
                     </TouchableOpacity>
                 )}
 
                 <TouchableOpacity style={styles.actionItem} onPress={onPickDocument}>
                     <Icon name="description" size={20} color="#FFFFFF" />
-                    <Text style={styles.actionText}>Document</Text>
+                    <Text style={styles.actionText}>Document ({(mediaCategoryLimits?.document / 1024 / 1024).toFixed(2)} MB)</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.actionItem} onPress={onCaptureFromCamera}>

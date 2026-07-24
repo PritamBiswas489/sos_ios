@@ -57,6 +57,7 @@ import SosFab from './src/components/sosFab/index.jsx';
 import { useIncomingSosNotifications } from './src/hook/useIncomingSosNotifications.jsx';
 import { useMySosSessions } from './src/hook/useMySosSessions.jsx';
 import { useUserData } from './src/hook/useUserData.jsx';
+import { useSettings } from './src/hook/useSettings';
 import {
   initCrashLogger,
   logError,
@@ -185,6 +186,7 @@ const App = () => {
   const { fetchSosNotifications } = useIncomingSosNotifications();
   const { fetchMySosSessions } = useMySosSessions();
   const { isAuthenticated } = useUserAuth();
+  const { fetchSettings } = useSettings();
   const [emittedSOS, setEmittedSOS] = useState(null);
   const { hasLicense } = useUserData();
 
@@ -217,6 +219,14 @@ const App = () => {
     const missing = await checkRequiredPermissions();
     setMissingPermissions(missing);
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    fetchSettings();
+  }, [isAuthenticated, fetchSettings]);
 
   // Check permissions on mount
   useEffect(() => {
